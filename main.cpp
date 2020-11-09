@@ -8,6 +8,9 @@
 #include "print.hpp"
 #include "file.hpp"
 
+#define IMPLEMENT_RENDER_RESULT
+#include "RenderResult.hpp"
+
 int main(void){
 	// create output directory.
 	// using string for dir-name to later create output filename
@@ -33,6 +36,8 @@ int main(void){
 	RNG rand;
 	int width = 512;
 	int height = 512;
+
+	RenderResult renderResult(width, height);
 
 	// render parameters
 	int nIteration = 10000;
@@ -74,20 +79,17 @@ int main(void){
 	{
 		std::cout <<"path tracing for non-target component..." <<std::endl;
 
-		glm::vec3* result = new glm::vec3[width*height];
 		RNG* rngForEveryPixel = new RNG[width*height];
 		for(int i=0; i<width*height; i++){
-			result[i] = glm::vec3(0);
 			rngForEveryPixel[i] = RNG(i);
 		}
 
-		renderNonTarget(result, width, height, 100, scene, rngForEveryPixel);
+		renderNonTarget(renderResult.data(RenderResult::Layer::NONTARGET), width, height, 100, scene, rngForEveryPixel);
 		
-		if(writeImage(result, width, height, (outDir + "/non-target.png").data()) == 1)
+		if(writeImage(renderResult.data(RenderResult::Layer::NONTARGET), width, height, (outDir + "/non-target.png").data()) == 1)
 			std::cout <<" non-target saved" <<std::endl;
 		else std::cout <<"failed to save image" <<std::endl;
 
-		delete[] result;
 		delete[] rngForEveryPixel;
 	}
 
