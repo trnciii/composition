@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <fstream>
 
-struct RenderResult{
+struct RenderPasses{
 private:
 	std::vector<glm::vec3> images;
 
@@ -14,7 +14,7 @@ public:
 	const int length;
 	int nLayer = 0;
 
-	inline RenderResult(int w, int h):width(w), height(h), length(w*h){
+	inline RenderPasses(int w, int h):width(w), height(h), length(w*h){
 		images.resize(length*nLayer);
 	}
 

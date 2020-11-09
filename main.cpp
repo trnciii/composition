@@ -4,12 +4,10 @@
 #include <cassert>
 #include <iostream>
 
+#include "RenderPasses.hpp"
 #include "Random.hpp"
 #include "print.hpp"
 #include "file.hpp"
-
-#define IMPLEMENT_RENDER_RESULT
-#include "RenderResult.hpp"
 
 int main(void){
 	// create output directory.
@@ -37,7 +35,7 @@ int main(void){
 	int width = 512;
 	int height = 512;
 
-	RenderResult renderResult(width, height);
+	RenderPasses passes(width, height);
 
 	// render parameters
 	int nIteration = 10000;
@@ -56,40 +54,35 @@ int main(void){
 	uint32_t aggregationTarget = scene.aggregationTarget[0];
 
 
-	int reference = renderResult.addLayer();
+	int reference = passes.addLayer();
 	{
 		std::cout <<"path tracing for reference..." <<std::endl;
 
-		glm::vec3* result = new glm::vec3[width*height];
 		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++){
-			result[i] = glm::vec3(0);
+		for(int i=0; i<width*height; i++)
 			rngForEveryPixel[i] = RNG(i);
-		}
 
-		renderReference(result, width, height, 100, scene, rngForEveryPixel);
+		renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
 		
-		if(writeImage(result, width, height, (outDir + "/reference.png").data()) == 1)
+		if(writeImage(passes.data(reference), width, height, (outDir + "/reference.png").data()) == 1)
 			std::cout <<" reference saved" <<std::endl;
 		else std::cout <<"failed to save image" <<std::endl;
 
-		delete[] result;
 		delete[] rngForEveryPixel;
 	}
 
 
-	int non_target = renderResult.addLayer();
+	int non_target = passes.addLayer();
 	{
 		std::cout <<"path tracing for non-target component..." <<std::endl;
 
 		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++){
+		for(int i=0; i<width*height; i++)
 			rngForEveryPixel[i] = RNG(i);
-		}
 
-		renderNonTarget(renderResult.data(non_target), width, height, 100, scene, rngForEveryPixel);
+		renderNonTarget(passes.data(non_target), width, height, 100, scene, rngForEveryPixel);
 		
-		if(writeImage(renderResult.data(non_target), width, height, (outDir + "/non-target.png").data()) == 1)
+		if(writeImage(passes.data(non_target), width, height, (outDir + "/non-target.png").data()) == 1)
 			std::cout <<" non-target saved" <<std::endl;
 		else std::cout <<"failed to save image" <<std::endl;
 
