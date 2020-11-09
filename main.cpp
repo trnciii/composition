@@ -55,6 +55,8 @@ int main(void){
 	}
 	uint32_t aggregationTarget = scene.aggregationTarget[0];
 
+
+	int reference = renderResult.addLayer();
 	{
 		std::cout <<"path tracing for reference..." <<std::endl;
 
@@ -76,6 +78,7 @@ int main(void){
 	}
 
 
+	int non_target = renderResult.addLayer();
 	{
 		std::cout <<"path tracing for non-target component..." <<std::endl;
 
@@ -84,16 +87,14 @@ int main(void){
 			rngForEveryPixel[i] = RNG(i);
 		}
 
-		renderNonTarget(renderResult.data(RenderResult::Layer::NONTARGET), width, height, 100, scene, rngForEveryPixel);
+		renderNonTarget(renderResult.data(non_target), width, height, 100, scene, rngForEveryPixel);
 		
-		if(writeImage(renderResult.data(RenderResult::Layer::NONTARGET), width, height, (outDir + "/non-target.png").data()) == 1)
+		if(writeImage(renderResult.data(non_target), width, height, (outDir + "/non-target.png").data()) == 1)
 			std::cout <<" non-target saved" <<std::endl;
 		else std::cout <<"failed to save image" <<std::endl;
 
 		delete[] rngForEveryPixel;
 	}
-
-
 
 
 	// if(result_non.write(outDir + "images"))std::cout <<"images saved" <<std::endl;
