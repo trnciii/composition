@@ -1,7 +1,11 @@
 #pragma once
 
+#include <string>
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
+
+#include "RenderPasses.hpp"
 
 unsigned char tonemap(double c){
 	int c_out = 255*pow(c,(1/2.2)) +0.5;
@@ -22,4 +26,14 @@ int writeImage(glm::vec3* color, int w, int h, const char* name){
 
 	delete[] tone;
 	return result;
+}
+
+int writePasses(RenderPasses& passes, const std::string& dir){
+	int success = 0;
+	for(int n=0; n<passes.nLayer; n++){
+		std::string name = std::to_string(n) + ".png";
+		if(writeImage(passes.data(n), passes.width, passes.height, (dir + "/" + name).data()) == 1)
+			success |= 1<<n;
+	}
+	return success;
 }

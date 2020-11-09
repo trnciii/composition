@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <cassert>
 #include <iostream>
+#include <bitset>
 
 #include "RenderPasses.hpp"
 #include "Random.hpp"
@@ -88,9 +89,6 @@ int main(void){
 
 		delete[] rngForEveryPixel;
 	}
-
-
-	// if(result_non.write(outDir + "images"))std::cout <<"images saved" <<std::endl;
 	
 
 	// RenderResult result(width, height);
@@ -180,6 +178,8 @@ int main(void){
 	// 	}
 
 	// }
+
+	std::cout <<"pass output: " <<std::bitset<8>(writePasses(passes, outDir)) <<std::endl;
 
 	return 0;
 }

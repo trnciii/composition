@@ -5,6 +5,7 @@
 
 #include "cmp.hpp"
 #include "RenderPasses.hpp"
+#include "file.hpp"
 
 std::vector<float> renderReference_wrap(
 	RenderPasses& passes, const int layer, const int spp, const Scene& scene)
@@ -76,4 +77,5 @@ BOOST_PYTHON_MODULE(composition) {
 	def("createScene", createScene);
 	def("renderReference", renderReference_wrap);
 	def("renderNonTarget", renderNonTarget_wrap);
+	def("writePasses", writePasses);
 }
