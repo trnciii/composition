@@ -45,3 +45,61 @@ Intersection intersect(const Ray& ray, const Scene& scene){
 
 	return is;
 }
+
+glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG* const rand){
+	glm::vec3 throuput(1);
+	float pTerminate = 1;
+
+	while(rand->uniform() < pTerminate){
+		Intersection is = intersect(ray, scene);
+		const Material& mtl = scene.materials[is.mtlID];
+
+		if(mtl.type == Material::Type::EMIT)
+			return throuput*mtl.color;
+
+		if(mtl.type == Material::Type::LAMBERT){
+			throuput *= mtl.color/pTerminate;
+
+			glm::vec3 tan[2];
+			tangentspace(is.n, tan);
+			glm::vec3 hemi = sampleCosinedHemisphere(rand->uniform(), rand->uniform());
+
+			ray.o = offset(is.p, is.n);
+			ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+		}
+
+		pTerminate = std::max(throuput.x, std::max(throuput.y, throuput.z));
+	}
+	return glm::vec3(0);
+}
+
+glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG* const rand){
+	const std::vector<uint32_t>& target = scene.aggregationTarget;
+	glm::vec3 throuput(1);
+	float pTerminate = 1;
+
+	while(rand->uniform() < pTerminate){
+		Intersection is = intersect(ray, scene);
+		const Material& mtl = scene.materials[is.mtlID];
+
+		if(mtl.type == Material::Type::EMIT)
+			return throuput*mtl.color;
+
+		if(std::find(target.begin(), target.end(), is.mtlID) != target.end())
+			return glm::vec3(0);
+
+		if(mtl.type == Material::Type::LAMBERT){
+			throuput *= mtl.color/pTerminate;
+
+			glm::vec3 tan[2];
+			tangentspace(is.n, tan);
+			glm::vec3 hemi = sampleCosinedHemisphere(rand->uniform(), rand->uniform());
+
+			ray.o = offset(is.p, is.n);
+			ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+		}
+
+		pTerminate = std::max(throuput.x, std::max(throuput.y, throuput.z));
+	}
+	return glm::vec3(0);
+}

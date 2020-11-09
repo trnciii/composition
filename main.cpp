@@ -6,6 +6,7 @@
 
 #include "Random.hpp"
 #include "print.hpp"
+#include "file.hpp"
 
 int main(void){
 	// create output directory.
@@ -49,26 +50,49 @@ int main(void){
 	}
 	uint32_t aggregationTarget = scene.aggregationTarget[0];
 
-	renderReference(width, height, 100, scene);
+	{
+		std::cout <<"path tracing for reference..." <<std::endl;
+
+		glm::vec3* result = new glm::vec3[width*height];
+		RNG* rngForEveryPixel = new RNG[width*height];
+		for(int i=0; i<width*height; i++){
+			result[i] = glm::vec3(0);
+			rngForEveryPixel[i] = RNG(i);
+		}
+
+		renderReference(result, width, height, 100, scene, rngForEveryPixel);
+		
+		if(writeImage(result, width, height, (outDir + "/reference.png").data()) == 1)
+			std::cout <<" reference saved" <<std::endl;
+		else std::cout <<"failed to save image" <<std::endl;
+
+		delete[] result;
+		delete[] rngForEveryPixel;
+	}
 
 
-	// RenderResult result_non(width, height);
+	{
+		std::cout <<"path tracing for non-target component..." <<std::endl;
 
-	// std::cout <<"path tracing for non-target component..." <<std::endl;
-	// #pragma omp parallel for schedule(dynamic)
-	// for(int i=0; i<result_non.length; i++){
-	// 	int xi = i%result_non.width;
-	// 	int yi = i/result_non.width;
+		glm::vec3* result = new glm::vec3[width*height];
+		RNG* rngForEveryPixel = new RNG[width*height];
+		for(int i=0; i<width*height; i++){
+			result[i] = glm::vec3(0);
+			rngForEveryPixel[i] = RNG(i);
+		}
 
-	// 	for(int n=0; n<spp_pt; n++){
-	// 		double x = (double) (2*(xi+rand.uniform())-result_non.width )/result_non.height;
-	// 		double y = (double)-(2*(yi+rand.uniform())-result_non.height)/result_non.height;
+		renderNonTarget(result, width, height, 100, scene, rngForEveryPixel);
+		
+		if(writeImage(result, width, height, (outDir + "/non-target.png").data()) == 1)
+			std::cout <<" non-target saved" <<std::endl;
+		else std::cout <<"failed to save image" <<std::endl;
 
-	// 		Ray view = scene.camera.ray(x, y);			
-	// 		result_non.data(RenderResult::Layer::NONTARGET)[i] += pathTracingKernel_nonTarget(view, scene,  &rand);
-	// 	}
-	// 	result_non.data(RenderResult::Layer::NONTARGET)[i] /= spp_pt;
-	// }
+		delete[] result;
+		delete[] rngForEveryPixel;
+	}
+
+
+
 
 	// if(result_non.write(outDir + "images"))std::cout <<"images saved" <<std::endl;
 	

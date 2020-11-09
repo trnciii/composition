@@ -1,5 +1,8 @@
 #pragma once
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
+
 unsigned char tonemap(double c){
 	int c_out = 255*pow(c,(1/2.2)) +0.5;
 	if(255 < c_out)c_out = 255;
