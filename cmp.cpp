@@ -11,69 +11,8 @@
 #include <algorithm>
 
 #include "Random.hpp"
-
-unsigned char tonemap(double c){
-	int c_out = 255*pow(c,(1/2.2)) +0.5;
-	if(255 < c_out)c_out = 255;
-	if(c_out < 0)c_out = 0;
-	return c_out&0xff;
-}
-
-int writeImage(glm::vec3* color, int w, int h, const char* name){
-	unsigned char *tone = new unsigned char[3*w*h];
-	for(int i=0; i<w*h; i++){
-		tone[3*i  ] = tonemap(color[i].x);
-		tone[3*i+1] = tonemap(color[i].y);
-		tone[3*i+2] = tonemap(color[i].z);
-	}
-
-	int result = stbi_write_png(name, w, h, 3, tone, 3*w);
-
-	delete[] tone;
-	return result;
-}
-
-glm::vec3 offset(glm::vec3 pos, glm::vec3 dir){return pos + (dir*1e-6f);}
-
-void tangentspace(glm::vec3 n, glm::vec3 basis[2]){
-	int sg =(n.z < 0) ?-1 :1;
-	double a = -1.0/(sg+n.z);
-	double b = n.x * n.y * a;
-	basis[0] = glm::vec3(
-		1.0 + sg * n.x*n.x * a,
-		sg*b,
-		-sg*n.x
-	);
-	basis[1] = glm::vec3(
-		b,
-		sg + n.y*n.y * a,
-		-n.y
-	);
-}
-
-glm::vec3 sampleCosinedHemisphere(double u1, double u2, double* p = nullptr){
-	u2 *= 2*kPI;
-	double r = sqrt(u1);
-	double z = sqrt(1-u1);
-
-	if(p)*p = z/kPI;
-	return glm::vec3(r*cos(u2), r*sin(u2), z);
-}
-
-Intersection intersect(const Ray& ray, const Scene& scene){
-	Intersection is;
-		is.dist = kHUGE;
-		is.mtlID = scene.environment;
-
-	for(const Sphere& s : scene.spheres)
-		s.intersect(&is, ray);
-
-	if(glm::dot(is.n, ray.d)>0){
-		is.n *= -1;
-	}
-
-	return is;
-}
+#include "file.hpp"
+#include "render_sub.hpp"
 
 glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG* const rand){
 	glm::vec3 throuput(1);
