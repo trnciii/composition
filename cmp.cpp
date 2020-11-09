@@ -131,10 +131,11 @@ void renderReference(const int w, const int h, const int spp, const Scene& scene
 		reference[i] /= spp;
 	}
 
-	std::string outDir("result_devCA");
+	std::string outDir("result");
 
 	if(writeImage(reference, w, h, (outDir + "/reference.png").data()) == 1)
 		std::cout <<" reference saved" <<std::endl;
+	else std::cout <<"failed to save image" <<std::endl;
 }
 
 int createScene(Scene* s){
