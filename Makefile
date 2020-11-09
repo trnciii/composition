@@ -6,7 +6,7 @@ main.exe: cmp.cpp cmp.o
 	g++ -o main.exe main.cpp cmp.o -O3 -fopenmp -std=c++17
 
 cmp.o:cmp.cpp
-	g++ -o cmp.so cmp.cpp -O3 -fopenmp -std=c++17
+	g++ -c -o cmp.o cmp.cpp -O3 -fopenmp -std=c++17
 
 clean:
 	$(RM) composition.pyd
