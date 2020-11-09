@@ -1,20 +1,10 @@
 import composition as cmp
 
-print("functions")
-print(dir(cmp))
-print("")
-
-print("Scene")
-print(dir(cmp.Scene))
-print("")
-
 w = 512
 h = 512
 spp_pt = 100
 
-print("     w = " + str(w))
-print("     h = " + str(h))
-print("spp_pt = " + str(spp_pt))
+passes = cmp.RenderPasses(w,h)
 
 scene = cmp.Scene()
 if not cmp.createScene(scene):
@@ -22,4 +12,7 @@ if not cmp.createScene(scene):
 else:
 	print("failed to create a scene")
 
-cmp.renderReference(w,h,spp_pt,scene)
+
+reference = passes.addLayer()
+
+image_reference = cmp.renderReference(passes, reference ,spp_pt,scene)
