@@ -24,9 +24,9 @@ std::vector<float> renderReference_wrap(
 
 	std::vector<float> imagef(w*h*3);
 	for(int i=0; i<w*h; i++){
-		imagef[i  ] = result[i].x;
-		imagef[i+1] = result[i].y;
-		imagef[i+2] = result[i].z;
+		imagef[3*i  ] = result[i].x;
+		imagef[3*i+1] = result[i].y;
+		imagef[3*i+2] = result[i].z;
 	}
 	return imagef;
 }
@@ -49,9 +49,9 @@ std::vector<float> renderNonTarget_wrap(
 
 	std::vector<float> imagef(w*h*3);
 	for(int i=0; i<w*h; i++){
-		imagef[i  ] = result[i].x;
-		imagef[i+1] = result[i].y;
-		imagef[i+2] = result[i].z;
+		imagef[3*i  ] = result[i].x;
+		imagef[3*i+1] = result[i].y;
+		imagef[3*i+2] = result[i].z;
 	}
 	return imagef;
 }
