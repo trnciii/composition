@@ -1,8 +1,8 @@
 ifeq ($(OS),Windows_NT)
 composition.pyd: interface.cpp cmp.o
-	g++ -o composition.pyd -shared -fPIC cmp.o interface.cpp -O3 -fopenmp -std=c++17 -I /mingw64/include/python3.8 -lboost_python38-mt -lpython3.8
+	g++ -o composition.pyd -shared cmp.o interface.cpp -O3 -fopenmp -std=c++17 -static -I /mingw64/include/python3.8 libboost_python37-mgw10-mt-x64-1_74.a python37.dll
 
-main.exe: main.cpp cmp.o
+main.exe: main.cpp cmp.cpp
 	g++ -o main main.cpp cmp.cpp -O3 -fopenmp -std=c++17
 
 cmp.o:cmp.cpp
