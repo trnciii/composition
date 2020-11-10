@@ -1,24 +1,31 @@
+SRCDIR = ./src
+OUTDIR = ./build
+
+
 ifeq ($(OS),Windows_NT)
 
 # variations
-blend: interface.cpp cmp.o
-	g++ -o composition.pyd -shared cmp.o interface.cpp -O3 -fopenmp -std=c++17 -static -I /mingw64/include/python3.8 libboost_python37-mgw10-mt-x64-1_74.a python37.dll
+blend: $(SRCDIR)/interface.cpp $(OUTDIR)/cmp.o
+	g++ -o $(OUTDIR)/composition.pyd -shared $(OUTDIR)/cmp.o $(SRCDIR)/interface.cpp\
+	 -O3 -fopenmp -std=c++17	-I /mingw64/include/python3.8\
+	 -static libboost_python37-mgw10-mt-x64-1_74.a python37.dll
 
-py: interface.cpp cmp.o
-	g++ -o composition.pyd -shared -fPIC cmp.o interface.cpp -O3 -fopenmp -std=c++17 -I /mingw64/include/python3.8 -lboost_python38-mt -lpython3.8
+py: $(SRCDIR)/interface.cpp cmp.o
+	g++ -o $(OUTDIR)/composition.pyd -shared -fPIC $(OUTDIR)/cmp.o $(SRCDIR)/interface.cpp\
+	 -O3 -fopenmp -std=c++17 -I /mingw64/include/python3.8 -lboost_python38-mt -lpython3.8
 
-cpp: main.cpp cmp.cpp
-	g++ -o main.exe main.cpp cmp.cpp -O3 -fopenmp -std=c++17
+cpp: $(SRCDIR)/main.cpp $(SRCDIR)/cmp.cpp
+	g++ -o $(OUTDIR)/main.exe $(SRCDIR)/main.cpp $(SRCDIR)/cmp.cpp -O3 -fopenmp -std=c++17
 
 # object
-cmp.o:cmp.cpp
-	g++ -c -o cmp.o cmp.cpp -O3 -fopenmp -std=c++17
+$(OUTDIR)/cmp.o: $(SRCDIR)/cmp.cpp
+	g++ -c -o $(OUTDIR)/cmp.o  $(SRCDIR)/cmp.cpp -O3 -fopenmp -std=c++17
 
 
 clean:
-	$(RM) composition.pyd
-	$(RM) main.exe
-	$(RM) cmp.o
+	$(RM) $(OUTDIR)/composition.pyd
+	$(RM) $(OUTDIR)/main.exe
+	$(RM) $(OUTDIR)/cmp.o
 
 # windows
 endif
@@ -28,17 +35,18 @@ UNAME = $(shell uname)
 
 ifeq ($(UNAME), Linux)
 # variations
-py: interface.cpp cmp.cpp
-	g++ -o composition.so -shared -fPIC interface.cpp cmp.cpp -O3 -fopenmp -std=c++17 -I /usr/include/python3.8 -lboost_python38 -lpython3.8
+py: $(SRCDIR)/interface.cpp $(SRCDIR)/cmp.cpp
+	g++ -o $(OUTDIR)/composition.so -shared -fPIC $(SRCDIR)/interface.cpp $(SRCDIR)/cmp.cpp\
+	 -O3 -fopenmp -std=c++17 -I /usr/include/python3.8 -lboost_python38 -lpython3.8
 
-cpp: main.cpp cmp.o
-	g++ -o main main.cpp cmp.cpp -O3 -fopenmp -std=c++17
+cpp: $(SRCDIR)/main.cpp
+	g++ -o $(OUTDIR)/main $(SRCDIR)/main.cpp $(SRCDIR)/cmp.cpp -O3 -fopenmp -std=c++17
 
 
 clean:
-	$(RM) composition.so
-	$(RM) main
-	$(RM) cmp.o
+	$(RM) $(OUTDIR)/composition.so
+	$(RM) $(OUTDIR)/main
+	$(RM) $(OUTDIR)/cmp.o
 
 # linux
 endif
