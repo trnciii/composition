@@ -1,6 +1,6 @@
 SRCDIR = ./src
 OUTDIR = ./build
-
+LIBS = ./lib_static
 
 ifeq ($(OS),Windows_NT)
 
@@ -8,7 +8,7 @@ ifeq ($(OS),Windows_NT)
 blend: $(SRCDIR)/interface.cpp $(OUTDIR)/cmp.o
 	g++ -o $(OUTDIR)/composition.pyd -shared $(OUTDIR)/cmp.o $(SRCDIR)/interface.cpp\
 	 -O3 -fopenmp -std=c++17	-I /mingw64/include/python3.8\
-	 -static libboost_python37-mgw10-mt-x64-1_74.a python37.dll
+	 -static $(LIBS)/libboost_python37-mgw10-mt-x64-1_74.a $(LIBS)/python37.dll
 
 py: $(SRCDIR)/interface.cpp cmp.o
 	g++ -o $(OUTDIR)/composition.pyd -shared -fPIC $(OUTDIR)/cmp.o $(SRCDIR)/interface.cpp\
