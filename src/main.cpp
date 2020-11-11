@@ -64,10 +64,6 @@ int main(void){
 			rngForEveryPixel[i] = RNG(i);
 
 		renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
-		
-		// if(writeImage(passes.data(reference), width, height, (outDir + "/reference.png").data()) == 1)
-		// 	std::cout <<" reference saved" <<std::endl;
-		// else std::cout <<"failed to save image" <<std::endl;
 
 		delete[] rngForEveryPixel;
 	}
@@ -82,16 +78,12 @@ int main(void){
 			rngForEveryPixel[i] = RNG(i);
 
 		renderNonTarget(passes.data(non_target), width, height, 100, scene, rngForEveryPixel);
-		
-		// if(writeImage(passes.data(non_target), width, height, (outDir + "/non-target.png").data()) == 1)
-		// 	std::cout <<" non-target saved" <<std::endl;
-		// else std::cout <<"failed to save image" <<std::endl;
 
 		delete[] rngForEveryPixel;
 	}
 	
 
-	uint32_t distribution_0 = passes.addLayer();
+	uint32_t distribution0 = passes.addLayer();
 	{
 		std::cout <<"collecting hitpoints for target component..." <<std::endl;
 
@@ -103,22 +95,28 @@ int main(void){
 			initialRadius, scene, target, rng);
 
 		// compose distriburion image
+		std::vector<glm::vec3> dist(width*height);
 		for(auto hit : hits){
-			passes.data(distribution_0)[hit.pixel] += hit.weight;
+			dist[hit.pixel] += hit.weight;
 		}
 
+		for(int i=0; i<passes.length; i++){
+			passes.set(distribution0, i, dist[i].x, dist[i].y, dist[i].z);
+		}
+			
 		// save hitpoints
 		if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
 	}
 
+
 	// read test
 	//
-	// uint32_t distribution_1 = passes.addLayer();
+	// uint32_t distribution1 = passes.addLayer();
 	// {
 	// 	std::vector<hitpoint> hits;
 	// 	if(readVector(hits, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
-	// 	for(auto hit : hits) passes.data(distribution_1)[hit.pixel] += hit.weight;
-	// 	if(writeImage(passes.data(distribution_1),width, height, (outDir + "/distribution1.png").data()) == 1)
+	// 	for(auto hit : hits) passes.data(distribution1)[hit.pixel] += hit.weight;
+	// 	if(writeImage(passes.data(distribution1),width, height, (outDir + "/distribution1.png").data()) == 1)
 	// 		std::cout <<" distribution1 saved" <<std::endl;
 	// 	else std::cout <<"failed to save image" <<std::endl;
 	// }

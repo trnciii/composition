@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <glm/glm.hpp>
 #include <fstream>
 
@@ -24,6 +25,10 @@ public:
 		nLayer++;
 		images.resize(length*nLayer);
 		return nLayer-1;
+	}
+
+	inline void set(const uint32_t layer, const int i, const float x, const float y, const float z){
+		images[layer*length + i] = glm::vec3(x, y, z);
 	}
 
 	inline void clear(){

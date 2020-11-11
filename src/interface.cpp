@@ -99,7 +99,8 @@ BOOST_PYTHON_MODULE(composition) {
 		.def_readonly("height", &RenderPasses::height)
 		.def_readonly("nLayers", &RenderPasses::nLayer)
 		.def("addLayer", &RenderPasses::addLayer)
-		.def("clear", &RenderPasses::clear);
+		.def("clear", &RenderPasses::clear)
+		.def("set", &RenderPasses::set);
 
 	class_<hitpoint>("hitpoint")
 		.def_readonly("pixel", &hitpoint::pixel)
