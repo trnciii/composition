@@ -16,11 +16,11 @@ else:
 
 
 reference = passes.addLayer()
-image_reference = cmp.renderReference(passes, reference ,spp_pt,scene)
+cmp.renderReference(passes, reference ,spp_pt,scene)
 
 nt = passes.addLayer()
-image_nt = cmp.renderNonTarget(passes, nt, spp_pt, scene)
+cmp.renderNonTarget(passes, nt, spp_pt, scene)
 
 
 print("saved layers")
-print( bin(cmp.writePasses(passes, dir)) )
+print( bin(cmp.writeAllPasses(passes, dir)) )
