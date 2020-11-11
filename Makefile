@@ -1,12 +1,12 @@
 SRCDIR = ./src
 OUTDIR = ./build
 LIBS = ./lib_static
-
+BADDONDIR = "/c/Users/Rinne/AppData/Roaming/Blender Foundation/Blender/2.83/scripts/addons/composition"
 
 ifeq ($(OS),Windows_NT)
 
 blend: $(OUTDIR)/cmp_blend.pyd
-	cp $(OUTDIR)/cmp_blend.pyd composition.pyd
+	cp $(OUTDIR)/cmp_blend.pyd $(BADDONDIR)/composition.pyd
 
 py: $(OUTDIR)/cmp_py.pyd
 	cp $(OUTDIR)/cmp_py.pyd composition.pyd
