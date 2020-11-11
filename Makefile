@@ -48,10 +48,10 @@ UNAME = $(shell uname)
 
 ifeq ($(UNAME), Linux)
 # variations
-py:$(OUTDIR)/cmp_py.so
+py: $(OUTDIR)/cmp_py.so
 	cp $(OUTDIR)/cmp_py.so composition.so
 
-cpp:$(OUTDIR)/main
+cpp: $(OUTDIR)/main
 	cp $(OUTDIR)/main main
 
 # objects
