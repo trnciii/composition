@@ -9,19 +9,25 @@
 #include "data.hpp"
 
 
-inline std::vector<float> getImage(RenderPasses passes, const uint32_t layer){
-	const glm::vec3* im_v = passes.data(layer);
+inline std::vector<float> getBlenderImage(RenderPasses passes, const uint32_t layer){
+	const glm::vec3* const v = passes.data(layer);
 
-	std::vector<float> f(passes.length*3);
-	for(int i=0; i<passes.length; i++){
-		f[3*i  ] = im_v[i].x;
-		f[3*i+1] = im_v[i].y;
-		f[3*i+2] = im_v[i].z;
+	std::vector<float> f(passes.length*4);
+	for(int y=0; y<passes.height; y++){
+		for(int x=0; x<passes.width; x++){
+			int i_s = y*passes.width + x;
+			int i_d = (passes.height -y-1)*passes.width + x;
+
+			f[4*i_d  ] = v[i_s].x;
+			f[4*i_d+1] = v[i_s].y;
+			f[4*i_d+2] = v[i_s].z;
+			f[4*i_d+3] = 1.0f;
+		}
 	}
 	return f;
 }
 
-std::vector<float> renderReference_wrap(
+void renderReference_wrap(
 	RenderPasses& passes, const int layer, const int spp, const Scene& scene)
 {
 	glm::vec3* const result = passes.data(layer);
@@ -35,11 +41,9 @@ std::vector<float> renderReference_wrap(
 	renderReference(result, w, h, spp, scene, rngForEveryPixel);
 
 	delete[] rngForEveryPixel;
-
-	return getImage(passes, layer);
 }
 
-std::vector<float> renderNonTarget_wrap(
+void renderNonTarget_wrap(
 	RenderPasses& passes, const int layer, const int spp, const Scene& scene)
 {
 	glm::vec3* const result = passes.data(layer);
@@ -53,8 +57,6 @@ std::vector<float> renderNonTarget_wrap(
 	renderNonTarget(result, w, h, spp, scene, rngForEveryPixel);
 
 	delete[] rngForEveryPixel;
-
-	return getImage(passes, layer);
 }
 
 BOOST_PYTHON_MODULE(composition) {
@@ -83,8 +85,15 @@ BOOST_PYTHON_MODULE(composition) {
 		// .def("add", &Scene::add)
 		// .def("newMaterial", &Scene.newMaterial);
 
+
+	// this - data
+	def("getImage", getBlenderImage);
+
+	// this - main functions
 	def("createScene", createScene);
 	def("renderReference", renderReference_wrap);
 	def("renderNonTarget", renderNonTarget_wrap);
+
+	// file.hpp
 	def("writeAllPasses", writeAllPasses);
 }
