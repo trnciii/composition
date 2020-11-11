@@ -12,44 +12,6 @@
 #include "Random.hpp"
 #include "render_sub.hpp"
 
-void renderReference(glm::vec3* const result, const int w, const int h, const int spp, const Scene& scene, RNG* const rngs){
-	#pragma omp parallel for schedule(dynamic)
-	for(int i=0; i<w*h; i++){
-		int xi = i%w;
-		int yi = i/w;
-		RNG& rand = rngs[i];
-
-		for(int n=0; n<spp; n++){
-			double x = (double) (2*(xi+rand.uniform())-w )/h;
-			double y = (double)-(2*(yi+rand.uniform())-h)/h;
-
-			Ray view = scene.camera.ray(x, y);			
-			result[i] += pathTracingKernel_total(view, scene, &rand);
-		}
-		result[i] /= spp;
-	}
-}
-
-
-
-void renderNonTarget(glm::vec3* const result, const int w, const int h, const int spp, const Scene& scene, RNG* const rngs){
-	#pragma omp parallel for schedule(dynamic)
-	for(int i=0; i<w*h; i++){
-		int xi = i%w;
-		int yi = i/w;
-		RNG& rand = rngs[i];
-
-		for(int n=0; n<spp; n++){
-			double x = (double) (2*(xi+rand.uniform())-w)/h;
-			double y = (double)-(2*(yi+rand.uniform())-h)/h;
-
-			Ray view = scene.camera.ray(x, y);			
-			result[i] += pathTracingKernel_nonTarget(view, scene, &rand);
-		}
-		result[i] /= spp;
-	}
-}
-
 int createScene(Scene* s){
 	s->camera.pos = glm::vec3(0,-10,4);
 	s->camera.setDir(glm::vec3(0,1,0), glm::vec3(0,0,1));
@@ -85,4 +47,87 @@ int createScene(Scene* s){
 	s->add(Sphere(glm::vec3(0,0,6), 0.5, light)); // light
 
 	return 0;
+}
+
+void renderReference(glm::vec3* const result, const int w, const int h, const int spp, const Scene& scene, RNG* const rngs){
+	#pragma omp parallel for schedule(dynamic)
+	for(int i=0; i<w*h; i++){
+		int xi = i%w;
+		int yi = i/w;
+		RNG& rand = rngs[i];
+
+		for(int n=0; n<spp; n++){
+			double x = (double) (2*(xi+rand.uniform())-w )/h;
+			double y = (double)-(2*(yi+rand.uniform())-h)/h;
+
+			Ray view = scene.camera.ray(x, y);			
+			result[i] += pathTracingKernel_total(view, scene, &rand);
+		}
+		result[i] /= spp;
+	}
+}
+
+void renderNonTarget(glm::vec3* const result, const int w, const int h, const int spp, const Scene& scene, RNG* const rngs){
+	#pragma omp parallel for schedule(dynamic)
+	for(int i=0; i<w*h; i++){
+		int xi = i%w;
+		int yi = i/w;
+		RNG& rand = rngs[i];
+
+		for(int n=0; n<spp; n++){
+			double x = (double) (2*(xi+rand.uniform())-w)/h;
+			double y = (double)-(2*(yi+rand.uniform())-h)/h;
+
+			Ray view = scene.camera.ray(x, y);			
+			result[i] += pathTracingKernel_nonTarget(view, scene, &rand);
+		}
+		result[i] /= spp;
+	}
+}
+
+void collectHitpoints(std::vector<hitpoint>& hits,
+	const int w, const int h, const int nRay,
+	const float R0, const Scene& scene, const uint32_t target, RNG& rng)
+{
+	for(int i=0; i<w*h*nRay; i++){
+		int idx = i/(float)nRay;
+		int xi = idx%w;
+		int yi = idx/w;
+
+		float x = (float) (2*(xi+rng.uniform())-w)/h;
+		float y = (float)-(2*(yi+rng.uniform())-h)/h;
+		Ray ray = scene.camera.ray(x, y);
+		glm::vec3 throuput(1);
+		float pDepth = 1;
+
+		while(rng.uniform()<pDepth){
+		// for(int depth=0; depth<5; depth++){
+			Intersection is = intersect(ray, scene);
+			const Material& mtl = scene.materials[is.mtlID];
+
+			if(mtl.type == Material::Type::EMIT) break;
+
+			if(is.mtlID == target ){
+				double p = 0.5;
+				if(rng.uniform()<p){
+					throuput /= p;
+					hits.push_back(hitpoint(is, R0, throuput/(float)nRay, idx, ray));
+					break;
+				}
+				else throuput /= (1-p);
+			}
+
+
+			glm::vec3 tan[2];
+			tangentspace(is.n, tan);
+			glm::vec3 hemi = sampleCosinedHemisphere(rng.uniform(), rng.uniform());
+
+			ray.o = offset(is.p, is.n);
+			ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+
+			throuput *= mtl.color/pDepth;
+			// pDepth = std::min(max(throuput), 1.0);
+			pDepth = std::min(1.0f, std::max(throuput.x, std::max(throuput.y, throuput.z)));
+		}
+	}
 }

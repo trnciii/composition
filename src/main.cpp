@@ -65,9 +65,9 @@ int main(void){
 
 		renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
 		
-		if(writeImage(passes.data(reference), width, height, (outDir + "/reference.png").data()) == 1)
-			std::cout <<" reference saved" <<std::endl;
-		else std::cout <<"failed to save image" <<std::endl;
+		// if(writeImage(passes.data(reference), width, height, (outDir + "/reference.png").data()) == 1)
+		// 	std::cout <<" reference saved" <<std::endl;
+		// else std::cout <<"failed to save image" <<std::endl;
 
 		delete[] rngForEveryPixel;
 	}
@@ -83,72 +83,47 @@ int main(void){
 
 		renderNonTarget(passes.data(non_target), width, height, 100, scene, rngForEveryPixel);
 		
-		if(writeImage(passes.data(non_target), width, height, (outDir + "/non-target.png").data()) == 1)
-			std::cout <<" non-target saved" <<std::endl;
-		else std::cout <<"failed to save image" <<std::endl;
+		// if(writeImage(passes.data(non_target), width, height, (outDir + "/non-target.png").data()) == 1)
+		// 	std::cout <<" non-target saved" <<std::endl;
+		// else std::cout <<"failed to save image" <<std::endl;
 
 		delete[] rngForEveryPixel;
 	}
 	
 
-	// RenderResult result(width, height);
-	// if(result.read(outDir + "/images"))std::cout <<"non target component load" <<std::endl;
-	// saveResult(result, RenderResult::Layer::NONTARGET, outDir);
-	// printRule();
+	int distribution_0 = passes.addLayer();
+	{
+		std::cout <<"collecting hitpoints for target component..." <<std::endl;
 
+		std::vector<hitpoint> hits;
+		hits.reserve(width*height*nRay);
+		RNG rng(0);
 
-	// std::vector<hitpoint> hits;
-	// hits.reserve(width*height*nRay);
+		collectHitpoints(hits, passes.width, passes.height, nRay,
+			initialRadius, scene, aggregationTarget, rng);
 
-	// std::cout <<"collecting hitpoints for target component..." <<std::endl;
-	// for(int i=0; i<result.length*nRay; i++){
-	// 	int idx = i/nRay;
-	// 	int xi = idx%result.width;
-	// 	int yi = idx/result.width;
+		// compose distriburion image
+		for(auto hit : hits){
+			passes.data(distribution_0)[hit.pixel] += hit.weight;
+		}
 
-	// 	double x = (double) (2*(xi+rand.uniform())-result.width )/result.height;
-	// 	double y = (double)-(2*(yi+rand.uniform())-result.height)/result.height;
-	// 	Ray ray = scene.camera.ray(x, y);
-	// 	vec3 throuput(1);
-	// 	double pDepth = 1;
+		// save hitpoints and visualization of weights
+		if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
 
-	// 	while(rand.uniform()<pDepth){
-	// 	// for(int depth=0; depth<5; depth++){
-	// 		Intersection is = intersect(ray, scene);
-	// 		Material& mtl = scene.materials[is.mtlID];
+		if(writeImage(passes.data(distribution_0),width, height, (outDir + "/distribution0.png").data()) == 1)
+			std::cout <<" non-target saved" <<std::endl;
+		else std::cout <<"failed to save image" <<std::endl;
+	}
 
-	// 		if(mtl.type == Material::Type::EMIT) break;
-
-	// 		if(is.mtlID == aggregationTarget ){
-	// 			double p = 0.5;
-	// 			if(rand.uniform()<p){
-	// 				throuput /= p;
-	// 				hits.push_back(hitpoint(is, initialRadius, throuput/nRay, idx, ray));
-	// 				result.data(RenderResult::Layer::DISTRIBUTION)[idx] += throuput/nRay;
-	// 				break;
-	// 			}
-	// 			else throuput /= (1-p);
-	// 		}
-
-
-	// 		vec3 tan[2];
-	// 		tangentspace(is.n, tan);
-	// 		vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
-
-	// 		ray.o = offset(is.p, is.n);
-	// 		ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-
-	// 		throuput *= mtl.color/pDepth;
-	// 		pDepth = std::min(max(throuput), 1.0);
-	// 	}
-	// }
-	// saveResult(result, RenderResult::Layer::DISTRIBUTION, outDir);
-	// printRule();
-
-	// if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
-
-	// std::vector<hitpoint> hit_target;
-	// if(readVector(hit_target, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
+	int distribution_1 = passes.addLayer();
+	{
+		std::vector<hitpoint> hits;
+		if(readVector(hits, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
+		for(auto hit : hits) passes.data(distribution_1)[hit.pixel] += hit.weight;
+		if(writeImage(passes.data(distribution_1),width, height, (outDir + "/distribution1.png").data()) == 1)
+			std::cout <<" non-target saved" <<std::endl;
+		else std::cout <<"failed to save image" <<std::endl;
+	}
 
 
 	// std::cout <<"progressive estimation pass for target component..." <<std::endl;
