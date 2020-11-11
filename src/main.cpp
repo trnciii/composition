@@ -107,23 +107,21 @@ int main(void){
 			passes.data(distribution_0)[hit.pixel] += hit.weight;
 		}
 
-		// save hitpoints and visualization of weights
+		// save hitpoints
 		if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
-
-		if(writeImage(passes.data(distribution_0),width, height, (outDir + "/distribution0.png").data()) == 1)
-			std::cout <<" non-target saved" <<std::endl;
-		else std::cout <<"failed to save image" <<std::endl;
 	}
 
-	uint32_t distribution_1 = passes.addLayer();
-	{
-		std::vector<hitpoint> hits;
-		if(readVector(hits, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
-		for(auto hit : hits) passes.data(distribution_1)[hit.pixel] += hit.weight;
-		if(writeImage(passes.data(distribution_1),width, height, (outDir + "/distribution1.png").data()) == 1)
-			std::cout <<" non-target saved" <<std::endl;
-		else std::cout <<"failed to save image" <<std::endl;
-	}
+	// read test
+	//
+	// uint32_t distribution_1 = passes.addLayer();
+	// {
+	// 	std::vector<hitpoint> hits;
+	// 	if(readVector(hits, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
+	// 	for(auto hit : hits) passes.data(distribution_1)[hit.pixel] += hit.weight;
+	// 	if(writeImage(passes.data(distribution_1),width, height, (outDir + "/distribution1.png").data()) == 1)
+	// 		std::cout <<" distribution1 saved" <<std::endl;
+	// 	else std::cout <<"failed to save image" <<std::endl;
+	// }
 
 
 	// std::cout <<"progressive estimation pass for target component..." <<std::endl;

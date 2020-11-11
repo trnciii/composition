@@ -10,6 +10,7 @@
 
 
 inline std::vector<float> getBlenderImage(RenderPasses passes, const uint32_t layer){
+	// pass image in linear? space
 	const glm::vec3* const v = passes.data(layer);
 
 	std::vector<float> f(passes.length*4);
@@ -59,8 +60,36 @@ void renderNonTarget_wrap(
 	delete[] rngForEveryPixel;
 }
 
+class hitpoints_wrap{
+	std::vector<hitpoint> hits;
+
+public:
+	hitpoints_wrap():hits(0){}
+	hitpoints_wrap(std::vector<hitpoint> h):hits(h){}
+
+	uint32_t size(){return hits.size();}
+	hitpoint element(uint32_t i){return hits[i];}
+};
+
+hitpoints_wrap collectHitpoints_wrap(const int w, const int h, const int nRay,
+	const float R0, const Scene& scene, const uint32_t target)
+{
+	std::vector<hitpoint> hits;
+	hits.reserve(w*h*nRay);
+	RNG rng(0);
+
+	collectHitpoints(hits, w, h, nRay, R0, scene, target, rng);
+
+	return hitpoints_wrap(hits);
+}
+
 BOOST_PYTHON_MODULE(composition) {
 	using namespace boost::python;
+
+	class_<glm::vec3>("vec3")
+		.def_readonly("x", &glm::vec3::x)
+		.def_readonly("y", &glm::vec3::y)
+		.def_readonly("z", &glm::vec3::z);
 
 	class_<std::vector<float>>("vF")
 		.def(vector_indexing_suite<std::vector<float>>());
@@ -69,19 +98,19 @@ BOOST_PYTHON_MODULE(composition) {
 		.def_readonly("width", &RenderPasses::width)
 		.def_readonly("height", &RenderPasses::height)
 		.def_readonly("nLayers", &RenderPasses::nLayer)
-		// .def("data", &RenderPasses::data)
 		.def("addLayer", &RenderPasses::addLayer)
 		.def("clear", &RenderPasses::clear);
 
-	class_<hitpoint>("hitpoint");
-	// class_<std::vector<hitpoint>>("vHit")
-		// .def(vector_indexing_suite<std::vector<hitpoint>>());
+	class_<hitpoint>("hitpoint")
+		.def_readonly("pixel", &hitpoint::pixel)
+		.def_readonly("weight", &hitpoint::weight);
 
-	// class_<RNG>("RNG")
-	// 	.def("seed", &RNG::seed)
-	// 	.def("uniform", &RNG::uniform);
+	class_<hitpoints_wrap>("hitpointArray")
+		.def("size", &hitpoints_wrap::size)
+		.def("element", &hitpoints_wrap::element);
 
 	class_<Scene>("Scene");
+		// .def_readonly("cmpTargets", &Scene::);
 		// .def("add", &Scene::add)
 		// .def("newMaterial", &Scene.newMaterial);
 
@@ -93,6 +122,7 @@ BOOST_PYTHON_MODULE(composition) {
 	def("createScene", createScene);
 	def("renderReference", renderReference_wrap);
 	def("renderNonTarget", renderNonTarget_wrap);
+	def("collectHitpoints", collectHitpoints_wrap);
 
 	// file.hpp
 	def("writeAllPasses", writeAllPasses);
