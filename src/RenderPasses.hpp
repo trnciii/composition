@@ -12,15 +12,15 @@ public:
 	const int width;
 	const int height;
 	const int length;
-	int nLayer = 0;
+	uint32_t nLayer = 0;
 
 	inline RenderPasses(int w, int h):width(w), height(h), length(w*h){
 		images.resize(length*nLayer);
 	}
 
-	inline glm::vec3* data(int layer){return images.data() + (length * layer);}
+	inline glm::vec3* data(uint32_t layer){return images.data() + (length * layer);}
 
-	inline int addLayer(){
+	inline uint32_t addLayer(){
 		nLayer++;
 		images.resize(length*nLayer);
 		return nLayer-1;

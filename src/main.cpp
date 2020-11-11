@@ -55,7 +55,7 @@ int main(void){
 	uint32_t aggregationTarget = scene.aggregationTarget[0];
 
 
-	int reference = passes.addLayer();
+	uint32_t reference = passes.addLayer();
 	{
 		std::cout <<"path tracing for reference..." <<std::endl;
 
@@ -73,7 +73,7 @@ int main(void){
 	}
 
 
-	int non_target = passes.addLayer();
+	uint32_t non_target = passes.addLayer();
 	{
 		std::cout <<"path tracing for non-target component..." <<std::endl;
 
@@ -91,7 +91,7 @@ int main(void){
 	}
 	
 
-	int distribution_0 = passes.addLayer();
+	uint32_t distribution_0 = passes.addLayer();
 	{
 		std::cout <<"collecting hitpoints for target component..." <<std::endl;
 
@@ -115,7 +115,7 @@ int main(void){
 		else std::cout <<"failed to save image" <<std::endl;
 	}
 
-	int distribution_1 = passes.addLayer();
+	uint32_t distribution_1 = passes.addLayer();
 	{
 		std::vector<hitpoint> hits;
 		if(readVector(hits, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
