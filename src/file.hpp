@@ -29,7 +29,7 @@ int writeImage(glm::vec3* color, int w, int h, const char* name){
 	return result;
 }
 
-int writePasses(RenderPasses& passes, const std::string& dir){
+int writeAllPasses(RenderPasses& passes, const std::string& dir){
 	int success = 0;
 	for(int n=0; n<passes.nLayer; n++){
 		std::string name = std::to_string(n) + ".png";

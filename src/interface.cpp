@@ -86,5 +86,5 @@ BOOST_PYTHON_MODULE(composition) {
 	def("createScene", createScene);
 	def("renderReference", renderReference_wrap);
 	def("renderNonTarget", renderNonTarget_wrap);
-	def("writePasses", writePasses);
+	def("writeAllPasses", writeAllPasses);
 }

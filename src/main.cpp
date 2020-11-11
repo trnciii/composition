@@ -154,7 +154,7 @@ int main(void){
 
 	// }
 
-	std::cout <<"pass output: " <<std::bitset<8>(writePasses(passes, outDir)) <<std::endl;
+	std::cout <<"pass output: " <<std::bitset<8>(writeAllPasses(passes, outDir)) <<std::endl;
 
 	return 0;
 }
