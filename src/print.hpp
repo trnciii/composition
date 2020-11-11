@@ -78,7 +78,7 @@ void print(const Scene& s){
 	puts("materials");
 	for(int i=0; i<s.materials.size(); i++){
 		printf("[%2d] ", i);
-		if(std::find(s.aggregationTarget.begin(), s.aggregationTarget.end(), i) != s.aggregationTarget.end())
+		if(std::find(s.cmpTargets.begin(), s.cmpTargets.end(), i) != s.cmpTargets.end())
 			print(s.materials[i], "aggregation target | ");
 		else
 			print(s.materials[i]);

@@ -35,7 +35,7 @@ int createScene(Scene* s){
 
 	uint32_t target = s->newMaterial(Material::Type::LAMBERT);
 	s->materials[target].color = glm::vec3(0.6);
-	s->aggregationTarget.push_back(target);
+	s->cmpTargets.push_back(target);
 
 	// box
 	s->add(Sphere(glm::vec3(-1e5, 0, 0), 1e5-4, green)); // left

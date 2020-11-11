@@ -74,7 +74,7 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG* const rand){
 }
 
 glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG* const rand){
-	const std::vector<uint32_t>& target = scene.aggregationTarget;
+	const std::vector<uint32_t>& targets = scene.cmpTargets;
 	glm::vec3 throuput(1);
 	float pTerminate = 1;
 
@@ -85,7 +85,7 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG* const ra
 		if(mtl.type == Material::Type::EMIT)
 			return throuput*mtl.color;
 
-		if(std::find(target.begin(), target.end(), is.mtlID) != target.end())
+		if(std::find(targets.begin(), targets.end(), is.mtlID) != targets.end())
 			return glm::vec3(0);
 
 		if(mtl.type == Material::Type::LAMBERT){

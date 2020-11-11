@@ -48,11 +48,11 @@ int main(void){
 	float alpha = 0.7;
 	int spp_pt = 1000;
 
-	if(scene.aggregationTarget.size()==0){
+	if(scene.cmpTargets.size()==0){
 		puts("no target");
 		return 0;
 	}
-	uint32_t aggregationTarget = scene.aggregationTarget[0];
+	uint32_t target = scene.cmpTargets[0];
 
 
 	uint32_t reference = passes.addLayer();
@@ -100,7 +100,7 @@ int main(void){
 		RNG rng(0);
 
 		collectHitpoints(hits, passes.width, passes.height, nRay,
-			initialRadius, scene, aggregationTarget, rng);
+			initialRadius, scene, target, rng);
 
 		// compose distriburion image
 		for(auto hit : hits){
