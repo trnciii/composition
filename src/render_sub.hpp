@@ -31,6 +31,15 @@ glm::vec3 sampleCosinedHemisphere(double u1, double u2, double* p = nullptr){
 	return glm::vec3(r*cos(u2), r*sin(u2), z);
 }
 
+glm::vec3 sampleUniformSphere(double u1, double u2, double* p = nullptr){
+	u1 = 2*u1 - 1;
+	u2 *= 2*kPI;
+	double r = sqrt(1-u1*u1);
+
+	if(p)*p = 0.25/kPI;
+	return glm::vec3(r*cos(u2), r*sin(u2), u1);
+}
+
 Intersection intersect(const Ray& ray, const Scene& scene){
 	Intersection is;
 		is.dist = kHUGE;

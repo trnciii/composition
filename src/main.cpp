@@ -55,24 +55,21 @@ int main(void){
 	uint32_t target = scene.cmpTargets[0];
 
 
-	uint32_t reference = passes.addLayer();
-	{
-		std::cout <<"path tracing for reference..." <<std::endl;
+	// uint32_t reference = passes.addLayer();
+	// {
+	// 	std::cout <<"path tracing for reference..." <<std::endl;
 
-		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++)
-			rngForEveryPixel[i] = RNG(i);
+	// 	RNG* rngForEveryPixel = new RNG[width*height];
+	// 	for(int i=0; i<width*height; i++)
+	// 		rngForEveryPixel[i] = RNG(i);
 
-		renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
+	// 	renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
 
-		writeLayer(passes, reference, outDir + "/reference");
+	// 	writeLayer(passes, reference, outDir + "/reference");
 
-		delete[] rngForEveryPixel;
-	}
+	// 	delete[] rngForEveryPixel;
+	// }
 
-	uint32_t reference_read = passes.addLayer();
-	loadLayer(passes, reference_read, outDir + "/reference");
-	
 	// uint32_t non_target = passes.addLayer();
 	// {
 	// 	std::cout <<"path tracing for non-target component..." <<std::endl;
@@ -85,6 +82,12 @@ int main(void){
 
 	// 	delete[] rngForEveryPixel;
 	// }
+
+	uint32_t reference = passes.addLayer();
+	loadLayer(passes, reference, outDir + "/reference");
+	
+	uint32_t non_target = passes.addLayer();
+	loadLayer(passes, non_target, outDir + "/nontarget");
 	
 
 	// uint32_t distribution0 = passes.addLayer();
@@ -111,23 +114,43 @@ int main(void){
 	// }
 
 
-	// // read hitpoints from a file
-	// uint32_t distribution1 = passes.addLayer();
-	// {
-	// 	std::vector<hitpoint> hits;
-	// 	if(readVector(hits, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
+	// read hitpoints from a file
+	uint32_t distribution1 = passes.addLayer();
+	{
+		std::vector<hitpoint> hits;
+		if(readVector(hits, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
 		
-	// 	std::vector<glm::vec3> im_d(width*height);
-	// 	for(auto hit : hits) im_d[hit.pixel] += hit.weight;
+		std::vector<glm::vec3> im_d(width*height);
+		for(auto hit : hits) im_d[hit.pixel] += hit.weight;
 		
-	// 	passes.set(distribution1, im_d.data());
-	// }
+		passes.setLayer(distribution1, im_d.begin());
+	}
 
+	// ppm
+	{
+		Tree photonmap = createPhotonmap(scene, nPhoton, target, &rand);
+		accumulateRadiance(hit_target, photonmap, scene, alpha);
+	}
+
+
+	// composition
+	{		
+		for(hitpoint hit : hit_target){
+			vec3 tau = hit.tau/iteration;
+			double u = max(tau);
+			u = pow(8*u, 1);
+			// result.data(RenderResult::Layer::TARGET)[hit.pixel] += 0.4*colormap_4(u) * hit.weight;
+			result.data(RenderResult::Layer::TARGET)[hit.pixel] += tau*hit.weight;
+		}
+
+		for(int i=0; i<result.length; i++)
+			result.data(RenderResult::Layer::COMPOSED)[i] = result.data(RenderResult::Layer::EMISSION)[i] + result.data(RenderResult::Layer::TARGET)[i] + result.data(RenderResult::Layer::NONTARGET)[i]; 
+	}
 
 	// std::cout <<"progressive estimation pass for target component..." <<std::endl;
 	// printBr();
 	// for(int iteration=1; iteration<=nIteration; iteration++){
-	// 	Tree photonmap = createPhotonmap(scene, nPhoton, aggregationTarget, &rand);
+	// 	Tree photonmap = createPhotonmap(scene, nPhoton, target, &rand);
 	// 	accumulateRadiance(hit_target, photonmap, scene, alpha);
 
 	// 	if(iteration%outInterval == 0 || iteration == nIteration){
@@ -149,9 +172,9 @@ int main(void){
 		
 	// 		printRule();
 	// 	}
-
 	// }
 
+	// save
 	{
 		const int digit = 8;
 		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPasses(passes, outDir)) <<" / ";
