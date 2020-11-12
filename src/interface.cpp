@@ -69,6 +69,9 @@ public:
 
 	uint32_t size(){return hits.size();}
 	hitpoint element(uint32_t i){return hits[i];}
+
+	void save(const std::string& s){writeVector(hits, s);}
+	void load(const std::string& s){readVector(hits, s);}
 };
 
 hitpoints_wrap collectHitpoints_wrap(const int w, const int h, const int nRay,
@@ -100,15 +103,17 @@ BOOST_PYTHON_MODULE(composition) {
 		.def_readonly("nLayers", &RenderPasses::nLayer)
 		.def("addLayer", &RenderPasses::addLayer)
 		.def("clear", &RenderPasses::clear)
-		.def("set", &RenderPasses::set);
+		.def("set", &RenderPasses::setPixel);
 
 	class_<hitpoint>("hitpoint")
 		.def_readonly("pixel", &hitpoint::pixel)
 		.def_readonly("weight", &hitpoint::weight);
 
-	class_<hitpoints_wrap>("hitpointArray")
+	class_<hitpoints_wrap>("hitArray")
 		.def("size", &hitpoints_wrap::size)
-		.def("element", &hitpoints_wrap::element);
+		.def("element", &hitpoints_wrap::element)
+		.def("save", &hitpoints_wrap::save)
+		.def("load", &hitpoints_wrap::load);
 
 	class_<Scene>("Scene");
 		// .def_readonly("cmpTargets", &Scene::);
@@ -127,4 +132,6 @@ BOOST_PYTHON_MODULE(composition) {
 
 	// file.hpp
 	def("writeAllPasses", writeAllPasses);
+	def("writeLayer", writeLayer);
+	def("loadLayer", loadLayer);
 }

@@ -8,37 +8,6 @@
 
 #include "RenderPasses.hpp"
 
-unsigned char tonemap(double c){
-	int c_out = 255*pow(c,(1/2.2)) +0.5;
-	if(255 < c_out)c_out = 255;
-	if(c_out < 0)c_out = 0;
-	return c_out&0xff;
-}
-
-int writeImage(glm::vec3* color, int w, int h, const char* name){
-	unsigned char *tone = new unsigned char[3*w*h];
-	for(int i=0; i<w*h; i++){
-		tone[3*i  ] = tonemap(color[i].x);
-		tone[3*i+1] = tonemap(color[i].y);
-		tone[3*i+2] = tonemap(color[i].z);
-	}
-
-	int result = stbi_write_png(name, w, h, 3, tone, 3*w);
-
-	delete[] tone;
-	return result;
-}
-
-int writeAllPasses(RenderPasses& passes, const std::string& dir){
-	int success = 0;
-	for(int n=0; n<passes.nLayer; n++){
-		std::string name = std::to_string(n) + ".png";
-		if(writeImage(passes.data(n), passes.width, passes.height, (dir + "/" + name).data()) == 1)
-			success |= 1<<n;
-	}
-	return success;
-}
-
 template<typename T>
 bool writeVector(const std::vector<T>& v, const std::string& name) {
 	std::ofstream out(name, std::ios::out | std::ios::binary);
@@ -66,4 +35,51 @@ bool readVector(std::vector<T>& v, const std::string& name) {
 	in.close();
 
 	return true;
+}
+
+unsigned char tonemap(double c){
+	int c_out = 255*pow(c,(1/2.2)) +0.5;
+	if(255 < c_out)c_out = 255;
+	if(c_out < 0)c_out = 0;
+	return c_out&0xff;
+}
+
+int writeImage(glm::vec3* color, int w, int h, const char* name){
+	unsigned char *tone = new unsigned char[3*w*h];
+	for(int i=0; i<w*h; i++){
+		tone[3*i  ] = tonemap(color[i].x);
+		tone[3*i+1] = tonemap(color[i].y);
+		tone[3*i+2] = tonemap(color[i].z);
+	}
+
+	int result = stbi_write_png(name, w, h, 3, tone, 3*w);
+
+	delete[] tone;
+	return result;
+}
+
+bool writeLayer(RenderPasses& passes, const uint32_t layer, const std::string& name){
+	std::vector<glm::vec3> image(passes.length);
+	std::vector<glm::vec3>::iterator it(passes.data(layer));
+	std::copy(it, it+passes.length, image.begin());	
+	return writeVector(image, name);
+}
+
+bool loadLayer(RenderPasses& passes, const uint32_t layer, const std::string& name){
+	if(passes.nLayer <= layer) return false;
+	std::vector<glm::vec3> image;
+	if( !readVector(image, name) )return false;
+	if( image.size() != passes.length )return false;
+	passes.setLayer(layer, image.begin());
+	return true;
+}
+
+int writeAllPasses(RenderPasses& passes, const std::string& dir){
+	int success = 0;
+	for(int n=0; n<passes.nLayer; n++){
+		std::string name = std::to_string(n) + ".png";
+		if(writeImage(passes.data(n), passes.width, passes.height, (dir + "/" + name).data()) == 1)
+			success |= 1<<n;
+	}
+	return success;
 }

@@ -3,6 +3,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <fstream>
+#include <cstring>
 
 struct RenderPasses{
 private:
@@ -27,7 +28,20 @@ public:
 		return nLayer-1;
 	}
 
-	inline void set(const uint32_t layer, const int i, const float x, const float y, const float z){
+	inline void setLayer_p(const uint32_t layer, glm::vec3* const i){
+		if( layer < nLayer ){
+			std::vector<glm::vec3>::iterator it(i);
+			std::copy(it, it+length, this->data(layer));
+		}
+	}
+
+	inline void setLayer(const uint32_t layer, std::vector<glm::vec3>::iterator begin){
+		if(layer < nLayer){
+			std::copy(begin, begin+length, this->data(layer));
+		}
+	}
+
+	inline void setPixel(const uint32_t layer, const int i, const float x, const float y, const float z){
 		images[layer*length + i] = glm::vec3(x, y, z);
 	}
 

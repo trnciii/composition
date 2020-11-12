@@ -65,60 +65,62 @@ int main(void){
 
 		renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
 
-		delete[] rngForEveryPixel;
-	}
-
-
-	uint32_t non_target = passes.addLayer();
-	{
-		std::cout <<"path tracing for non-target component..." <<std::endl;
-
-		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++)
-			rngForEveryPixel[i] = RNG(i);
-
-		renderNonTarget(passes.data(non_target), width, height, 100, scene, rngForEveryPixel);
+		writeLayer(passes, reference, outDir + "/reference");
 
 		delete[] rngForEveryPixel;
 	}
+
+	uint32_t reference_read = passes.addLayer();
+	loadLayer(passes, reference_read, outDir + "/reference");
+	
+	// uint32_t non_target = passes.addLayer();
+	// {
+	// 	std::cout <<"path tracing for non-target component..." <<std::endl;
+
+	// 	RNG* rngForEveryPixel = new RNG[width*height];
+	// 	for(int i=0; i<width*height; i++)
+	// 		rngForEveryPixel[i] = RNG(i);
+
+	// 	renderNonTarget(passes.data(non_target), width, height, 100, scene, rngForEveryPixel);
+
+	// 	delete[] rngForEveryPixel;
+	// }
 	
 
-	uint32_t distribution0 = passes.addLayer();
-	{
-		std::cout <<"collecting hitpoints for target component..." <<std::endl;
+	// uint32_t distribution0 = passes.addLayer();
+	// {
+	// 	std::cout <<"collecting hitpoints for target component..." <<std::endl;
 
-		std::vector<hitpoint> hits;
-		hits.reserve(width*height*nRay);
-		RNG rng(0);
+	// 	std::vector<hitpoint> hits;
+	// 	hits.reserve(width*height*nRay);
+	// 	RNG rng(0);
 
-		collectHitpoints(hits, passes.width, passes.height, nRay,
-			initialRadius, scene, target, rng);
+	// 	collectHitpoints(hits, passes.width, passes.height, nRay,
+	// 		initialRadius, scene, target, rng);
 
-		// compose distriburion image
-		std::vector<glm::vec3> dist(width*height);
-		for(auto hit : hits){
-			dist[hit.pixel] += hit.weight;
-		}
+	// 	// compose distriburion image
+	// 	std::vector<glm::vec3> dist(width*height);
+	// 	for(auto hit : hits){
+	// 		dist[hit.pixel] += hit.weight;
+	// 	}
 
-		for(int i=0; i<passes.length; i++){
-			passes.set(distribution0, i, dist[i].x, dist[i].y, dist[i].z);
-		}
+	// 	passes.set(distribution0, dist.data());
 			
-		// save hitpoints
-		if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
-	}
+	// 	// save hitpoints
+	// 	if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
+	// }
 
 
-	// read test
-	//
+	// // read hitpoints from a file
 	// uint32_t distribution1 = passes.addLayer();
 	// {
 	// 	std::vector<hitpoint> hits;
 	// 	if(readVector(hits, outDir + "/hit"))std::cout <<"hitpoints load" <<std::endl;
-	// 	for(auto hit : hits) passes.data(distribution1)[hit.pixel] += hit.weight;
-	// 	if(writeImage(passes.data(distribution1),width, height, (outDir + "/distribution1.png").data()) == 1)
-	// 		std::cout <<" distribution1 saved" <<std::endl;
-	// 	else std::cout <<"failed to save image" <<std::endl;
+		
+	// 	std::vector<glm::vec3> im_d(width*height);
+	// 	for(auto hit : hits) im_d[hit.pixel] += hit.weight;
+		
+	// 	passes.set(distribution1, im_d.data());
 	// }
 
 
@@ -150,7 +152,12 @@ int main(void){
 
 	// }
 
-	std::cout <<"pass output: " <<std::bitset<8>(writeAllPasses(passes, outDir)) <<std::endl;
+	{
+		const int digit = 8;
+		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPasses(passes, outDir)) <<" / ";
+		for(int i=digit; 0<i; --i) std::cout <<(i<=passes.nLayer)? "1" : "0";
+		std::cout <<std::endl;
+	}	
 
 	return 0;
 }
