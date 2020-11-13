@@ -110,13 +110,8 @@ void collectHitpoints(std::vector<hitpoint>& hits,
 			if(mtl.type == Material::Type::EMIT) break;
 
 			if(is.mtlID == target ){
-				double p = 0.5;
-				if(rng.uniform()<p){
-					throuput /= p;
-					hits.push_back(hitpoint(is, R0, throuput/(float)nRay, idx, ray));
-					break;
-				}
-				else throuput /= (1-p);
+				hits.push_back(hitpoint(is, R0, throuput/(float)nRay, idx, ray));
+				break;
 			}
 
 
