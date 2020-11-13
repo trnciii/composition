@@ -53,11 +53,19 @@ struct hitpoint{
 	int N = 0; // accumulated photon count <<todo
 	glm::vec3 tau = glm::vec3(0,0,0); // accumulated reflected flux <<todo
 	glm::vec3 weight;
+	int iteration = 0;
 
 	inline hitpoint(){}
 	
 	inline hitpoint(Intersection& is, float r, glm::vec3 w, uint32_t px, Ray& ray)
 	:p(is.p), n(is.n), wo(-ray.d), mtlID(is.mtlID), pixel(px), N(0), R(r), weight(w){}
+
+	inline void clear(float R0){
+		N = 0;
+		iteration = 0;
+		R = R0;
+		tau = glm::vec3(0);
+	}
 };
 
 struct Photon{

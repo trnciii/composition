@@ -63,7 +63,7 @@ void renderReference(glm::vec3* const result, const int w, const int h, const in
 			double y = (double)-(2*(yi+rand.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);			
-			result[i] += pathTracingKernel_total(view, scene, &rand);
+			result[i] += pathTracingKernel_total(view, scene, rand);
 		}
 		result[i] /= spp;
 	}
@@ -81,7 +81,7 @@ void renderNonTarget(glm::vec3* const result, const int w, const int h, const in
 			double y = (double)-(2*(yi+rand.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);			
-			result[i] += pathTracingKernel_nonTarget(view, scene, &rand);
+			result[i] += pathTracingKernel_nonTarget(view, scene, rand);
 		}
 		result[i] /= spp;
 	}
@@ -129,93 +129,13 @@ void collectHitpoints(std::vector<hitpoint>& hits,
 	}
 }
 
-Tree createPhotonmap(const Scene& scene, int nPhoton, const uint32_t target, RNG* const rand){
-	std::vector<Photon> photons;
-	photons.reserve(10*nPhoton);
-
-	for(int n=0; n<nPhoton; n++){
-		const Sphere& source = scene.spheres[scene.lights[0]];
-		Ray ray(glm::vec3(0),glm::vec3(0));
-		{
-			glm::vec3 N = sampleUniformSphere(rand->uniform(), rand->uniform());
-			glm::vec3 P = source.p + (source.r + kTINY)*N;
-			glm::vec3 tan[2];
-			tangentspace(N, tan);
-
-			glm::vec3 hemi = sampleCosinedHemisphere(rand->uniform(), rand->uniform());
-
-			ray.o = offset(P, N);
-			ray.d = (N*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-		}
-		
-		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
-		// double initialFlux = max(ph);
-		float pTerminate = 1;
-
-		while(rand->uniform() < pTerminate){
-		// for(int depth=0; depth<5; depth++){
-			Intersection is = intersect(ray, scene);
-			const Material& mtl = scene.materials[is.mtlID];
-
-			if(mtl.type == Material::Type::EMIT) break;
-
-			if(target == is.mtlID){
-				photons.push_back(Photon(is.p, ph, -ray.d));
-				break;
-			}
-
-			{
-				glm::vec3 tan[2];
-				tangentspace(is.n, tan);
-				glm::vec3 hemi = sampleCosinedHemisphere(rand->uniform(), rand->uniform());
-
-				ray.o = offset(is.p, is.n);
-				ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-			}
-			
-			ph *= mtl.color/pTerminate;
-
-			pTerminate = std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-		}
-	}
-
-	Tree tree;
-	tree.copyElements(photons.data(), photons.size());
-	tree.build();
-
-	return tree;
-}
-
-void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const Scene& scene, const double alpha){
-	#pragma omp parallel for schedule(dynamic)
-	for(hitpoint& hit : hitpoints){
-		const Material& mtl = scene.materials[hit.mtlID];
-
-		int M = 0;
-		glm::vec3 tauM(0);
-
-		std::vector<Tree::Result> nearPhotons = photonmap.searchNN(hit);
-		for(const Tree::Result& p : nearPhotons){
-			float photonFilter = 3*(1 - p.distance/hit.R) / (kPI*hit.R*hit.R); // cone
-			// double photonFilter = 1/(kPI*hit.R*hit.R); // constant
-			tauM += photonFilter * p.photon.ph * mtl.color /kPI; // times BSDF
-			M++;
-		}
-
-
-		if(hit.N==0){
-			hit.N += M;
-			hit.tau += tauM;
-		}
-		else{
-			int N = hit.N;
-			int Nnext = N + alpha*M;
-
-			float ratio = (float)Nnext/(float)(N+M);
-
-			hit.N = Nnext;
-			hit.R *= sqrt(ratio);
-			hit.tau = (hit.tau + tauM)*ratio;			
-		}
+void progressivePhotonMapping(std::vector<hitpoint>& hits,
+	const float R0, const int iteration, const int nPhoton, const float alpha,
+	const Scene& scene, const uint32_t target, RNG& rand)
+{
+	for(hitpoint& hit : hits)hit.clear(R0);
+	for(int i=0; i<iteration; i++){
+		Tree photonmap = createPhotonmap(scene, nPhoton, target, rand);
+		accumulateRadiance(hits, photonmap, scene, alpha);	
 	}
 }

@@ -55,11 +55,11 @@ Intersection intersect(const Ray& ray, const Scene& scene){
 	return is;
 }
 
-glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG* const rand){
+glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
 	glm::vec3 throuput(1);
 	float pTerminate = 1;
 
-	while(rand->uniform() < pTerminate){
+	while(rand.uniform() < pTerminate){
 		Intersection is = intersect(ray, scene);
 		const Material& mtl = scene.materials[is.mtlID];
 
@@ -71,7 +71,7 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG* const rand){
 
 			glm::vec3 tan[2];
 			tangentspace(is.n, tan);
-			glm::vec3 hemi = sampleCosinedHemisphere(rand->uniform(), rand->uniform());
+			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
 
 			ray.o = offset(is.p, is.n);
 			ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
@@ -82,12 +82,12 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG* const rand){
 	return glm::vec3(0);
 }
 
-glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG* const rand){
+glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
 	const std::vector<uint32_t>& targets = scene.cmpTargets;
 	glm::vec3 throuput(1);
 	float pTerminate = 1;
 
-	while(rand->uniform() < pTerminate){
+	while(rand.uniform() < pTerminate){
 		Intersection is = intersect(ray, scene);
 		const Material& mtl = scene.materials[is.mtlID];
 
@@ -102,7 +102,7 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG* const ra
 
 			glm::vec3 tan[2];
 			tangentspace(is.n, tan);
-			glm::vec3 hemi = sampleCosinedHemisphere(rand->uniform(), rand->uniform());
+			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
 
 			ray.o = offset(is.p, is.n);
 			ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
@@ -111,4 +111,96 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG* const ra
 		pTerminate = std::max(throuput.x, std::max(throuput.y, throuput.z));
 	}
 	return glm::vec3(0);
+}
+
+Tree createPhotonmap(const Scene& scene, int nPhoton, const uint32_t target, RNG& rand){
+	std::vector<Photon> photons;
+	photons.reserve(10*nPhoton);
+
+	for(int n=0; n<nPhoton; n++){
+		const Sphere& source = scene.spheres[scene.lights[0]];
+		Ray ray(glm::vec3(0),glm::vec3(0));
+		{
+			glm::vec3 N = sampleUniformSphere(rand.uniform(), rand.uniform());
+			glm::vec3 P = source.p + (source.r + kTINY)*N;
+			glm::vec3 tan[2];
+			tangentspace(N, tan);
+
+			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
+
+			ray.o = offset(P, N);
+			ray.d = (N*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+		}
+		
+		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
+		// double initialFlux = max(ph);
+		float pTerminate = 1;
+
+		while(rand.uniform() < pTerminate){
+		// for(int depth=0; depth<5; depth++){
+			Intersection is = intersect(ray, scene);
+			const Material& mtl = scene.materials[is.mtlID];
+
+			if(mtl.type == Material::Type::EMIT) break;
+
+			if(target == is.mtlID){
+				photons.push_back(Photon(is.p, ph, -ray.d));
+				break;
+			}
+
+			{
+				glm::vec3 tan[2];
+				tangentspace(is.n, tan);
+				glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
+
+				ray.o = offset(is.p, is.n);
+				ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+			}
+			
+			ph *= mtl.color/pTerminate;
+
+			pTerminate = std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		}
+	}
+
+	Tree tree;
+	tree.copyElements(photons.data(), photons.size());
+	tree.build();
+
+	return tree;
+}
+
+void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const Scene& scene, const double alpha){
+	#pragma omp parallel for schedule(dynamic)
+	for(hitpoint& hit : hitpoints){
+		const Material& mtl = scene.materials[hit.mtlID];
+
+		int M = 0;
+		glm::vec3 tauM(0);
+
+		std::vector<Tree::Result> nearPhotons = photonmap.searchNN(hit);
+		for(const Tree::Result& p : nearPhotons){
+			float photonFilter = 3*(1 - p.distance/hit.R) / (kPI*hit.R*hit.R); // cone
+			// double photonFilter = 1/(kPI*hit.R*hit.R); // constant
+			tauM += photonFilter * p.photon.ph * mtl.color /kPI; // times BSDF
+			M++;
+		}
+
+		hit.iteration++;
+
+		if(hit.N==0){
+			hit.N += M;
+			hit.tau += tauM;
+		}
+		else{
+			int N = hit.N;
+			int Nnext = N + alpha*M;
+
+			float ratio = (float)Nnext/(float)(N+M);
+
+			hit.N = Nnext;
+			hit.R *= sqrt(ratio);
+			hit.tau = (hit.tau + tauM)*ratio;			
+		}
+	}
 }

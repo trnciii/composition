@@ -63,84 +63,83 @@ int main(void){
 
 
 	// render path traced reference
-	// uint32_t reference = passes.addLayer();
-	// {
-	// 	std::cout <<"path tracing for reference..." <<std::endl;
+	uint32_t reference = passes.addLayer();
+	{
+		std::cout <<"path tracing for reference..." <<std::endl;
 
-	// 	RNG* rngForEveryPixel = new RNG[width*height];
-	// 	for(int i=0; i<width*height; i++)
-	// 		rngForEveryPixel[i] = RNG(i);
+		RNG* rngForEveryPixel = new RNG[width*height];
+		for(int i=0; i<width*height; i++)
+			rngForEveryPixel[i] = RNG(i);
 
-	// 	renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
+		renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
 
-	// 	writeLayer(passes, reference, outDir + "/reference");
+		writeLayer(passes, reference, outDir + "/reference");
 
-	// 	delete[] rngForEveryPixel;
-	// }
+		delete[] rngForEveryPixel;
+	}
 
 
 	// render non target component with pt
 	uint32_t nontarget = passes.addLayer();
-	// {
-	// 	RNG* rngForEveryPixel = new RNG[width*height];
-	// 	for(int i=0; i<width*height; i++)
-	// 		rngForEveryPixel[i] = RNG(i);
+	{
+		std::cout <<"path tracing for non-target component..." <<std::endl;
 
-	// 	renderNonTarget(passes.data(nontarget), width, height, 100, scene, rngForEveryPixel);
+		RNG* rngForEveryPixel = new RNG[width*height];
+		for(int i=0; i<width*height; i++)
+			rngForEveryPixel[i] = RNG(i);
 
-	// 	delete[] rngForEveryPixel;
-	// }
-	loadLayer(passes, nontarget, outDir + "/nontarget");
+		renderNonTarget(passes.data(nontarget), width, height, 100, scene, rngForEveryPixel);
+
+		delete[] rngForEveryPixel;
+		writeLayer(passes, nontarget, outDir + "/nontarget");
+	}
+	// loadLayer(passes, nontarget, outDir + "/nontarget");
 	
 
 	// collect hitpoints
 	std::vector<hitpoint> hits;
-	// {
-	// 	std::cout <<"collecting hitpoints for target component..." <<std::endl;
+	{
+		std::cout <<"collecting hitpoints for target component..." <<std::endl;
 
-	// 	hits.reserve(width*height*nRay);
-	// 	RNG rng(0);
+		hits.reserve(width*height*nRay);
+		RNG rng(0);
 
-	// 	collectHitpoints(hits, passes.width, passes.height, nRay,
-	// 		initialRadius, scene, targetObject, rng);
-
-	// 	// compose distriburion image
-	// 	std::vector<glm::vec3> dist(width*height);
-	// 	for(auto hit : hits){
-	// 		dist[hit.pixel] += hit.weight;
-	// 	}
-
-	// 	passes.setLayer(distribution, dist.begin());
+		collectHitpoints(hits, passes.width, passes.height, nRay,
+			initialRadius, scene, targetObject, rng);
 			
-	// 	// save hitpoints
-	// 	if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
-	// }
-	readVector(hits, outDir + "/hit");
+		// save hitpoints
+		if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
+	}
+	// readVector(hits, outDir + "/hit");
 
 	// visualize weight of hits
 	uint32_t weights = passes.addLayer();
 	{		
 		std::vector<glm::vec3> im_d(passes.length);
 		for(auto hit : hits) im_d[hit.pixel] += hit.weight;
-		
 		passes.setLayer(weights, im_d.begin());
 	}
 
-
 	// ppm
+	// todo: takeover RNG state. currently hits are cleared before this iterations.
 	{
-		Tree photonmap = createPhotonmap(scene, nPhoton, targetObject, &rand);
-		accumulateRadiance(hits, photonmap, scene, alpha);
+		int iteration = 100;
+		std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
+
+		progressivePhotonMapping(hits, initialRadius, iteration, nPhoton, alpha, scene, targetObject, rand);
+		writeVector(hits, outDir + "/hit_100itr");
 	}
+	// readVector(hits, outDir + "/hit_100itr");
 
 
 	// composition
 	uint32_t target = passes.addLayer();
 	uint32_t composed = passes.addLayer();
 	{
-		int iteration = 1;
+		std::cout <<"compositing image..." <<std::endl;
+
 		for(hitpoint hit : hits){
-			glm::vec3 tau = hit.tau/(float)iteration;
+			glm::vec3 tau = hit.tau/(float)(hit.iteration);
 
 			double u = std::max(tau.x, std::max(tau.y, tau.z));
 			u = pow(8*u, 1);
