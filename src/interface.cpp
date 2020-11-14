@@ -61,9 +61,9 @@ void renderNonTarget_wrap(
 }
 
 class hitpoints_wrap{
+public:
 	std::vector<hitpoint> hits;
 
-public:
 	hitpoints_wrap():hits(0){}
 	hitpoints_wrap(std::vector<hitpoint> h):hits(h){}
 
@@ -74,16 +74,25 @@ public:
 	void load(const std::string& s){readVector(hits, s);}
 };
 
-hitpoints_wrap collectHitpoints_wrap(const int w, const int h, const int nRay,
+hitpoints_wrap collectHitpoints_wrap(const int depth, const int w, const int h, const int nRay,
 	const float R0, const Scene& scene, const uint32_t target)
+// todo: passing rng state
 {
 	std::vector<hitpoint> hits;
 	hits.reserve(w*h*nRay);
 	RNG rng(0);
 
-	collectHitpoints(hits, w, h, nRay, R0, scene, target, rng);
+	collectHitpoints(hits, depth, w, h, nRay, R0, scene, target, rng);
 
 	return hitpoints_wrap(hits);
+}
+
+void progressivePhotonMapping_wrap(hitpoints_wrap& hits, 
+	const float R0, const int iteration, const int nPhoton, const float alpha,
+	const Scene& scene, const uint32_t target)
+{
+	RNG rng;
+	progressivePhotonMapping(hits.hits, R0, iteration, nPhoton, alpha, scene, target, rng);
 }
 
 BOOST_PYTHON_MODULE(composition) {
@@ -107,6 +116,7 @@ BOOST_PYTHON_MODULE(composition) {
 
 	class_<hitpoint>("hitpoint")
 		.def_readonly("pixel", &hitpoint::pixel)
+		.def_readonly("tau", &hitpoint::tau)
 		.def_readonly("weight", &hitpoint::weight);
 
 	class_<hitpoints_wrap>("hitArray")
@@ -129,6 +139,7 @@ BOOST_PYTHON_MODULE(composition) {
 	def("renderReference", renderReference_wrap);
 	def("renderNonTarget", renderNonTarget_wrap);
 	def("collectHitpoints", collectHitpoints_wrap);
+	def("progressivePhotonMapping", progressivePhotonMapping_wrap);
 
 	// file.hpp
 	def("writeAllPasses", writeAllPasses);

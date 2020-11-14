@@ -115,7 +115,7 @@ int main(void){
 	// todo: takeover RNG state. currently hits are cleared before this iterations.
 	{
 		int nPhoton = 10000;
-		int iteration = 100;
+		int iteration = 10;
 		float alpha = 0.7;
 		float R0 = 1;
 
@@ -124,7 +124,7 @@ int main(void){
 		progressivePhotonMapping(hits, R0, iteration, nPhoton, alpha, scene, targetObject, rand);
 		writeVector(hits, outDir + "/hit_1_100itr");
 	}
-	readVector(hits, outDir + "/hit_1_100itr");
+	// readVector(hits, outDir + "/hit_1_100itr");
 
 
 	// composition
