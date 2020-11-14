@@ -87,7 +87,7 @@ void renderNonTarget(glm::vec3* const result, const int w, const int h, const in
 	}
 }
 
-void collectHitpoints(std::vector<hitpoint>& hits,
+void collectHitpoints(std::vector<hitpoint>& hits, int depth,
 	const int w, const int h, const int nRay,
 	const float R0, const Scene& scene, const uint32_t target, RNG& rng)
 {
@@ -101,19 +101,23 @@ void collectHitpoints(std::vector<hitpoint>& hits,
 		Ray ray = scene.camera.ray(x, y);
 		glm::vec3 throuput(1);
 		float pDepth = 1;
+		int countTarget = 0;
 
 		while(rng.uniform()<pDepth){
 		// for(int depth=0; depth<5; depth++){
 			Intersection is = intersect(ray, scene);
 			const Material& mtl = scene.materials[is.mtlID];
 
-			if(mtl.type == Material::Type::EMIT) break;
+			if( mtl.type == Material::Type::EMIT ) break;
 
-			if(is.mtlID == target ){
-				hits.push_back(hitpoint(is, R0, throuput/(float)nRay, idx, ray));
-				break;
+			if( is.mtlID == target ){
+				countTarget++;
+
+				if( countTarget == depth ){
+					hits.push_back(hitpoint(is, R0, throuput/(float)nRay, idx, ray));
+					break;
+				}
 			}
-
 
 			glm::vec3 tan[2];
 			tangentspace(is.n, tan);

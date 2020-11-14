@@ -143,10 +143,7 @@ Tree createPhotonmap(const Scene& scene, int nPhoton, const uint32_t target, RNG
 
 			if(mtl.type == Material::Type::EMIT) break;
 
-			if(target == is.mtlID){
-				photons.push_back(Photon(is.p, ph, -ray.d));
-				break;
-			}
+			if(target == is.mtlID) photons.push_back(Photon(is.p, ph, -ray.d));
 
 			{
 				glm::vec3 tan[2];

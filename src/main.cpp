@@ -42,18 +42,7 @@ int main(void){
 	RNG rand;
 	int width = 512;
 	int height = 512;
-
 	RenderPasses passes(width, height);
-
-	// render parameters
-	int nIteration = 10000;
-	int outInterval = 100;
-
-	int nPhoton = 10000;
-	float initialRadius = 1;
-	int nRay = 16;
-	float alpha = 0.7;
-	int spp_pt = 1000;
 
 	if(scene.cmpTargets.size()==0){
 		puts("no target");
@@ -63,54 +52,56 @@ int main(void){
 
 
 	// render path traced reference
-	uint32_t reference = passes.addLayer();
-	{
-		std::cout <<"path tracing for reference..." <<std::endl;
+	// uint32_t reference = passes.addLayer();
+	// {
+	// 	std::cout <<"path tracing for reference..." <<std::endl;
 
-		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++)
-			rngForEveryPixel[i] = RNG(i);
+	// 	RNG* rngForEveryPixel = new RNG[width*height];
+	// 	for(int i=0; i<width*height; i++)
+	// 		rngForEveryPixel[i] = RNG(i);
 
-		renderReference(passes.data(reference), width, height, 100, scene, rngForEveryPixel);
+	// 	renderReference(passes.data(reference), width, height, 10000, scene, rngForEveryPixel);
 
-		writeLayer(passes, reference, outDir + "/reference");
-
-		delete[] rngForEveryPixel;
-	}
+	// 	writeLayer(passes, reference, outDir + "/reference");
+	// 	delete[] rngForEveryPixel;
+	// }
+	// loadLayer(passes, reference, outDir + "/reference");
 
 
 	// render non target component with pt
 	uint32_t nontarget = passes.addLayer();
-	{
-		std::cout <<"path tracing for non-target component..." <<std::endl;
+	// {
+	// 	std::cout <<"path tracing for non-target component..." <<std::endl;
 
-		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++)
-			rngForEveryPixel[i] = RNG(i);
+	// 	RNG* rngForEveryPixel = new RNG[width*height];
+	// 	for(int i=0; i<width*height; i++)
+	// 		rngForEveryPixel[i] = RNG(i);
 
-		renderNonTarget(passes.data(nontarget), width, height, 100, scene, rngForEveryPixel);
+	// 	renderNonTarget(passes.data(nontarget), width, height, 10000, scene, rngForEveryPixel);
 
-		delete[] rngForEveryPixel;
-		writeLayer(passes, nontarget, outDir + "/nontarget");
-	}
-	// loadLayer(passes, nontarget, outDir + "/nontarget");
+	// 	delete[] rngForEveryPixel;
+	// 	writeLayer(passes, nontarget, outDir + "/nontarget");
+	// }
+	loadLayer(passes, nontarget, outDir + "/nontarget");
 	
 
 	// collect hitpoints
 	std::vector<hitpoint> hits;
-	{
-		std::cout <<"collecting hitpoints for target component..." <<std::endl;
+	// {
+	// 	int nRay = 128;
 
-		hits.reserve(width*height*nRay);
-		RNG rng(0);
+	// 	std::cout <<"collecting hitpoints for target component..." <<std::endl;
+	
+	// 	hits.reserve(width*height*nRay);
+	// 	RNG rng(0);
 
-		collectHitpoints(hits, passes.width, passes.height, nRay,
-			initialRadius, scene, targetObject, rng);
+	// 	collectHitpoints(hits, 2, passes.width, passes.height, nRay,
+	// 		0, scene, targetObject, rng);
 			
-		// save hitpoints
-		if(writeVector(hits, outDir + "/hit"))std::cout <<"hitpoints saved" <<std::endl;
-	}
-	// readVector(hits, outDir + "/hit");
+	// 	// save hitpoints
+	// 	if(writeVector(hits, outDir + "/hit_2"))std::cout <<"hitpoints saved" <<std::endl;
+	// }
+	readVector(hits, outDir + "/hit_1");
 
 	// visualize weight of hits
 	uint32_t weights = passes.addLayer();
@@ -123,13 +114,17 @@ int main(void){
 	// ppm
 	// todo: takeover RNG state. currently hits are cleared before this iterations.
 	{
+		int nPhoton = 10000;
 		int iteration = 100;
+		float alpha = 0.7;
+		float R0 = 1;
+
 		std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
 
-		progressivePhotonMapping(hits, initialRadius, iteration, nPhoton, alpha, scene, targetObject, rand);
-		writeVector(hits, outDir + "/hit_100itr");
+		progressivePhotonMapping(hits, R0, iteration, nPhoton, alpha, scene, targetObject, rand);
+		writeVector(hits, outDir + "/hit_1_100itr");
 	}
-	// readVector(hits, outDir + "/hit_100itr");
+	readVector(hits, outDir + "/hit_1_100itr");
 
 
 	// composition
@@ -143,8 +138,8 @@ int main(void){
 
 			double u = std::max(tau.x, std::max(tau.y, tau.z));
 			u = pow(8*u, 1);
-			passes.data(target)[hit.pixel] += 0.4f*colormap_4(u) * hit.weight;
-			// passes.data(target)[hit.pixel] += tau*hit.weight;
+			// passes.data(target)[hit.pixel] += 0.4f*colormap_4(u) * hit.weight;
+			passes.data(target)[hit.pixel] += tau*hit.weight;
 		}
 
 		for(int i=0; i<passes.length; i++)
