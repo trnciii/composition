@@ -34,18 +34,26 @@ int createScene(Scene* s){
 
 	uint32_t green = s->newMaterial(Material::Type::LAMBERT);
 	s->materials[green].color = glm::vec3(0.1, 0.85, 0.1);
+	s->materials[green].a = 0.2;
 
-	uint32_t target = s->newMaterial(Material::Type::LAMBERT);
-	s->materials[target].color = glm::vec3(0.6);
-	s->cmpTargets.push_back(target);
+	uint32_t target1 = s->newMaterial(Material::Type::GGX_REFLECTION);
+	s->materials[target1].color = glm::vec3(1);
+	s->materials[target1].a = 0.1;
+	s->cmpTargets.push_back(target1);
+
+	uint32_t target2 = s->newMaterial(Material::Type::GGX_REFLECTION);
+	s->materials[target2].color = glm::vec3(1);
+	s->materials[target2].a = 0.05;
+	s->cmpTargets.push_back(target2);
 
 	// box
-	s->add(Sphere(glm::vec3(-1e5, 0, 0), 1e5-4, green)); // left
-	s->add(Sphere(glm::vec3( 1e5, 0, 0), 1e5-4, red)); // right
-	s->add(Sphere(glm::vec3(0, 0, -1e5), 1e5, white)); // bottom
-	s->add(Sphere(glm::vec3(0, 0,  1e5), 1e5-8, white)); // top
-	s->add(Sphere(glm::vec3(0,  1e5, 0), 1e5-4, white)); // back
-	s->add(Sphere(glm::vec3(1.5, 0.5, 1.5), 1.5, target));
+	s->add(Sphere(glm::vec3(-1e4, 0, 0), 1e4-4, green)); // left
+	s->add(Sphere(glm::vec3( 1e4, 0, 0), 1e4-4, red)); // right
+	s->add(Sphere(glm::vec3(0, 0, -1e4), 1e4, white)); // bottom
+	s->add(Sphere(glm::vec3(0, 0,  1e4), 1e4-8, white)); // top
+	s->add(Sphere(glm::vec3(0,  1e4, 0), 1e4-4, white)); // back
+	s->add(Sphere(glm::vec3( 1.5, 0.0, 1.2), 1.2, target1));
+	s->add(Sphere(glm::vec3(-1.5, 1.5, 1.5), 1.5, target2));
 	s->add(Sphere(glm::vec3(0,0,6), 0.5, light)); // light
 
 	return 0;
@@ -59,7 +67,7 @@ void renderReference(glm::vec3* const result, const int w, const int h, const in
 		RNG& rand = rngs[i];
 
 		for(int n=0; n<spp; n++){
-			double x = (double) (2*(xi+rand.uniform())-w )/h;
+			double x = (double) (2*(xi+rand.uniform())-w)/h;
 			double y = (double)-(2*(yi+rand.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);			
@@ -139,7 +147,7 @@ void progressivePhotonMapping(std::vector<hitpoint>& hits,
 {
 	for(hitpoint& hit : hits)hit.clear(R0);
 	for(int i=0; i<iteration; i++){
-		Tree photonmap = createPhotonmap(scene, nPhoton, target, rand);
+		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rand);
 		accumulateRadiance(hits, photonmap, scene, alpha);	
 	}
 }

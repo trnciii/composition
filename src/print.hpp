@@ -17,13 +17,13 @@ void print(const char* s1, const char* s2 = "\n"){
 
 void print(const float& v, const char* s = "\n"){
 	float exp = log10(fabs(v));
-	if(-3<exp && exp<4) printf("%10.6f%s", v, s);
-	else printf("%10.2e%s", v, s);
+	if(-3<exp && exp<3) printf("%10.5f%s", v, s);
+	else printf("%10.1e%s", v, s);
 }
 
 void print(const int& v, const char* s = "\n"){
 	float exp = log10(fabs(v));
-	if(exp<(4)) printf("%4d%s", v, s);
+	if(exp<4) printf("%4d%s", v, s);
 	else printf("%4e%s", (float)v, s);
 }
 
@@ -54,11 +54,13 @@ void print(const Material& m, const char* str = "\n"){
 	std::cout <<std::setw(7);
 	if(m.type == Material::Type::EMIT) std::cout <<"EMIT";
 	if(m.type == Material::Type::LAMBERT) std::cout <<"LAMBERT";
+	if(m.type == Material::Type::GGX_REFLECTION) std::cout <<"GGX";
 	
 	std::cout <<" | ";
 	print(m.color, " | ");
+	print(m.a, " | ");
 
-	std::cout <<str <<std::flush;
+	std::cout <<str;
 }
 
 void print(const Camera& a, const char* str="\n"){
@@ -79,7 +81,7 @@ void print(const Scene& s){
 	for(int i=0; i<s.materials.size(); i++){
 		printf("[%2d] ", i);
 		if(std::find(s.cmpTargets.begin(), s.cmpTargets.end(), i) != s.cmpTargets.end())
-			print(s.materials[i], "aggregation target | ");
+			print(s.materials[i], "composite\n");
 		else
 			print(s.materials[i]);
 	}

@@ -52,37 +52,44 @@ int main(void){
 
 
 	// render path traced reference
-	// uint32_t reference = passes.addLayer();
-	// {
-	// 	std::cout <<"path tracing for reference..." <<std::endl;
+	uint32_t reference = passes.addLayer();
+	{
+		std::cout <<"path tracing for reference..." <<std::endl;
 
-	// 	RNG* rngForEveryPixel = new RNG[width*height];
-	// 	for(int i=0; i<width*height; i++)
-	// 		rngForEveryPixel[i] = RNG(i);
+		RNG* rngForEveryPixel = new RNG[width*height];
+		for(int i=0; i<width*height; i++)
+			rngForEveryPixel[i] = RNG(i);
 
-	// 	renderReference(passes.data(reference), width, height, 10000, scene, rngForEveryPixel);
-
-	// 	writeLayer(passes, reference, outDir + "/reference");
-	// 	delete[] rngForEveryPixel;
-	// }
+		renderReference(passes.data(reference), width, height, 2000, scene, rngForEveryPixel);
+		writeLayer(passes, reference, outDir + "/reference");
+		delete[] rngForEveryPixel;
+	}
 	// loadLayer(passes, reference, outDir + "/reference");
 
 
 	// render non target component with pt
 	uint32_t nontarget = passes.addLayer();
-	// {
-	// 	std::cout <<"path tracing for non-target component..." <<std::endl;
+	{
+		std::cout <<"path tracing for non-target component..." <<std::endl;
 
-	// 	RNG* rngForEveryPixel = new RNG[width*height];
-	// 	for(int i=0; i<width*height; i++)
-	// 		rngForEveryPixel[i] = RNG(i);
+		RNG* rngForEveryPixel = new RNG[width*height];
+		for(int i=0; i<width*height; i++)
+			rngForEveryPixel[i] = RNG(i);
 
-	// 	renderNonTarget(passes.data(nontarget), width, height, 10000, scene, rngForEveryPixel);
+		renderNonTarget(passes.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
 
-	// 	delete[] rngForEveryPixel;
-	// 	writeLayer(passes, nontarget, outDir + "/nontarget");
-	// }
-	loadLayer(passes, nontarget, outDir + "/nontarget");
+		delete[] rngForEveryPixel;
+		writeLayer(passes, nontarget, outDir + "/nontarget");
+	}
+	// loadLayer(passes, nontarget, outDir + "/nontarget");
+
+	{
+		const int digit = 8;
+		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPasses(passes, outDir)) <<" / ";
+		for(int i=digit; 0<i; --i) std::cout <<(i<=passes.nLayer)? "1" : "0";
+		std::cout <<std::endl;
+		return 0;
+	}
 	
 
 	// collect hitpoints
@@ -113,17 +120,17 @@ int main(void){
 
 	// ppm
 	// todo: takeover RNG state. currently hits are cleared before this iterations.
-	{
-		int nPhoton = 10000;
-		int iteration = 10;
-		float alpha = 0.7;
-		float R0 = 1;
+	// {
+	// 	int nPhoton = 10000;
+	// 	int iteration = 10;
+	// 	float alpha = 0.7;
+	// 	float R0 = 1;
 
-		std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
+	// 	std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
 
-		progressivePhotonMapping(hits, R0, iteration, nPhoton, alpha, scene, targetObject, rand);
-		writeVector(hits, outDir + "/hit_1_100itr");
-	}
+	// 	progressivePhotonMapping(hits, R0, iteration, nPhoton, alpha, scene, targetObject, rand);
+	// 	writeVector(hits, outDir + "/hit_1_100itr");
+	// }
 	// readVector(hits, outDir + "/hit_1_100itr");
 
 

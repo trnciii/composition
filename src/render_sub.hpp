@@ -4,12 +4,12 @@
 #include "data.hpp"
 #include "Scene.hpp"
 
-glm::vec3 offset(glm::vec3 pos, glm::vec3 dir){return pos + (dir*1e-6f);}
+glm::vec3 offset(glm::vec3 pos, glm::vec3 dir){return pos + (dir*1e-3f);}
 
 void tangentspace(glm::vec3 n, glm::vec3 basis[2]){
 	int sg =(n.z < 0) ?-1 :1;
-	double a = -1.0/(sg+n.z);
-	double b = n.x * n.y * a;
+	float a = -1.0/(sg+n.z);
+	float b = n.x * n.y * a;
 	basis[0] = glm::vec3(
 		1.0 + sg * n.x*n.x * a,
 		sg*b,
@@ -22,22 +22,37 @@ void tangentspace(glm::vec3 n, glm::vec3 basis[2]){
 	);
 }
 
-glm::vec3 sampleCosinedHemisphere(double u1, double u2, double* p = nullptr){
+glm::vec3 sampleCosinedHemisphere(float u1, float u2, float* p = nullptr){
 	u2 *= 2*kPI;
-	double r = sqrt(u1);
-	double z = sqrt(1-u1);
+	float r = sqrt(u1);
+	float z = sqrt(1-u1);
 
 	if(p)*p = z/kPI;
 	return glm::vec3(r*cos(u2), r*sin(u2), z);
 }
 
-glm::vec3 sampleUniformSphere(double u1, double u2, double* p = nullptr){
+glm::vec3 sampleUniformSphere(float u1, float u2, float* p = nullptr){
 	u1 = 2*u1 - 1;
 	u2 *= 2*kPI;
-	double r = sqrt(1-u1*u1);
+	float r = sqrt(1-u1*u1);
 
 	if(p)*p = 0.25/kPI;
 	return glm::vec3(r*cos(u2), r*sin(u2), u1);
+}
+
+glm::vec3 sampleNDF_GGX(float u1, float u2, glm::vec3 wi, float a, float* p = nullptr){
+	u2 *= 2*kPI;
+	float a2 = a*a;
+	float r2 = a2*u1/(1+u1*(a2-1));
+	float r = sqrt(r2);
+	return glm::vec3(r*cos(u2), r*sin(u2), sqrt(1-r2));
+}
+
+float smith_mask(glm::vec3 x, glm::vec3 n, float a){
+	float a2 = a*a;
+	float xn2 = glm::dot(x,n);
+	xn2 *= xn2;
+	return 2/(1+sqrt(1+a2*(1-xn2)/xn2));
 }
 
 Intersection intersect(const Ray& ray, const Scene& scene){
@@ -49,10 +64,44 @@ Intersection intersect(const Ray& ray, const Scene& scene){
 		s.intersect(&is, ray);
 
 	if(glm::dot(is.n, ray.d)>0){
-		is.n *= -1;
+		is.n *= -1.0f;
+		is.backfacing = true;
 	}
 
 	return is;
+}
+
+void sampleBSDF(Ray& ray, glm::vec3& throuput,
+	const Intersection& is, const Material& mtl, const Scene& scene, RNG& rand)
+{
+	if(mtl.type == Material::Type::LAMBERT){
+		glm::vec3 tan[2];
+		tangentspace(is.n, tan);
+		glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
+
+		ray.o = offset(is.p, is.n);
+		ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+		throuput *= mtl.color;
+	}
+
+	if(mtl.type == Material::Type::GGX_REFLECTION){
+		const glm::vec3 wi = -ray.d;
+		glm::vec3 tan[2];
+		tangentspace(is.n, tan);
+
+		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), wi, mtl.a);
+		glm::vec3 m_w = m_tan.x*tan[0] + m_tan.y*tan[1] + m_tan.z*is.n;
+
+		const glm::vec3 wo = ray.d - 2*glm::dot(ray.d, is.n)*is.n;
+
+		float gi = smith_mask(wi, is.n, mtl.a);
+		float go = smith_mask(wo, is.n, mtl.a);
+		float w = fabs( gi*go*glm::dot(wi, m_w) / (glm::dot(wi, is.n)*m_tan.z) );
+
+		ray.o = offset(is.p, is.n);
+		ray.d = wo;
+		throuput *= w*mtl.color;
+	}
 }
 
 glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
@@ -60,24 +109,15 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
 	float pTerminate = 1;
 
 	while(rand.uniform() < pTerminate){
-		Intersection is = intersect(ray, scene);
+		const Intersection is = intersect(ray, scene);
 		const Material& mtl = scene.materials[is.mtlID];
 
 		if(mtl.type == Material::Type::EMIT)
 			return throuput*mtl.color;
 
-		if(mtl.type == Material::Type::LAMBERT){
-			throuput *= mtl.color/pTerminate;
-
-			glm::vec3 tan[2];
-			tangentspace(is.n, tan);
-			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
-
-			ray.o = offset(is.p, is.n);
-			ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-		}
-
-		pTerminate = std::max(throuput.x, std::max(throuput.y, throuput.z));
+		sampleBSDF(ray, throuput, is, mtl, scene, rand);
+		throuput /= pTerminate;
+		pTerminate *= 0.9*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 	}
 	return glm::vec3(0);
 }
@@ -88,7 +128,7 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
 	float pTerminate = 1;
 
 	while(rand.uniform() < pTerminate){
-		Intersection is = intersect(ray, scene);
+		const Intersection is = intersect(ray, scene);
 		const Material& mtl = scene.materials[is.mtlID];
 
 		if(mtl.type == Material::Type::EMIT)
@@ -97,23 +137,14 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
 		if(std::find(targets.begin(), targets.end(), is.mtlID) != targets.end())
 			return glm::vec3(0);
 
-		if(mtl.type == Material::Type::LAMBERT){
-			throuput *= mtl.color/pTerminate;
-
-			glm::vec3 tan[2];
-			tangentspace(is.n, tan);
-			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
-
-			ray.o = offset(is.p, is.n);
-			ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-		}
-
-		pTerminate = std::max(throuput.x, std::max(throuput.y, throuput.z));
+		sampleBSDF(ray, throuput, is, mtl, scene, rand);
+		throuput /= pTerminate;
+		pTerminate *= 0.9*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 	}
 	return glm::vec3(0);
 }
 
-Tree createPhotonmap(const Scene& scene, int nPhoton, const uint32_t target, RNG& rand){
+Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t target, RNG& rand){
 	std::vector<Photon> photons;
 	photons.reserve(10*nPhoton);
 
@@ -169,7 +200,9 @@ Tree createPhotonmap(const Scene& scene, int nPhoton, const uint32_t target, RNG
 
 void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const Scene& scene, const double alpha){
 	#pragma omp parallel for schedule(dynamic)
-	for(hitpoint& hit : hitpoints){
+	// for(hitpoint& hit : hitpoints){
+	for(int it=0; it<hitpoints.size(); it++){
+		hitpoint& hit = hitpoints[it];
 		const Material& mtl = scene.materials[hit.mtlID];
 
 		int M = 0;

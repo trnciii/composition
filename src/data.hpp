@@ -21,13 +21,13 @@ struct Material{
 		EMIT,
 		LAMBERT,
 		// DIELECTRIC,
-		// GGX_REFLECTION,
+		GGX_REFLECTION,
 		// GGX_REFRACTOIN,
 	};
 
 	Type type;
 	glm::vec3 color = glm::vec3(0.6, 0.6, 0.6);
-	// double a;
+	float a = 0;
 	// double ior;
 	
 	inline Material(Material::Type t):type(t){}
@@ -39,7 +39,7 @@ struct Intersection{
 	glm::vec3 p;
 	glm::vec3 n;
 	uint32_t mtlID;
-	bool backface;
+	bool backfacing = false;
 };
 
 // first hit point from eye (following the ppm paper)
@@ -58,7 +58,7 @@ struct hitpoint{
 	inline hitpoint(){}
 	
 	inline hitpoint(Intersection& is, float r, glm::vec3 w, uint32_t px, Ray& ray)
-	:p(is.p), n(is.n), wo(-ray.d), mtlID(is.mtlID), pixel(px), N(0), R(r), weight(w){}
+	:p(is.p), n(is.n), wo(-ray.d), mtlID(is.mtlID), pixel(px), R(r), weight(w){}
 
 	inline void clear(float R0){
 		N = 0;

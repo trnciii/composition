@@ -13,17 +13,17 @@ struct Sphere{
 	Sphere(glm::vec3 _p, float _r, uint32_t _m)
 	:p(_p), r(_r), mtlID(_m), area(4*kPI*_r*_r){}
 
-	float dist(const Ray &ray) const;
-	void intersect(Intersection* is, const Ray &ray) const;
+	float dist(const Ray& ray)const;
+	void intersect(Intersection* is, const Ray& ray)const;
 };
 
 #ifdef IMPLEMENT_SPHERE
 
-float Sphere::dist(const Ray &ray) const {
+float Sphere::dist(const Ray& ray)const {
 	glm::vec3 OP = p - ray.o;
 	float b = glm::dot(ray.d, OP);
 	float b2 = b*b;
-	float c = dot(OP, OP) - r*r;
+	float c = glm::dot(OP, OP) - r*r;
 	
 	if(c < b2){
 		float t1 = b - sqrt(b2-c);
@@ -35,7 +35,7 @@ float Sphere::dist(const Ray &ray) const {
 	return -1;
 }
 
-void Sphere::intersect(Intersection* is, const Ray &ray) const {
+void Sphere::intersect(Intersection* is, const Ray& ray)const {
 	float t = this->dist(ray);
 	if((0 <t) && (t< is->dist)){
 		is->p = ray.o + t*ray.d;
