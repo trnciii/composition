@@ -11,12 +11,12 @@ struct Camera{
 
 	inline Ray ray(float x, float y) const{
 		glm::vec3 dir = basis[0]*x + basis[1]*y - basis[2]*flen;
-		return Ray(pos, normalize(dir));
+		return Ray(pos, glm::normalize(dir));
 	}
 
 	inline void setDir(glm::vec3 dir, glm::vec3 up){
-		basis[0] = normalize(cross(dir, up));
-		basis[2] = -normalize(dir);
-		basis[1] = cross(basis[2], basis[0]);
+		basis[0] = glm::normalize(glm::cross(dir, up));
+		basis[2] = -glm::normalize(dir);
+		basis[1] = glm::cross(basis[2], basis[0]);
 	}
 };

@@ -4,9 +4,9 @@
 #include "data.hpp"
 #include "Scene.hpp"
 
-glm::vec3 offset(glm::vec3 pos, glm::vec3 dir){return pos + (dir*1e-3f);}
+glm::vec3 offset(const glm::vec3& pos, const glm::vec3& dir){return pos + (dir*1e-3f);}
 
-void tangentspace(glm::vec3 n, glm::vec3 basis[2]){
+void tangentspace(const glm::vec3 n, glm::vec3 basis[2]){
 	int sg =(n.z < 0) ?-1 :1;
 	float a = -1.0/(sg+n.z);
 	float b = n.x * n.y * a;
@@ -22,7 +22,45 @@ void tangentspace(glm::vec3 n, glm::vec3 basis[2]){
 	);
 }
 
-glm::vec3 sampleCosinedHemisphere(float u1, float u2, float* p = nullptr){
+float GGX_D(const float mn, const float a2){
+	if(mn<0)return 0;	
+
+	float cos2 = mn*mn;
+	float t = a2*cos2 + 1-cos2;
+	return (t>1e-4)? a2/(kPI*t*t) : 0;
+}
+
+float smith_mask(const glm::vec3& x, const glm::vec3& n, const float a2){
+	float xn2 = glm::dot(x,n);
+	xn2 *= xn2;
+	return 2/(1+sqrt(1+a2*(1-xn2)/xn2));
+}
+
+// double Fresnel_Schlick(double dot, double ior_in, double ior_out){
+// 	double r = pow((ior_in - ior_out)/(ior_in + ior_out),2);
+// 	return r + (1-r)*pow(1-dot,5);
+// }
+
+float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3 n, const Material& mtl){
+	if(mtl.type == Material::Type::LAMBERT){
+		return 1/kPI;
+	}
+
+	if(mtl.type == Material::Type::GGX_REFLECTION){
+		glm::vec3 m = glm::normalize(wi+wo);
+		float a2 = mtl.a*mtl.a;
+
+		float D = GGX_D(glm::dot(n, m), a2);
+		float gi = smith_mask(wi, n, a2);
+		float go = smith_mask(wo, n, a2);
+		float F = 1;
+		return F * gi*go * D * 0.25/fabs(glm::dot(wi,n)*glm::dot(wo,n));
+	}
+
+	return 0;
+}
+
+glm::vec3 sampleCosinedHemisphere(float u1, float u2, float* const p = nullptr){
 	u2 *= 2*kPI;
 	float r = sqrt(u1);
 	float z = sqrt(1-u1);
@@ -31,28 +69,23 @@ glm::vec3 sampleCosinedHemisphere(float u1, float u2, float* p = nullptr){
 	return glm::vec3(r*cos(u2), r*sin(u2), z);
 }
 
-glm::vec3 sampleUniformSphere(float u1, float u2, float* p = nullptr){
+glm::vec3 sampleUniformSphere(float u1, float u2, float* const p = nullptr){
 	u1 = 2*u1 - 1;
 	u2 *= 2*kPI;
 	float r = sqrt(1-u1*u1);
 
-	if(p)*p = 0.25/kPI;
+	if(p) *p = 0.25/kPI;
 	return glm::vec3(r*cos(u2), r*sin(u2), u1);
 }
 
-glm::vec3 sampleNDF_GGX(float u1, float u2, glm::vec3 wi, float a, float* p = nullptr){
+glm::vec3 sampleNDF_GGX(float u1, float u2, const glm::vec3& wi, const float a2, float* const p = nullptr){
 	u2 *= 2*kPI;
-	float a2 = a*a;
 	float r2 = a2*u1/(1+u1*(a2-1));
 	float r = sqrt(r2);
-	return glm::vec3(r*cos(u2), r*sin(u2), sqrt(1-r2));
-}
+	float z = sqrt(1-r2);
 
-float smith_mask(glm::vec3 x, glm::vec3 n, float a){
-	float a2 = a*a;
-	float xn2 = glm::dot(x,n);
-	xn2 *= xn2;
-	return 2/(1+sqrt(1+a2*(1-xn2)/xn2));
+	if(p) *p = GGX_D(z, a2)*z;
+	return glm::vec3(r*cos(u2), r*sin(u2), z);
 }
 
 Intersection intersect(const Ray& ray, const Scene& scene){
@@ -89,14 +122,17 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		glm::vec3 tan[2];
 		tangentspace(is.n, tan);
 
-		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), wi, mtl.a);
+		float a2 = mtl.a*mtl.a;
+
+		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), wi, a2);
 		glm::vec3 m_w = m_tan.x*tan[0] + m_tan.y*tan[1] + m_tan.z*is.n;
 
 		const glm::vec3 wo = ray.d - 2*glm::dot(ray.d, is.n)*is.n;
 
-		float gi = smith_mask(wi, is.n, mtl.a);
-		float go = smith_mask(wo, is.n, mtl.a);
-		float w = fabs( gi*go*glm::dot(wi, m_w) / (glm::dot(wi, is.n)*m_tan.z) );
+		float gi = smith_mask(wi, is.n, a2);
+		float go = smith_mask(wo, is.n, a2);
+		float F = 1;
+		float w = fabs( F* gi*go * glm::dot(wi, m_w)/(glm::dot(wi, is.n)*m_tan.z) );
 
 		ray.o = offset(is.p, is.n);
 		ray.d = wo;
@@ -117,7 +153,7 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
 
 		sampleBSDF(ray, throuput, is, mtl, scene, rand);
 		throuput /= pTerminate;
-		pTerminate *= 0.9*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 	}
 	return glm::vec3(0);
 }
@@ -139,7 +175,7 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
 
 		sampleBSDF(ray, throuput, is, mtl, scene, rand);
 		throuput /= pTerminate;
-		pTerminate *= 0.9*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 	}
 	return glm::vec3(0);
 }
@@ -148,9 +184,9 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 	std::vector<Photon> photons;
 	photons.reserve(10*nPhoton);
 
+	const Sphere& source = scene.spheres[scene.lights[0]];
 	for(int n=0; n<nPhoton; n++){
-		const Sphere& source = scene.spheres[scene.lights[0]];
-		Ray ray(glm::vec3(0),glm::vec3(0));
+		glm::vec3 ro, rd;
 		{
 			glm::vec3 N = sampleUniformSphere(rand.uniform(), rand.uniform());
 			glm::vec3 P = source.p + (source.r + kTINY)*N;
@@ -159,12 +195,12 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
 
-			ray.o = offset(P, N);
-			ray.d = (N*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+			ro = offset(P, N);
+			rd = (N*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
 		}
+		Ray ray(ro,rd);
 		
 		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
-		// double initialFlux = max(ph);
 		float pTerminate = 1;
 
 		while(rand.uniform() < pTerminate){
@@ -176,18 +212,9 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 			if(target == is.mtlID) photons.push_back(Photon(is.p, ph, -ray.d));
 
-			{
-				glm::vec3 tan[2];
-				tangentspace(is.n, tan);
-				glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
-
-				ray.o = offset(is.p, is.n);
-				ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-			}
-			
-			ph *= mtl.color/pTerminate;
-
-			pTerminate = std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			sampleBSDF(ray, ph, is, mtl, scene, rand);
+			ph /= pTerminate;
+			pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 		}
 	}
 
@@ -200,9 +227,9 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const Scene& scene, const double alpha){
 	#pragma omp parallel for schedule(dynamic)
-	// for(hitpoint& hit : hitpoints){
-	for(int it=0; it<hitpoints.size(); it++){
-		hitpoint& hit = hitpoints[it];
+	for(hitpoint& hit : hitpoints){
+	// for(int it=0; it<hitpoints.size(); it++){
+		// hitpoint& hit = hitpoints[it];
 		const Material& mtl = scene.materials[hit.mtlID];
 
 		int M = 0;
@@ -212,7 +239,7 @@ void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const
 		for(const Tree::Result& p : nearPhotons){
 			float photonFilter = 3*(1 - p.distance/hit.R) / (kPI*hit.R*hit.R); // cone
 			// double photonFilter = 1/(kPI*hit.R*hit.R); // constant
-			tauM += photonFilter * p.photon.ph * mtl.color /kPI; // times BSDF
+			tauM += photonFilter * p.photon.ph * mtl.color * evalBSDF(p.photon.wi, hit.wo, hit.n, mtl);
 			M++;
 		}
 

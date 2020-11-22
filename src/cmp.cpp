@@ -37,6 +37,7 @@ int createScene(Scene* s){
 	s->materials[green].a = 0.2;
 
 	uint32_t target1 = s->newMaterial(Material::Type::GGX_REFLECTION);
+	// uint32_t target1 = s->newMaterial(Material::Type::LAMBERT);
 	s->materials[target1].color = glm::vec3(1);
 	s->materials[target1].a = 0.1;
 	s->cmpTargets.push_back(target1);
@@ -99,44 +100,38 @@ void collectHitpoints(std::vector<hitpoint>& hits, int depth,
 	const int w, const int h, const int nRay,
 	const float R0, const Scene& scene, const uint32_t target, RNG& rng)
 {
-	for(int i=0; i<w*h*nRay; i++){
-		int idx = i/(float)nRay;
-		int xi = idx%w;
-		int yi = idx/w;
+	for(int i=0; i<w*h; i++){
+		int xi = i%w;
+		int yi = i/w;
 
-		float x = (float) (2*(xi+rng.uniform())-w)/h;
-		float y = (float)-(2*(yi+rng.uniform())-h)/h;
-		Ray ray = scene.camera.ray(x, y);
-		glm::vec3 throuput(1);
-		float pDepth = 1;
-		int countTarget = 0;
+		for (int n=0; n<nRay; n++){
+			float x = (float) (2*(xi+rng.uniform())-w)/h;
+			float y = (float)-(2*(yi+rng.uniform())-h)/h;
+			Ray ray = scene.camera.ray(x, y);
+			glm::vec3 throuput(1);
+			float pTerminate = 1;
+			int countTarget = 0;
 
-		while(rng.uniform()<pDepth){
-		// for(int depth=0; depth<5; depth++){
-			Intersection is = intersect(ray, scene);
-			const Material& mtl = scene.materials[is.mtlID];
+			while(rng.uniform()<pTerminate){
+			// for(int depth=0; depth<5; depth++){
+				const Intersection is = intersect(ray, scene);
+				const Material& mtl = scene.materials[is.mtlID];
 
-			if( mtl.type == Material::Type::EMIT ) break;
+				if( mtl.type == Material::Type::EMIT ) break;
 
-			if( is.mtlID == target ){
-				countTarget++;
+				if( is.mtlID == target ){
+					countTarget++;
 
-				if( countTarget == depth ){
-					hits.push_back(hitpoint(is, R0, throuput/(float)nRay, idx, ray));
-					break;
+					if( countTarget == depth ){
+						hits.push_back(hitpoint(is, R0, throuput/(float)nRay, i, ray));
+						break;
+					}
 				}
+
+				sampleBSDF(ray, throuput, is, mtl, scene, rng);
+				throuput /= pTerminate;
+				pTerminate = std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 			}
-
-			glm::vec3 tan[2];
-			tangentspace(is.n, tan);
-			glm::vec3 hemi = sampleCosinedHemisphere(rng.uniform(), rng.uniform());
-
-			ray.o = offset(is.p, is.n);
-			ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-
-			throuput *= mtl.color/pDepth;
-			// pDepth = std::min(max(throuput), 1.0);
-			pDepth = std::min(1.0f, std::max(throuput.x, std::max(throuput.y, throuput.z)));
 		}
 	}
 }
@@ -148,6 +143,6 @@ void progressivePhotonMapping(std::vector<hitpoint>& hits,
 	for(hitpoint& hit : hits)hit.clear(R0);
 	for(int i=0; i<iteration; i++){
 		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rand);
-		accumulateRadiance(hits, photonmap, scene, alpha);	
+		accumulateRadiance(hits, photonmap, scene, alpha);
 	}
 }

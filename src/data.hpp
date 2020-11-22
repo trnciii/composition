@@ -57,7 +57,7 @@ struct hitpoint{
 
 	inline hitpoint(){}
 	
-	inline hitpoint(Intersection& is, float r, glm::vec3 w, uint32_t px, Ray& ray)
+	inline hitpoint(const Intersection& is, float r, glm::vec3 w, uint32_t px, Ray& ray)
 	:p(is.p), n(is.n), wo(-ray.d), mtlID(is.mtlID), pixel(px), R(r), weight(w){}
 
 	inline void clear(float R0){

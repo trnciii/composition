@@ -127,8 +127,8 @@ BOOST_PYTHON_MODULE(composition) {
 
 	class_<Scene>("Scene");
 		// .def_readonly("cmpTargets", &Scene::);
-		// .def("add", &Scene::add)
-		// .def("newMaterial", &Scene.newMaterial);
+		.def("add", &Scene::add)
+		.def("newMaterial", &Scene.newMaterial);
 
 
 	// this - data
