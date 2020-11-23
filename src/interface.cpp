@@ -82,7 +82,7 @@ hitpoints_wrap collectHitpoints_wrap(const int depth, const int w, const int h, 
 	hits.reserve(w*h*nRay);
 	RNG rng(0);
 
-	collectHitpoints(hits, depth, w, h, nRay, R0, scene, target, rng);
+	collectHitpoints_target(hits, depth, w, h, nRay, R0, scene, target, rng);
 
 	return hitpoints_wrap(hits);
 }
@@ -92,7 +92,7 @@ void progressivePhotonMapping_wrap(hitpoints_wrap& hits,
 	const Scene& scene, const uint32_t target)
 {
 	RNG rng;
-	progressivePhotonMapping(hits.hits, R0, iteration, nPhoton, alpha, scene, target, rng);
+	progressivePhotonMapping_target(hits.hits, R0, iteration, nPhoton, alpha, scene, target, rng);
 }
 
 BOOST_PYTHON_MODULE(composition) {
@@ -125,10 +125,10 @@ BOOST_PYTHON_MODULE(composition) {
 		.def("save", &hitpoints_wrap::save)
 		.def("load", &hitpoints_wrap::load);
 
-	class_<Scene>("Scene");
+	class_<Scene>("Scene")
 		// .def_readonly("cmpTargets", &Scene::);
 		.def("add", &Scene::add)
-		.def("newMaterial", &Scene.newMaterial);
+		.def("newMaterial", &Scene::newMaterial);
 
 
 	// this - data

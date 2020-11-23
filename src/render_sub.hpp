@@ -23,8 +23,6 @@ void tangentspace(const glm::vec3 n, glm::vec3 basis[2]){
 }
 
 float GGX_D(const float mn, const float a2){
-	if(mn<0)return 0;	
-
 	float cos2 = mn*mn;
 	float t = a2*cos2 + 1-cos2;
 	return (t>1e-4)? a2/(kPI*t*t) : 0;
@@ -54,7 +52,7 @@ float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3 n, cons
 		float gi = smith_mask(wi, n, a2);
 		float go = smith_mask(wo, n, a2);
 		float F = 1;
-		return F * gi*go * D * 0.25/fabs(glm::dot(wi,n)*glm::dot(wo,n));
+		return F * gi*go * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
 	}
 
 	return 0;
@@ -127,7 +125,7 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), wi, a2);
 		glm::vec3 m_w = m_tan.x*tan[0] + m_tan.y*tan[1] + m_tan.z*is.n;
 
-		const glm::vec3 wo = ray.d - 2*glm::dot(ray.d, is.n)*is.n;
+		const glm::vec3 wo = ray.d - 2*glm::dot(ray.d, m_w)*m_w;
 
 		float gi = smith_mask(wi, is.n, a2);
 		float go = smith_mask(wo, is.n, a2);
@@ -178,6 +176,51 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
 		pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 	}
 	return glm::vec3(0);
+}
+
+Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
+	std::vector<Photon> photons;
+	photons.reserve(10*nPhoton);
+
+	const Sphere& source = scene.spheres[scene.lights[0]];
+	for(int n=0; n<nPhoton; n++){
+		glm::vec3 ro, rd;
+		{
+			glm::vec3 N = sampleUniformSphere(rand.uniform(), rand.uniform());
+			glm::vec3 P = source.p + (source.r + kTINY)*N;
+			glm::vec3 tan[2];
+			tangentspace(N, tan);
+
+			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
+
+			ro = offset(P, N);
+			rd = (N*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+		}
+		Ray ray(ro,rd);
+		
+		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
+		float pTerminate = 1;
+
+		while(rand.uniform() < pTerminate){
+		// for(int depth=0; depth<5; depth++){
+			Intersection is = intersect(ray, scene);
+			const Material& mtl = scene.materials[is.mtlID];
+
+			if(mtl.type == Material::Type::EMIT) break;
+
+			photons.push_back(Photon(is.p, ph, -ray.d));
+
+			sampleBSDF(ray, ph, is, mtl, scene, rand);
+			ph /= pTerminate;
+			pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		}
+	}
+
+	Tree tree;
+	tree.copyElements(photons.data(), photons.size());
+	tree.build();
+
+	return tree;
 }
 
 Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t target, RNG& rand){

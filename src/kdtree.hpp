@@ -127,7 +127,7 @@ std::vector<Tree::Result> Tree::searchNN(const hitpoint& hit){
 					float l = length(d);
 					d /= l;
 
-					if(l < hit.R && dot(hit.n, d) < hit.R*0.01)
+					if(l < hit.R && dot(hit.n, d) < hit.R*hit.R*0.01)
 						result.push_back(Tree::Result(node->begin[i], l));
 				}
 

@@ -44,7 +44,7 @@ int createScene(Scene* s){
 
 	uint32_t target2 = s->newMaterial(Material::Type::GGX_REFLECTION);
 	s->materials[target2].color = glm::vec3(1);
-	s->materials[target2].a = 0.05;
+	s->materials[target2].a = 0.4;
 	s->cmpTargets.push_back(target2);
 
 	// box
@@ -96,7 +96,28 @@ void renderNonTarget(glm::vec3* const result, const int w, const int h, const in
 	}
 }
 
-void collectHitpoints(std::vector<hitpoint>& hits, int depth,
+void collectHitpoints_all(std::vector<hitpoint>& hits,
+	const int w, const int h, const int nRay,
+	const float R0, const Scene& scene, RNG& rng)
+{
+	for(int i=0; i<w*h; i++){
+		int xi = i%w;
+		int yi = i/w;
+
+		for (int n=0; n<nRay; n++){
+			float x = (float) (2*(xi+rng.uniform())-w)/h;
+			float y = (float)-(2*(yi+rng.uniform())-h)/h;
+			Ray ray = scene.camera.ray(x, y);
+
+			const Intersection is = intersect(ray, scene);
+
+			if( scene.materials[is.mtlID].type != Material::Type::EMIT )
+				hits.push_back(hitpoint(is, R0, glm::vec3(1.0/(float)nRay), i, ray));
+		}
+	}
+}
+
+void collectHitpoints_target(std::vector<hitpoint>& hits, int depth,
 	const int w, const int h, const int nRay,
 	const float R0, const Scene& scene, const uint32_t target, RNG& rng)
 {
@@ -136,7 +157,18 @@ void collectHitpoints(std::vector<hitpoint>& hits, int depth,
 	}
 }
 
-void progressivePhotonMapping(std::vector<hitpoint>& hits,
+void progressivePhotonMapping_all(std::vector<hitpoint>& hits, 
+	const float R0, const int iteration, const int nPhoton, const float alpha,
+	const Scene& scene, RNG& rand)
+{
+	for(hitpoint& hit : hits)hit.clear(R0);
+	for(int i=0; i<iteration; i++){
+		Tree photonmap = createPhotonmap_all(scene, nPhoton, rand);
+		accumulateRadiance(hits, photonmap, scene, alpha);
+	}		
+}
+
+void progressivePhotonMapping_target(std::vector<hitpoint>& hits,
 	const float R0, const int iteration, const int nPhoton, const float alpha,
 	const Scene& scene, const uint32_t target, RNG& rand)
 {
