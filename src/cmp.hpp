@@ -13,7 +13,7 @@ void collectHitpoints_all(std::vector<hitpoint>& hits,
 	const int w, const int h, const int nRay,
 	const float R0, const Scene& scene, RNG& rng);
 
-void collectHitpoints_target(std::vector<hitpoint>& hits, int depth,
+void collectHitpoints_target(std::vector<hitpoint>& hits, const int depth,
 	const int w, const int h, const int nRay,
 	const float R0, const Scene& scene, const uint32_t target, RNG& rng);
 

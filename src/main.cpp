@@ -45,19 +45,19 @@ int main(void){
 
 
 	// render path traced reference
-	uint32_t reference = passes.addLayer();
-	{
-		std::cout <<"path tracing for reference [" <<reference <<"]" <<std::endl;
-
-		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++)
-			rngForEveryPixel[i] = RNG(i);
-
-		renderReference(passes.data(reference), width, height, 5000, scene, rngForEveryPixel);
-		writeLayer(passes, reference, outDir + "/reference");
-		delete[] rngForEveryPixel;
-	}
+	// uint32_t reference = passes.addLayer();
 	// loadLayer(passes, reference, outDir + "/reference");
+	// {
+	// 	std::cout <<"path tracing for reference [" <<reference <<"]" <<std::endl;
+
+	// 	RNG* rngForEveryPixel = new RNG[width*height];
+	// 	for(int i=0; i<width*height; i++)
+	// 		rngForEveryPixel[i] = RNG(i);
+
+	// 	renderReference(passes.data(reference), width, height, 5000, scene, rngForEveryPixel);
+	// 	writeLayer(passes, reference, outDir + "/reference");
+	// 	delete[] rngForEveryPixel;
+	// }
 
 	// uint32_t ppm = passes.addLayer();
 	// {
@@ -82,25 +82,25 @@ int main(void){
 
 	// render non target component with pt
 	const uint32_t nontarget = passes.addLayer();
-	{
-		std::cout <<"path tracing for non-target component [" <<nontarget <<"]" <<std::endl;
+	loadLayer(passes, nontarget, outDir + "/nontarget");
+	// {
+	// 	std::cout <<"path tracing for non-target component [" <<nontarget <<"]" <<std::endl;
 
-		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++)
-			rngForEveryPixel[i] = RNG(i);
+	// 	RNG* rngForEveryPixel = new RNG[width*height];
+	// 	for(int i=0; i<width*height; i++)
+	// 		rngForEveryPixel[i] = RNG(i);
 
-		renderNonTarget(passes.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
+	// 	renderNonTarget(passes.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
 
-		delete[] rngForEveryPixel;
-		writeLayer(passes, nontarget, outDir + "/nontarget");
-	}
-	// loadLayer(passes, nontarget, outDir + "/nontarget");
+	// 	delete[] rngForEveryPixel;
+	// 	writeLayer(passes, nontarget, outDir + "/nontarget");
+	// }
 	
 
 	// collect hitpoints
 	std::vector<hitpoint> hits;
 	{
-		int nRay = 128;
+		int nRay = 16;
 		int nDepth = 1;
 		RNG rng(0);
 
@@ -110,9 +110,9 @@ int main(void){
 
 		collectHitpoints_target(hits, nDepth, passes.width, passes.height, nRay,
 			0, scene, targetObject, rng);
-			
+
 		// save hitpoints
-		if(writeVector(hits, outDir + "/hit_2"))std::cout <<"hitpoints saved" <<std::endl;
+		if(writeVector(hits, outDir + "/hit_2")) std::cout <<"hitpoints saved" <<std::endl;
 	}
 	// readVector(hits, outDir + "/hit_1");
 
@@ -122,14 +122,14 @@ int main(void){
 	{	
 		std::vector<glm::vec3> im_d(passes.length);
 		for(hitpoint& hit : hits) im_d[hit.pixel] += hit.weight;
-		passes.setLayer(weights, im_d.begin()); std::cout <<"V";
+		passes.setLayer(weights, im_d.begin());
 	}
 
 	// ppm
 	// todo: takeover RNG state. currently hits are cleared before this iterations.
 	{
-		int nPhoton = 10000;
-		int iteration = 10000;
+		int nPhoton = 100000;
+		int iteration = 100;
 		float alpha = 0.6;
 		float R0 = 0.5;
 

@@ -151,7 +151,7 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
 
 		sampleBSDF(ray, throuput, is, mtl, scene, rand);
 		throuput /= pTerminate;
-		pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		pTerminate *= 0.9*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 	}
 	return glm::vec3(0);
 }
@@ -173,7 +173,7 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
 
 		sampleBSDF(ray, throuput, is, mtl, scene, rand);
 		throuput /= pTerminate;
-		pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		pTerminate *= 0.9*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 	}
 	return glm::vec3(0);
 }
@@ -200,6 +200,7 @@ Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
 		
 		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
 		float pTerminate = 1;
+		int depth = 0;
 
 		while(rand.uniform() < pTerminate){
 		// for(int depth=0; depth<5; depth++){
@@ -212,7 +213,8 @@ Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
 
 			sampleBSDF(ray, ph, is, mtl, scene, rand);
 			ph /= pTerminate;
-			pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			if(10<depth++) pTerminate *= 0.5; 
 		}
 	}
 
@@ -245,6 +247,7 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 		
 		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
 		float pTerminate = 1;
+		int depth = 0;
 
 		while(rand.uniform() < pTerminate){
 		// for(int depth=0; depth<5; depth++){
@@ -257,7 +260,8 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 			sampleBSDF(ray, ph, is, mtl, scene, rand);
 			ph /= pTerminate;
-			pTerminate *= 0.95*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			if(10<depth++) pTerminate *= 0.5;
 		}
 	}
 

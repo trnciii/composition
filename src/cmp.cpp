@@ -117,7 +117,7 @@ void collectHitpoints_all(std::vector<hitpoint>& hits,
 	}
 }
 
-void collectHitpoints_target(std::vector<hitpoint>& hits, int depth,
+void collectHitpoints_target(std::vector<hitpoint>& hits, const int d_target,
 	const int w, const int h, const int nRay,
 	const float R0, const Scene& scene, const uint32_t target, RNG& rng)
 {
@@ -131,6 +131,7 @@ void collectHitpoints_target(std::vector<hitpoint>& hits, int depth,
 			Ray ray = scene.camera.ray(x, y);
 			glm::vec3 throuput(1);
 			float pTerminate = 1;
+			int d_all = 0;
 			int countTarget = 0;
 
 			while(rng.uniform()<pTerminate){
@@ -143,7 +144,7 @@ void collectHitpoints_target(std::vector<hitpoint>& hits, int depth,
 				if( is.mtlID == target ){
 					countTarget++;
 
-					if( countTarget == depth ){
+					if( countTarget == d_target ){
 						hits.push_back(hitpoint(is, R0, throuput/(float)nRay, i, ray));
 						break;
 					}
@@ -151,7 +152,8 @@ void collectHitpoints_target(std::vector<hitpoint>& hits, int depth,
 
 				sampleBSDF(ray, throuput, is, mtl, scene, rng);
 				throuput /= pTerminate;
-				pTerminate = std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+				pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+				if(10<d_all++) pTerminate *= 0.8;
 			}
 		}
 	}
