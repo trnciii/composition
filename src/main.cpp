@@ -59,26 +59,30 @@ int main(void){
 	// 	delete[] rngForEveryPixel;
 	// }
 
-	// uint32_t ppm = passes.addLayer();
-	// {
-	// 	int nRay = 4;
-	// 	int nPhoton = 100000;
-	// 	int iteration = 10000;
-	// 	float alpha = 0.6;
-	// 	float R0 = 0.5;
-	// 	RNG rng(0);
+	uint32_t ppm = passes.addLayer();
+	{
+		int nRay = 4;
+		int nPhoton = 100000;
+		int iteration = 10;
+		float alpha = 0.6;
+		float R0 = 0.5;
+		RNG rng(0);
 	
-	// 	std::vector<hitpoint> hits;
-	// 	hits.reserve(width*height*nRay);
+		std::vector<hitpoint> hits;
+		hits.reserve(width*height*nRay);
 
-	// 	collectHitpoints_all(hits, passes.width, passes.height, nRay, 0, scene, rng);
-	// 	progressivePhotonMapping_all(hits, R0, iteration, nPhoton, alpha, scene, rng);
+		collectHitpoints_all(hits, passes.width, passes.height, nRay, 0, scene, rng);
+		for(hitpoint& hit : hits)hit.clear(R0);
+		for(int i=0; i<iteration; i++){
+			Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
+			accumulateRadiance(hits, photonmap, scene, alpha);
+		}
 
-	// 	glm::vec3* image = passes.data(ppm);
-	// 	for(hitpoint& hit : hits){
-	// 		image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
-	// 	}
-	// }
+		glm::vec3* image = passes.data(ppm);
+		for(hitpoint& hit : hits){
+			image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
+		}
+	}
 
 	// render non target component with pt
 	const uint32_t nontarget = passes.addLayer();
@@ -135,7 +139,13 @@ int main(void){
 
 		std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
 
-		progressivePhotonMapping_target(hits, R0, iteration, nPhoton, alpha, scene, targetObject, rand);
+		for(hitpoint& hit : hits)hit.clear(R0);
+		for(int i=0; i<iteration; i++){
+			Tree photonmap = createPhotonmap_target(scene, nPhoton, targetObject, rand);
+			accumulateRadiance(hits, photonmap, scene, alpha);
+		}
+
+		// progressivePhotonMapping_target(hits, R0, iteration, nPhoton, alpha, scene, targetObject, rand);
 		std::cout <<"C" <<std::endl;
 		// writeVector(hits, outDir + "/hit_1_100itr");
 	}

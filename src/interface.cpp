@@ -87,12 +87,29 @@ hitpoints_wrap collectHitpoints_wrap(const int depth, const int w, const int h, 
 	return hitpoints_wrap(hits);
 }
 
-void progressivePhotonMapping_wrap(hitpoints_wrap& hits, 
+void progressivePhotonMapping_all(std::vector<hitpoint>& hits, 
+	const float R0, const int iteration, const int nPhoton, const float alpha,
+	const Scene& scene)
+{
+	RNG rng;
+	for(hitpoint& hit : hits)hit.clear(R0);
+	for(int i=0; i<iteration; i++){
+		Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
+		accumulateRadiance(hits, photonmap, scene, alpha);
+	}		
+}
+
+void progressivePhotonMapping_target(hitpoints_wrap& hw,
 	const float R0, const int iteration, const int nPhoton, const float alpha,
 	const Scene& scene, const uint32_t target)
 {
 	RNG rng;
-	progressivePhotonMapping_target(hits.hits, R0, iteration, nPhoton, alpha, scene, target, rng);
+	std::vector<hitpoint>& hits = hw.hits;
+	for(hitpoint& hit : hits)hit.clear(R0);
+	for(int i=0; i<iteration; i++){
+		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rng);
+		accumulateRadiance(hits, photonmap, scene, alpha);
+	}
 }
 
 BOOST_PYTHON_MODULE(composition) {
@@ -139,7 +156,7 @@ BOOST_PYTHON_MODULE(composition) {
 	def("renderReference", renderReference_wrap);
 	def("renderNonTarget", renderNonTarget_wrap);
 	def("collectHitpoints", collectHitpoints_wrap);
-	def("progressivePhotonMapping", progressivePhotonMapping_wrap);
+	def("progressivePhotonMapping", progressivePhotonMapping_target);
 
 	// file.hpp
 	def("writeAllPasses", writeAllPasses);

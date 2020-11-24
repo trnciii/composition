@@ -17,10 +17,6 @@ void collectHitpoints_target(std::vector<hitpoint>& hits, const int depth,
 	const int w, const int h, const int nRay,
 	const float R0, const Scene& scene, const uint32_t target, RNG& rng);
 
-void progressivePhotonMapping_all(std::vector<hitpoint>& hits, 
-	const float R0, const int iteration, const int nPhoton, const float alpha,
-	const Scene& scene, RNG& rand);
-
-void progressivePhotonMapping_target(std::vector<hitpoint>& hits,
-	const float R0, const int iteration, const int nPhoton, const float alpha,
-	const Scene& scene, const uint32_t target, RNG& rand);
+Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand);
+Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t target, RNG& rand);
+void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const Scene& scene, const double alpha);

@@ -159,24 +159,133 @@ void collectHitpoints_target(std::vector<hitpoint>& hits, const int d_target,
 	}
 }
 
-void progressivePhotonMapping_all(std::vector<hitpoint>& hits, 
-	const float R0, const int iteration, const int nPhoton, const float alpha,
-	const Scene& scene, RNG& rand)
-{
-	for(hitpoint& hit : hits)hit.clear(R0);
-	for(int i=0; i<iteration; i++){
-		Tree photonmap = createPhotonmap_all(scene, nPhoton, rand);
-		accumulateRadiance(hits, photonmap, scene, alpha);
-	}		
+Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
+	std::vector<Photon> photons;
+	photons.reserve(10*nPhoton);
+
+	const Sphere& source = scene.spheres[scene.lights[0]];
+	for(int n=0; n<nPhoton; n++){
+		glm::vec3 ro, rd;
+		{
+			glm::vec3 N = sampleUniformSphere(rand.uniform(), rand.uniform());
+			glm::vec3 P = source.p + (source.r + kTINY)*N;
+			glm::vec3 tan[2];
+			tangentspace(N, tan);
+
+			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
+
+			ro = offset(P, N);
+			rd = (N*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+		}
+		Ray ray(ro,rd);
+		
+		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
+		float pTerminate = 1;
+		int depth = 0;
+
+		while(rand.uniform() < pTerminate){
+		// for(int depth=0; depth<5; depth++){
+			Intersection is = intersect(ray, scene);
+			const Material& mtl = scene.materials[is.mtlID];
+
+			if(mtl.type == Material::Type::EMIT) break;
+
+			photons.push_back(Photon(is.p, ph, -ray.d));
+
+			sampleBSDF(ray, ph, is, mtl, scene, rand);
+			ph /= pTerminate;
+			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			if(10<depth++) pTerminate *= 0.5; 
+		}
+	}
+
+	Tree tree;
+	tree.copyElements(photons.data(), photons.size());
+	tree.build();
+
+	return tree;
 }
 
-void progressivePhotonMapping_target(std::vector<hitpoint>& hits,
-	const float R0, const int iteration, const int nPhoton, const float alpha,
-	const Scene& scene, const uint32_t target, RNG& rand)
-{
-	for(hitpoint& hit : hits)hit.clear(R0);
-	for(int i=0; i<iteration; i++){
-		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rand);
-		accumulateRadiance(hits, photonmap, scene, alpha);
+Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t target, RNG& rand){
+	std::vector<Photon> photons;
+	photons.reserve(10*nPhoton);
+
+	const Sphere& source = scene.spheres[scene.lights[0]];
+	for(int n=0; n<nPhoton; n++){
+		glm::vec3 ro, rd;
+		{
+			glm::vec3 N = sampleUniformSphere(rand.uniform(), rand.uniform());
+			glm::vec3 P = source.p + (source.r + kTINY)*N;
+			glm::vec3 tan[2];
+			tangentspace(N, tan);
+
+			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
+
+			ro = offset(P, N);
+			rd = (N*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+		}
+		Ray ray(ro,rd);
+		
+		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
+		float pTerminate = 1;
+		int depth = 0;
+
+		while(rand.uniform() < pTerminate){
+		// for(int depth=0; depth<5; depth++){
+			Intersection is = intersect(ray, scene);
+			const Material& mtl = scene.materials[is.mtlID];
+
+			if(mtl.type == Material::Type::EMIT) break;
+
+			if(target == is.mtlID) photons.push_back(Photon(is.p, ph, -ray.d));
+
+			sampleBSDF(ray, ph, is, mtl, scene, rand);
+			ph /= pTerminate;
+			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			if(10<depth++) pTerminate *= 0.5;
+		}
+	}
+
+	Tree tree;
+	tree.copyElements(photons.data(), photons.size());
+	tree.build();
+
+	return tree;
+}
+
+void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const Scene& scene, const double alpha){
+	#pragma omp parallel for schedule(dynamic)
+	for(hitpoint& hit : hitpoints){
+	// for(int it=0; it<hitpoints.size(); it++){
+		// hitpoint& hit = hitpoints[it];
+		const Material& mtl = scene.materials[hit.mtlID];
+
+		int M = 0;
+		glm::vec3 tauM(0);
+
+		std::vector<Tree::Result> nearPhotons = photonmap.searchNN(hit);
+		for(const Tree::Result& p : nearPhotons){
+			float photonFilter = 3*(1 - p.distance/hit.R) / (kPI*hit.R*hit.R); // cone
+			// double photonFilter = 1/(kPI*hit.R*hit.R); // constant
+			tauM += photonFilter * p.photon.ph * mtl.color * evalBSDF(p.photon.wi, hit.wo, hit.n, mtl);
+			M++;
+		}
+
+		hit.iteration++;
+
+		if(hit.N==0){
+			hit.N += M;
+			hit.tau += tauM;
+		}
+		else{
+			int N = hit.N;
+			int Nnext = N + alpha*M;
+
+			float ratio = (float)Nnext/(float)(N+M);
+
+			hit.N = Nnext;
+			hit.R *= sqrt(ratio);
+			hit.tau = (hit.tau + tauM)*ratio;			
+		}
 	}
 }
