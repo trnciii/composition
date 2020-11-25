@@ -112,7 +112,7 @@ void collectHitpoints_all(std::vector<hitpoint>& hits,
 			const Intersection is = intersect(ray, scene);
 
 			if( scene.materials[is.mtlID].type != Material::Type::EMIT )
-				hits.push_back(hitpoint(is, R0, glm::vec3(1.0/(float)nRay), i, ray));
+				hits.push_back(hitpoint(is, R0, glm::vec3(1.0/(float)nRay), i, ray, 1));
 		}
 	}
 }
@@ -145,7 +145,7 @@ void collectHitpoints_target(std::vector<hitpoint>& hits, const int d_target,
 					countTarget++;
 
 					if( countTarget == d_target ){
-						hits.push_back(hitpoint(is, R0, throuput/(float)nRay, i, ray));
+						hits.push_back(hitpoint(is, R0, throuput/(float)nRay, i, ray, d_all+1));
 						break;
 					}
 				}
@@ -256,8 +256,6 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const Scene& scene, const double alpha){
 	#pragma omp parallel for schedule(dynamic)
 	for(hitpoint& hit : hitpoints){
-	// for(int it=0; it<hitpoints.size(); it++){
-		// hitpoint& hit = hitpoints[it];
 		const Material& mtl = scene.materials[hit.mtlID];
 
 		int M = 0;

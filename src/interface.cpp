@@ -134,7 +134,9 @@ BOOST_PYTHON_MODULE(composition) {
 	class_<hitpoint>("hitpoint")
 		.def_readonly("pixel", &hitpoint::pixel)
 		.def_readonly("tau", &hitpoint::tau)
-		.def_readonly("weight", &hitpoint::weight);
+		.def_readonly("weight", &hitpoint::weight)
+		.def_readonly("iteration", &hitpoint::iteration)
+		.def_readonly("depth", &hitpoint::depth);
 
 	class_<hitpoints_wrap>("hitArray")
 		.def("size", &hitpoints_wrap::size)
