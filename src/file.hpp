@@ -6,7 +6,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
-#include "RenderPasses.hpp"
+#include "RenderPass.hpp"
 
 template<typename T>
 bool writeVector(const std::vector<T>& v, const std::string& name) {
@@ -58,27 +58,27 @@ int writeImage(glm::vec3* color, int w, int h, const char* name){
 	return result;
 }
 
-bool writeLayer(RenderPasses& passes, const uint32_t layer, const std::string& name){
-	std::vector<glm::vec3> image(passes.length);
-	std::vector<glm::vec3>::iterator it(passes.data(layer));
-	std::copy(it, it+passes.length, image.begin());	
+bool writeLayer(RenderPass& pass, const uint32_t layer, const std::string& name){
+	std::vector<glm::vec3> image(pass.length);
+	std::vector<glm::vec3>::iterator it(pass.data(layer));
+	std::copy(it, it+pass.length, image.begin());	
 	return writeVector(image, name);
 }
 
-bool loadLayer(RenderPasses& passes, const uint32_t layer, const std::string& name){
-	if(passes.nLayer <= layer) return false;
+bool loadLayer(RenderPass& pass, const uint32_t layer, const std::string& name){
+	if(pass.nLayer <= layer) return false;
 	std::vector<glm::vec3> image;
 	if( !readVector(image, name) )return false;
-	if( image.size() != passes.length )return false;
-	passes.setLayer(layer, image.begin());
+	if( image.size() != pass.length )return false;
+	pass.setLayer(layer, image.begin());
 	return true;
 }
 
-int writeAllPasses(RenderPasses& passes, const std::string& dir){
+int writeAllPasses(RenderPass& pass, const std::string& dir){
 	int success = 0;
-	for(int n=0; n<passes.nLayer; n++){
+	for(int n=0; n<pass.nLayer; n++){
 		std::string name = std::to_string(n) + ".png";
-		if(writeImage(passes.data(n), passes.width, passes.height, (dir + "/" + name).data()) == 1)
+		if(writeImage(pass.data(n), pass.width, pass.height, (dir + "/" + name).data()) == 1)
 			success |= 1<<n;
 	}
 	return success;

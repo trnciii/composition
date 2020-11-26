@@ -5,7 +5,7 @@
 #include <iostream>
 #include <bitset>
 
-#include "RenderPasses.hpp"
+#include "RenderPass.hpp"
 #include "Random.hpp"
 #include "print.hpp"
 #include "file.hpp"
@@ -35,7 +35,7 @@ int main(void){
 	RNG rand;
 	int width = 512;
 	int height = 512;
-	RenderPasses passes(width, height);
+	RenderPass pass(width, height);
 
 	if(scene.cmpTargets.size()==0){
 		puts("no target");
@@ -45,8 +45,8 @@ int main(void){
 
 
 	// render path traced reference
-	// uint32_t reference = passes.addLayer();
-	// loadLayer(passes, reference, outDir + "/reference");
+	// uint32_t reference = pass.addLayer();
+	// loadLayer(pass, reference, outDir + "/reference");
 	// {
 	// 	std::cout <<"path tracing for reference [" <<reference <<"]" <<std::endl;
 
@@ -54,12 +54,12 @@ int main(void){
 	// 	for(int i=0; i<width*height; i++)
 	// 		rngForEveryPixel[i] = RNG(i);
 
-	// 	renderReference(passes.data(reference), width, height, 5000, scene, rngForEveryPixel);
-	// 	writeLayer(passes, reference, outDir + "/reference");
+	// 	renderReference(pass.data(reference), width, height, 5000, scene, rngForEveryPixel);
+	// 	writeLayer(pass, reference, outDir + "/reference");
 	// 	delete[] rngForEveryPixel;
 	// }
 
-	uint32_t ppm = passes.addLayer();
+	uint32_t ppm = pass.addLayer();
 	{
 		int nRay = 4;
 		int nPhoton = 100000;
@@ -71,22 +71,22 @@ int main(void){
 		std::vector<hitpoint> hits;
 		hits.reserve(width*height*nRay);
 
-		collectHitpoints_all(hits, passes.width, passes.height, nRay, 0, scene, rng);
+		collectHitpoints_all(hits, pass.width, pass.height, nRay, 0, scene, rng);
 		for(hitpoint& hit : hits)hit.clear(R0);
 		for(int i=0; i<iteration; i++){
 			Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
 			accumulateRadiance(hits, photonmap, scene, alpha);
 		}
 
-		glm::vec3* image = passes.data(ppm);
+		glm::vec3* image = pass.data(ppm);
 		for(hitpoint& hit : hits){
 			image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
 		}
 	}
 
 	// render non target component with pt
-	const uint32_t nontarget = passes.addLayer();
-	loadLayer(passes, nontarget, outDir + "/nontarget");
+	const uint32_t nontarget = pass.addLayer();
+	loadLayer(pass, nontarget, outDir + "/nontarget");
 	// {
 	// 	std::cout <<"path tracing for non-target component [" <<nontarget <<"]" <<std::endl;
 
@@ -94,10 +94,10 @@ int main(void){
 	// 	for(int i=0; i<width*height; i++)
 	// 		rngForEveryPixel[i] = RNG(i);
 
-	// 	renderNonTarget(passes.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
+	// 	renderNonTarget(pass.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
 
 	// 	delete[] rngForEveryPixel;
-	// 	writeLayer(passes, nontarget, outDir + "/nontarget");
+	// 	writeLayer(pass, nontarget, outDir + "/nontarget");
 	// }
 	
 
@@ -112,7 +112,7 @@ int main(void){
 	
 		hits.reserve(width*height*nRay);
 
-		collectHitpoints_target(hits, nDepth, passes.width, passes.height, nRay,
+		collectHitpoints_target(hits, nDepth, pass.width, pass.height, nRay,
 			0, scene, targetObject, rng);
 
 		// save hitpoints
@@ -121,12 +121,12 @@ int main(void){
 	// readVector(hits, outDir + "/hit_1");
 
 	// visualize weight of hits
-	uint32_t weights = passes.addLayer();
+	uint32_t weights = pass.addLayer();
 	std::cout <<"visualization of weights [" <<weights <<"]" <<std::endl;
 	{	
-		std::vector<glm::vec3> im_d(passes.length);
+		std::vector<glm::vec3> im_d(pass.length);
 		for(hitpoint& hit : hits) im_d[hit.pixel] += hit.weight;
-		passes.setLayer(weights, im_d.begin());
+		pass.setLayer(weights, im_d.begin());
 	}
 
 	// ppm
@@ -153,9 +153,9 @@ int main(void){
 
 
 	// composition
-	uint32_t target_raw = passes.addLayer();
-	uint32_t target_txr = passes.addLayer();
-	uint32_t composed = passes.addLayer();
+	uint32_t target_raw = pass.addLayer();
+	uint32_t target_txr = pass.addLayer();
+	uint32_t composed = pass.addLayer();
 	{
 		std::cout <<"compositing image.";
 		std::cout <<"raw target component [" <<target_raw <<"], ";
@@ -167,20 +167,20 @@ int main(void){
 
 			double u = std::max(tau.x, std::max(tau.y, tau.z));
 			u = pow(8*u, 1);
-			passes.data(target_txr)[hit.pixel] += 0.4f*colormap_4(u) * hit.weight;
-			passes.data(target_raw)[hit.pixel] += tau*hit.weight;
+			pass.data(target_txr)[hit.pixel] += 0.4f*colormap_4(u) * hit.weight;
+			pass.data(target_raw)[hit.pixel] += tau*hit.weight;
 		}
 
-		for(int i=0; i<passes.length; i++)
-			passes.data(composed)[i] = passes.data(target_txr)[i] + passes.data(nontarget)[i];
+		for(int i=0; i<pass.length; i++)
+			pass.data(composed)[i] = pass.data(target_txr)[i] + pass.data(nontarget)[i];
 	}
 
 
 	// save all image
 	{
 		const int digit = 8;
-		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPasses(passes, outDir)) <<" / ";
-		for(int i=digit; 0<i; --i) std::cout <<(i<=passes.nLayer)? "1" : "0";
+		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPasses(pass, outDir)) <<" / ";
+		for(int i=digit; 0<i; --i) std::cout <<(i<=pass.nLayer)? "1" : "0";
 		std::cout <<std::endl;
 	}	
 

@@ -54,12 +54,15 @@ struct hitpoint{
 	glm::vec3 tau = glm::vec3(0,0,0); // accumulated reflected flux <<todo
 	glm::vec3 weight;
 	int iteration = 0;
+	// int targetID;
 	int depth;
 
 	inline hitpoint(){}
 	
-	inline hitpoint(const Intersection& is, float r, glm::vec3 w, uint32_t px, Ray& ray, int d)
-	:p(is.p), n(is.n), wo(-ray.d), mtlID(is.mtlID), pixel(px), R(r), weight(w), depth(d){}
+	inline hitpoint(const Intersection& is,
+		float r, glm::vec3 w, uint32_t px, Ray& ray, int d/*, int tID*/)
+	:p(is.p), n(is.n), wo(-ray.d), mtlID(is.mtlID), pixel(px),
+	R(r), weight(w), depth(d)/*, targetID(tID)*/{}
 
 	inline void clear(float R0){
 		N = 0;

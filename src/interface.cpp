@@ -4,20 +4,20 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include "cmp.hpp"
-#include "RenderPasses.hpp"
+#include "RenderPass.hpp"
 #include "file.hpp"
 #include "data.hpp"
 
 
-inline std::vector<float> getBlenderImage(RenderPasses passes, const uint32_t layer){
+inline std::vector<float> getBlenderImage(RenderPass pass, const uint32_t layer){
 	// pass image in linear? space
-	const glm::vec3* const v = passes.data(layer);
+	const glm::vec3* const v = pass.data(layer);
 
-	std::vector<float> f(passes.length*4);
-	for(int y=0; y<passes.height; y++){
-		for(int x=0; x<passes.width; x++){
-			int i_s = y*passes.width + x;
-			int i_d = (passes.height -y-1)*passes.width + x;
+	std::vector<float> f(pass.length*4);
+	for(int y=0; y<pass.height; y++){
+		for(int x=0; x<pass.width; x++){
+			int i_s = y*pass.width + x;
+			int i_d = (pass.height -y-1)*pass.width + x;
 
 			f[4*i_d  ] = v[i_s].x;
 			f[4*i_d+1] = v[i_s].y;
@@ -29,11 +29,11 @@ inline std::vector<float> getBlenderImage(RenderPasses passes, const uint32_t la
 }
 
 void renderReference_wrap(
-	RenderPasses& passes, const int layer, const int spp, const Scene& scene)
+	RenderPass& pass, const int layer, const int spp, const Scene& scene)
 {
-	glm::vec3* const result = passes.data(layer);
-	const int w = passes.width;
-	const int h = passes.height;
+	glm::vec3* const result = pass.data(layer);
+	const int w = pass.width;
+	const int h = pass.height;
 
 	RNG* rngForEveryPixel = new RNG[w*h];
 	for(int i=0; i<w*h; i++)
@@ -45,11 +45,11 @@ void renderReference_wrap(
 }
 
 void renderNonTarget_wrap(
-	RenderPasses& passes, const int layer, const int spp, const Scene& scene)
+	RenderPass& pass, const int layer, const int spp, const Scene& scene)
 {
-	glm::vec3* const result = passes.data(layer);
-	const int w = passes.width;
-	const int h = passes.height;
+	glm::vec3* const result = pass.data(layer);
+	const int w = pass.width;
+	const int h = pass.height;
 
 	RNG* rngForEveryPixel = new RNG[w*h];
 	for(int i=0; i<w*h; i++)
@@ -123,13 +123,13 @@ BOOST_PYTHON_MODULE(composition) {
 	class_<std::vector<float>>("vF")
 		.def(vector_indexing_suite<std::vector<float>>());
 
-	class_<RenderPasses>("RenderPasses", init<int, int>())
-		.def_readonly("width", &RenderPasses::width)
-		.def_readonly("height", &RenderPasses::height)
-		.def_readonly("nLayers", &RenderPasses::nLayer)
-		.def("addLayer", &RenderPasses::addLayer)
-		.def("clear", &RenderPasses::clear)
-		.def("set", &RenderPasses::setPixel);
+	class_<RenderPass>("RenderPass", init<int, int>())
+		.def_readonly("width", &RenderPass::width)
+		.def_readonly("height", &RenderPass::height)
+		.def_readonly("nLayers", &RenderPass::nLayer)
+		.def("addLayer", &RenderPass::addLayer)
+		.def("clear", &RenderPass::clear)
+		.def("set", &RenderPass::setPixel);
 
 	class_<hitpoint>("hitpoint")
 		.def_readonly("pixel", &hitpoint::pixel)
@@ -138,7 +138,7 @@ BOOST_PYTHON_MODULE(composition) {
 		.def_readonly("iteration", &hitpoint::iteration)
 		.def_readonly("depth", &hitpoint::depth);
 
-	class_<hitpoints_wrap>("hitArray")
+	class_<hitpoints_wrap>("vHitpoint")
 		.def("size", &hitpoints_wrap::size)
 		.def("element", &hitpoints_wrap::element)
 		.def("save", &hitpoints_wrap::save)

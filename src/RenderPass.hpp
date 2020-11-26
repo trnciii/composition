@@ -5,7 +5,7 @@
 #include <fstream>
 #include <cstring>
 
-struct RenderPasses{
+struct RenderPass{
 private:
 	std::vector<glm::vec3> images;
 
@@ -16,7 +16,7 @@ public:
 	const int length;
 	uint32_t nLayer = 0;
 
-	inline RenderPasses(int w, int h):width(w), height(h), length(w*h){
+	inline RenderPass(int w, int h):width(w), height(h), length(w*h){
 		images.resize(length*nLayer);
 	}
 
