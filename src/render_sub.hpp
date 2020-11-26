@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <glm/glm.hpp>
 #include "data.hpp"
 #include "Scene.hpp"
@@ -76,7 +77,7 @@ glm::vec3 sampleUniformSphere(float u1, float u2, float* const p = nullptr){
 	return glm::vec3(r*cos(u2), r*sin(u2), u1);
 }
 
-glm::vec3 sampleNDF_GGX(float u1, float u2, const glm::vec3& wi, const float a2, float* const p = nullptr){
+glm::vec3 sampleNDF_GGX(float u1, float u2, const float a2, float* const p = nullptr){
 	u2 *= 2*kPI;
 	float r2 = a2*u1/(1+u1*(a2-1));
 	float r = sqrt(r2);
@@ -103,7 +104,7 @@ Intersection intersect(const Ray& ray, const Scene& scene){
 }
 
 void sampleBSDF(Ray& ray, glm::vec3& throuput,
-	const Intersection& is, const Material& mtl, const Scene& scene, RNG& rand)
+	const Intersection& is, const Material& mtl, const Scene& scene, RNG& rand, float* const p = nullptr)
 {
 	if(mtl.type == Material::Type::LAMBERT){
 		glm::vec3 tan[2];
@@ -122,7 +123,7 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 
 		float a2 = mtl.a*mtl.a;
 
-		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), wi, a2);
+		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), a2);
 		glm::vec3 m_w = m_tan.x*tan[0] + m_tan.y*tan[1] + m_tan.z*is.n;
 
 		const glm::vec3 wo = ray.d - 2*glm::dot(ray.d, m_w)*m_w;

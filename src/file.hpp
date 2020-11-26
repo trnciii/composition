@@ -74,7 +74,7 @@ bool loadLayer(RenderPass& pass, const uint32_t layer, const std::string& name){
 	return true;
 }
 
-int writeAllPasses(RenderPass& pass, const std::string& dir){
+int writeAllPass(RenderPass& pass, const std::string& dir){
 	int success = 0;
 	for(int n=0; n<pass.nLayer; n++){
 		std::string name = std::to_string(n) + ".png";

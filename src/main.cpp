@@ -41,8 +41,6 @@ int main(void){
 		puts("no target");
 		return 0;
 	}
-	uint32_t targetObject = scene.cmpTargets[0];
-
 
 	// render path traced reference
 	// uint32_t reference = pass.addLayer();
@@ -59,30 +57,30 @@ int main(void){
 	// 	delete[] rngForEveryPixel;
 	// }
 
-	uint32_t ppm = pass.addLayer();
-	{
-		int nRay = 4;
-		int nPhoton = 100000;
-		int iteration = 10;
-		float alpha = 0.6;
-		float R0 = 0.5;
-		RNG rng(0);
+	// uint32_t ppm = pass.addLayer();
+	// {
+	// 	int nRay = 4;
+	// 	int nPhoton = 100000;
+	// 	int iteration = 10;
+	// 	float alpha = 0.6;
+	// 	float R0 = 0.5;
+	// 	RNG rng(0);
 	
-		std::vector<hitpoint> hits;
-		hits.reserve(width*height*nRay);
+	// 	std::vector<hitpoint> hits;
+	// 	hits.reserve(width*height*nRay);
 
-		collectHitpoints_all(hits, pass.width, pass.height, nRay, 0, scene, rng);
-		for(hitpoint& hit : hits)hit.clear(R0);
-		for(int i=0; i<iteration; i++){
-			Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
-			accumulateRadiance(hits, photonmap, scene, alpha);
-		}
+	// 	collectHitpoints_all(hits, pass.width, pass.height, nRay, scene, rng);
+	// 	for(hitpoint& hit : hits)hit.clear(R0);
+	// 	for(int i=0; i<iteration; i++){
+	// 		Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
+	// 		accumulateRadiance(hits, photonmap, scene, alpha);
+	// 	}
 
-		glm::vec3* image = pass.data(ppm);
-		for(hitpoint& hit : hits){
-			image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
-		}
-	}
+	// 	glm::vec3* image = pass.data(ppm);
+	// 	for(hitpoint& hit : hits){
+	// 		image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
+	// 	}
+	// }
 
 	// render non target component with pt
 	const uint32_t nontarget = pass.addLayer();
@@ -112,11 +110,12 @@ int main(void){
 	
 		hits.reserve(width*height*nRay);
 
-		collectHitpoints_target(hits, nDepth, pass.width, pass.height, nRay,
-			0, scene, targetObject, rng);
+		uint32_t targetID = 0;
+		collectHitpoints_target_one(hits, targetID, nDepth,
+			pass.width, pass.height, nRay, scene, rng);
 
 		// save hitpoints
-		if(writeVector(hits, outDir + "/hit_2")) std::cout <<"hitpoints saved" <<std::endl;
+		// if(writeVector(hits, outDir + "/hit_2")) std::cout <<"hitpoints saved" <<std::endl;
 	}
 	// readVector(hits, outDir + "/hit_1");
 
@@ -133,20 +132,21 @@ int main(void){
 	// todo: takeover RNG state. currently hits are cleared before this iterations.
 	{
 		int nPhoton = 100000;
-		int iteration = 100;
+		int iteration = 10;
 		float alpha = 0.6;
 		float R0 = 0.5;
 
 		std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
 
+		uint32_t targetID = 0;
+
 		for(hitpoint& hit : hits)hit.clear(R0);
 		for(int i=0; i<iteration; i++){
-			Tree photonmap = createPhotonmap_target(scene, nPhoton, targetObject, rand);
+			Tree photonmap = createPhotonmap_target(scene, nPhoton, targetID, rand);
 			accumulateRadiance(hits, photonmap, scene, alpha);
 		}
 
-		// progressivePhotonMapping_target(hits, R0, iteration, nPhoton, alpha, scene, targetObject, rand);
-		std::cout <<"C" <<std::endl;
+		// progressivePhotonMapping_target(hits, R0, iteration, nPhoton, alpha, scene, scene.cmpTargets[0], rand);
 		// writeVector(hits, outDir + "/hit_1_100itr");
 	}
 	// readVector(hits, outDir + "/hit_1_100itr");
@@ -179,10 +179,10 @@ int main(void){
 	// save all image
 	{
 		const int digit = 8;
-		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPasses(pass, outDir)) <<" / ";
+		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPass(pass, outDir)) <<" / ";
 		for(int i=digit; 0<i; --i) std::cout <<(i<=pass.nLayer)? "1" : "0";
 		std::cout <<std::endl;
-	}	
+	}
 
 	return 0;
 }

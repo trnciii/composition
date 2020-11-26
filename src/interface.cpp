@@ -8,7 +8,6 @@
 #include "file.hpp"
 #include "data.hpp"
 
-
 inline std::vector<float> getBlenderImage(RenderPass pass, const uint32_t layer){
 	// pass image in linear? space
 	const glm::vec3* const v = pass.data(layer);
@@ -82,7 +81,7 @@ hitpoints_wrap collectHitpoints_wrap(const int depth, const int w, const int h, 
 	hits.reserve(w*h*nRay);
 	RNG rng(0);
 
-	collectHitpoints_target(hits, depth, w, h, nRay, R0, scene, target, rng);
+	collectHitpoints_target_one(hits, target, depth, w, h, nRay, scene, rng);
 
 	return hitpoints_wrap(hits);
 }
@@ -134,7 +133,7 @@ BOOST_PYTHON_MODULE(composition) {
 	class_<hitpoint>("hitpoint")
 		.def_readonly("pixel", &hitpoint::pixel)
 		.def_readonly("tau", &hitpoint::tau)
-		.def_readonly("weight", &hitpoint::weight)
+		.def_readonly("throuput", &hitpoint::weight)
 		.def_readonly("iteration", &hitpoint::iteration)
 		.def_readonly("depth", &hitpoint::depth);
 
@@ -161,7 +160,7 @@ BOOST_PYTHON_MODULE(composition) {
 	def("progressivePhotonMapping", progressivePhotonMapping_target);
 
 	// file.hpp
-	def("writeAllPasses", writeAllPasses);
+	def("writeAllPass", writeAllPass);
 	def("writeLayer", writeLayer);
 	def("loadLayer", loadLayer);
 }

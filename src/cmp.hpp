@@ -11,11 +11,12 @@ void renderNonTarget(glm::vec3* const result, const int w, const int h, const in
 
 void collectHitpoints_all(std::vector<hitpoint>& hits,
 	const int w, const int h, const int nRay,
-	const float R0, const Scene& scene, RNG& rng);
+	const Scene& scene, RNG& rng);
 
-void collectHitpoints_target(std::vector<hitpoint>& hits, const int depth,
+void collectHitpoints_target_one(std::vector<hitpoint>& hits,
+	const uint32_t targetID, const int targetDepth,
 	const int w, const int h, const int nRay,
-	const float R0, const Scene& scene, const uint32_t target, RNG& rng);
+	const Scene& scene, RNG& rng);
 
 Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand);
 Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t target, RNG& rand);

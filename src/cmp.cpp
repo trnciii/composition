@@ -98,7 +98,7 @@ void renderNonTarget(glm::vec3* const result, const int w, const int h, const in
 
 void collectHitpoints_all(std::vector<hitpoint>& hits,
 	const int w, const int h, const int nRay,
-	const float R0, const Scene& scene, RNG& rng)
+	const Scene& scene, RNG& rng)
 {
 	for(int i=0; i<w*h; i++){
 		int xi = i%w;
@@ -112,15 +112,19 @@ void collectHitpoints_all(std::vector<hitpoint>& hits,
 			const Intersection is = intersect(ray, scene);
 
 			if( scene.materials[is.mtlID].type != Material::Type::EMIT )
-				hits.push_back(hitpoint(is, R0, glm::vec3(1.0/(float)nRay), i, ray, 1));
+				hits.push_back(hitpoint(is, glm::vec3(1.0/(float)nRay), i, ray, 1));
 		}
 	}
 }
 
-void collectHitpoints_target(std::vector<hitpoint>& hits, const int d_target,
+void collectHitpoints_target_one(std::vector<hitpoint>& hits,
+	const uint32_t targetID, const int targetDepth,
 	const int w, const int h, const int nRay,
-	const float R0, const Scene& scene, const uint32_t target, RNG& rng)
+	const Scene& scene, RNG& rng)
 {
+	std::vector<uint32_t> others = scene.cmpTargets;
+	others.erase(others.begin()+targetID);
+
 	for(int i=0; i<w*h; i++){
 		int xi = i%w;
 		int yi = i/w;
@@ -128,11 +132,16 @@ void collectHitpoints_target(std::vector<hitpoint>& hits, const int d_target,
 		for (int n=0; n<nRay; n++){
 			float x = (float) (2*(xi+rng.uniform())-w)/h;
 			float y = (float)-(2*(yi+rng.uniform())-h)/h;
+			
 			Ray ray = scene.camera.ray(x, y);
 			glm::vec3 throuput(1);
+			
 			float pTerminate = 1;
 			int d_all = 0;
-			int countTarget = 0;
+			int countTargetDepth = 0;
+
+			hitpoint candidate;
+			bool addHitpoint = false;
 
 			while(rng.uniform()<pTerminate){
 			// for(int depth=0; depth<5; depth++){
@@ -141,20 +150,28 @@ void collectHitpoints_target(std::vector<hitpoint>& hits, const int d_target,
 
 				if( mtl.type == Material::Type::EMIT ) break;
 
-				if( is.mtlID == target ){
-					countTarget++;
+				if( is.mtlID == scene.cmpTargets[targetID] ){
+					countTargetDepth++;
 
-					if( countTarget == d_target ){
-						hits.push_back(hitpoint(is, R0, throuput/(float)nRay, i, ray, d_all+1));
-						break;
+					if( countTargetDepth == targetDepth ){
+						addHitpoint = true;
+						candidate = hitpoint(is, throuput/(float)nRay, i, ray, d_all+1);
 					}
+				}
+
+				if(addHitpoint &&
+					std::find(others.begin(), others.end(), is.mtlID) != others.end()){
+					addHitpoint = false;
+					break;
 				}
 
 				sampleBSDF(ray, throuput, is, mtl, scene, rng);
 				throuput /= pTerminate;
 				pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-				if(10<d_all++) pTerminate *= 0.8;
+				if(10<d_all++) pTerminate *= 0.5;
 			}
+
+			if(addHitpoint) hits.push_back(candidate);
 		}
 	}
 }
@@ -206,7 +223,7 @@ Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
 	return tree;
 }
 
-Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t target, RNG& rand){
+Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targetID, RNG& rand){
 	std::vector<Photon> photons;
 	photons.reserve(10*nPhoton);
 
@@ -237,7 +254,7 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 			if(mtl.type == Material::Type::EMIT) break;
 
-			if(target == is.mtlID) photons.push_back(Photon(is.p, ph, -ray.d));
+			if(scene.cmpTargets[targetID] == is.mtlID) photons.push_back(Photon(is.p, ph, -ray.d));
 
 			sampleBSDF(ray, ph, is, mtl, scene, rand);
 			ph /= pTerminate;
