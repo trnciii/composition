@@ -96,7 +96,7 @@ void progressivePhotonMapping_all(std::vector<hitpoint>& hits,
 	for(int i=0; i<iteration; i++){
 		Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
 		accumulateRadiance(hits, photonmap, scene, alpha);
-	}		
+	}
 }
 
 void progressivePhotonMapping_target(hitpoints_wrap& hw,

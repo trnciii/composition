@@ -16,9 +16,7 @@ public:
 	const int length;
 	uint32_t nLayer = 0;
 
-	inline RenderPass(int w, int h):width(w), height(h), length(w*h){
-		images.resize(length*nLayer);
-	}
+	inline RenderPass(int w, int h):width(w), height(h), length(w*h){}
 
 	inline glm::vec3* data(uint32_t layer){return images.data() + (length * layer);}
 
@@ -28,7 +26,7 @@ public:
 		return nLayer-1;
 	}
 
-	inline void setLayer_p(const uint32_t layer, glm::vec3* const i){
+	inline void setLayer(const uint32_t layer, glm::vec3* const i){
 		if( layer < nLayer ){
 			std::vector<glm::vec3>::iterator it(i);
 			std::copy(it, it+length, this->data(layer));
