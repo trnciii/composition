@@ -34,7 +34,6 @@ int createScene(Scene* s){
 
 	uint32_t green = s->newMaterial(Material::Type::LAMBERT);
 	s->materials[green].color = glm::vec3(0.1, 0.85, 0.1);
-	s->materials[green].a = 0.2;
 
 	uint32_t target1 = s->newMaterial(Material::Type::GGX_REFLECTION);
 	// uint32_t target1 = s->newMaterial(Material::Type::LAMBERT);
@@ -44,7 +43,7 @@ int createScene(Scene* s){
 
 	uint32_t target2 = s->newMaterial(Material::Type::GGX_REFLECTION);
 	s->materials[target2].color = glm::vec3(1);
-	s->materials[target2].a = 0.4;
+	s->materials[target2].a = 0.04;
 	s->cmpTargets.push_back(target2);
 
 	// box
