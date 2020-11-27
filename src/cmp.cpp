@@ -138,9 +138,12 @@ void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 			float pTerminate = 1;
 			int d_all = 0;
 			int countTargetDepth = 0;
+			int countTargetDepth_others = 0;
 
-			hitpoint candidate;
-			bool addHitpoint = false;
+			hitpoint firstMe, firstOthers;
+			bool hasHitMe = false;
+			bool hasHitOthers = false;
+			int targetDepth_others = 1;
 
 			while(rng.uniform()<pTerminate){
 			// for(int depth=0; depth<5; depth++){
@@ -153,16 +156,20 @@ void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 					countTargetDepth++;
 
 					if( countTargetDepth == targetDepth ){
-						addHitpoint = true;
-						candidate = hitpoint(is, throuput/(float)nRay, i, ray, d_all+1);
+						hasHitMe = true;
+						firstMe = hitpoint(is, throuput/(float)nRay, i, ray, d_all+1);
+						// break;
+					}
+				}
+				else if(std::find(others.begin(), others.end(), is.mtlID) != others.end()){
+					countTargetDepth_others++;
+					if(countTargetDepth_others == targetDepth_others){
+						hasHitOthers = true;
+						firstOthers = hitpoint(is, throuput/(float)nRay, i, ray, d_all+1);
 					}
 				}
 
-				if(addHitpoint &&
-					std::find(others.begin(), others.end(), is.mtlID) != others.end()){
-					addHitpoint = false;
-					break;
-				}
+				if(hasHitOthers && hasHitMe)break;
 
 				sampleBSDF(ray, throuput, is, mtl, scene, rng);
 				throuput /= pTerminate;
@@ -170,7 +177,11 @@ void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 				if(10<d_all++) pTerminate *= 0.5;
 			}
 
-			if(addHitpoint) hits.push_back(candidate);
+			if(hasHitMe && !hasHitOthers) hits.push_back(firstMe);
+			else if(hasHitMe && hasHitOthers){
+				if(firstMe.depth>1)hits.push_back(firstMe);
+				else if(firstOthers.depth == 1 && firstMe.depth == 2)hits.push_back(firstMe);
+			}
 		}
 	}
 }
