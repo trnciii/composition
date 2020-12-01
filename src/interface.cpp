@@ -74,7 +74,7 @@ public:
 };
 
 hitpoints_wrap collectHitpoints_wrap(const int depth, const int w, const int h, const int nRay,
-	const float R0, const Scene& scene, const uint32_t target)
+	const Scene& scene, const uint32_t target)
 // todo: passing rng state
 {
 	std::vector<hitpoint> hits;
