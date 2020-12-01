@@ -147,6 +147,7 @@ void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 
 			while(rng.uniform()<pTerminate){
 			// for(int depth=0; depth<5; depth++){
+				d_all++;
 				const Intersection is = intersect(ray, scene);
 				const Material& mtl = scene.materials[is.mtlID];
 
@@ -157,7 +158,7 @@ void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 
 					if( countTargetDepth == targetDepth ){
 						hasHitMe = true;
-						firstMe = hitpoint(is, throuput/(float)nRay, i, ray, d_all+1);
+						firstMe = hitpoint(is, throuput/(float)nRay, i, ray, d_all);
 						// break;
 					}
 				}
@@ -165,16 +166,16 @@ void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 					countTargetDepth_others++;
 					if(countTargetDepth_others == targetDepth_others){
 						hasHitOthers = true;
-						firstOthers = hitpoint(is, throuput/(float)nRay, i, ray, d_all+1);
+						firstOthers = hitpoint(is, throuput/(float)nRay, i, ray, d_all);
 					}
 				}
 
-				if(hasHitOthers && hasHitMe)break;
+				if(hasHitOthers && hasHitMe) break;
 
 				sampleBSDF(ray, throuput, is, mtl, scene, rng);
 				throuput /= pTerminate;
 				pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-				if(10<d_all++) pTerminate *= 0.5;
+				if(10<d_all) pTerminate *= 0.5;
 			}
 
 			if(hasHitMe && !hasHitOthers) hits.push_back(firstMe);
@@ -212,6 +213,7 @@ Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
 
 		while(rand.uniform() < pTerminate){
 		// for(int depth=0; depth<5; depth++){
+			depth++;
 			Intersection is = intersect(ray, scene);
 			const Material& mtl = scene.materials[is.mtlID];
 
@@ -222,7 +224,7 @@ Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
 			sampleBSDF(ray, ph, is, mtl, scene, rand);
 			ph /= pTerminate;
 			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-			if(10<depth++) pTerminate *= 0.5; 
+			if(10<depth) pTerminate *= 0.5; 
 		}
 	}
 
@@ -259,6 +261,7 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 		while(rand.uniform() < pTerminate){
 		// for(int depth=0; depth<5; depth++){
+			depth++;
 			Intersection is = intersect(ray, scene);
 			const Material& mtl = scene.materials[is.mtlID];
 
@@ -269,7 +272,7 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 			sampleBSDF(ray, ph, is, mtl, scene, rand);
 			ph /= pTerminate;
 			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-			if(10<depth++) pTerminate *= 0.5;
+			if(10<depth) pTerminate *= 0.5;
 		}
 	}
 
