@@ -105,10 +105,10 @@ bool Tree::build(){
 
 	if(verts.size() < 1) return false;
 	
-	Node node(verts.begin(), verts.end());
-	nodes.push_back(node);
-	if(nElements < node.size)split(verts.begin(), verts.end(), node.axis());
-	
+	Node root(verts.begin(), verts.end());
+	nodes.push_back(root);
+	if(nElements < root.size) split(verts.begin(), verts.end(), root.axis());
+	nodes[0].next = nodes.size();
 	return true;
 }
 
@@ -130,7 +130,6 @@ std::vector<Tree::Result> Tree::searchNN(const hitpoint& hit){
 					if(l < hit.R && dot(hit.n, d) < hit.R*hit.R*0.01)
 						result.push_back(Tree::Result(node->begin[i], l));
 				}
-
 			node++;
 		}
 		else node += node->next;
