@@ -1,7 +1,7 @@
 SRCDIR = ./src
 OUTDIR = ./build
 LIBS = ./lib_static
-BADDONDIR = "/c/Users/Rinne/AppData/Roaming/Blender Foundation/Blender/2.83/scripts/addons/composition"
+BADDONDIR = ./composition
 
 ifeq ($(OS),Windows_NT)
 
