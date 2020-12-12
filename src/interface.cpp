@@ -3,6 +3,8 @@
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
+#include <string>
+
 #include "cmp.hpp"
 #include "RenderPass.hpp"
 #include "file.hpp"
@@ -69,8 +71,19 @@ public:
 	uint32_t size(){return hits.size();}
 	hitpoint element(uint32_t i){return hits[i];}
 
-	void save(const std::string& s){writeVector(hits, s);}
-	void load(const std::string& s){readVector(hits, s);}
+	std::string save(const std::string& s){
+		if(writeVector(hits, s))
+			return std::to_string(hits.size()) + "hitpoints saved.";
+		else
+			return "failed to save hitpoints";
+	}
+
+	std::string load(const std::string& s){
+		if(readVector(hits, s))
+			return std::to_string(hits.size()) + " hitpoints loaded";
+		else
+			return "failed to load hitpoints";
+	}
 };
 
 hitpoints_wrap collectHitpoints_wrap(const int depth, const int w, const int h, const int nRay,
@@ -119,7 +132,7 @@ BOOST_PYTHON_MODULE(composition) {
 		.def_readonly("y", &glm::vec3::y)
 		.def_readonly("z", &glm::vec3::z);
 
-	class_<std::vector<float>>("vF")
+	class_<std::vector<float>>("vec3s")
 		.def(vector_indexing_suite<std::vector<float>>());
 
 	class_<RenderPass>("RenderPass", init<int, int>())
@@ -131,13 +144,19 @@ BOOST_PYTHON_MODULE(composition) {
 		.def("set", &RenderPass::setPixel);
 
 	class_<hitpoint>("hitpoint")
+		.def_readonly("p", &hitpoint::p)
+		.def_readonly("n", &hitpoint::n)
+		.def_readonly("wo", &hitpoint::wo)
+		.def_readonly("mtlID", &hitpoint::mtlID)
 		.def_readonly("pixel", &hitpoint::pixel)
+		.def_readonly("R", &hitpoint::R)
+		.def_readonly("N", &hitpoint::N)
 		.def_readonly("tau", &hitpoint::tau)
-		.def_readonly("throuput", &hitpoint::weight)
+		.def_readonly("weight", &hitpoint::weight)
 		.def_readonly("iteration", &hitpoint::iteration)
 		.def_readonly("depth", &hitpoint::depth);
 
-	class_<hitpoints_wrap>("vHitpoint")
+	class_<hitpoints_wrap>("hitpoints")
 		.def("size", &hitpoints_wrap::size)
 		.def("element", &hitpoints_wrap::element)
 		.def("save", &hitpoints_wrap::save)
