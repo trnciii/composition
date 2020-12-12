@@ -100,37 +100,38 @@ int main(void){
 	
 
 	// collect hitpoints
-	std::vector<hitpoint> hits;
-	{
+	std::vector<std::vector<hitpoint>> hits(scene.cmpTargets.size());
+	for(uint32_t targetID=0; targetID<scene.cmpTargets.size(); targetID++){
 		int nRay = 16;
 		int nDepth = 1;
 		RNG rng(0);
 
 		std::cout <<"collecting hitpoints for target component..." <<std::endl;
 	
-		hits.reserve(width*height*nRay);
+		hits[targetID].reserve(width*height*nRay);
 
-		uint32_t targetID = 0;
-		collectHitpoints_target_one(hits, targetID, nDepth,
+		// uint32_t targetID = 0;
+		collectHitpoints_target_one(hits[targetID], targetID, nDepth,
 			pass.width, pass.height, nRay, scene, rng);
 
 		// save hitpoints
 		// if(writeVector(hits, outDir + "/hit_2")) std::cout <<"hitpoints saved" <<std::endl;
 	}
+
 	// readVector(hits, outDir + "/hit_1");
 
 	// visualize weight of hits
-	uint32_t weights = pass.addLayer();
-	std::cout <<"visualization of weights [" <<weights <<"]" <<std::endl;
-	{	
-		std::vector<glm::vec3> im_d(pass.length);
-		for(hitpoint& hit : hits) im_d[hit.pixel] += hit.weight;
-		pass.setLayer(weights, im_d.begin());
-	}
+	// uint32_t weights = pass.addLayer();
+	// std::cout <<"visualization of weights [" <<weights <<"]" <<std::endl;
+	// {	
+	// 	std::vector<glm::vec3> im_d(pass.length);
+	// 	for(hitpoint& hit : hits) im_d[hit.pixel] += hit.weight;
+	// 	pass.setLayer(weights, im_d.begin());
+	// }
 
 	// ppm
 	// todo: takeover RNG state. currently hits are cleared before this iterations.
-	{
+	for(uint32_t targetID=0; targetID<scene.cmpTargets.size(); targetID++){
 		int nPhoton = 100000;
 		int iteration = 10;
 		float alpha = 0.6;
@@ -138,12 +139,12 @@ int main(void){
 
 		std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
 
-		uint32_t targetID = 0;
+		// uint32_t targetID = 0;
 
-		for(hitpoint& hit : hits)hit.clear(R0);
+		for(hitpoint& hit : hits[targetID])hit.clear(R0);
 		for(int i=0; i<iteration; i++){
 			Tree photonmap = createPhotonmap_target(scene, nPhoton, targetID, rand);
-			accumulateRadiance(hits, photonmap, scene, alpha);
+			accumulateRadiance(hits[targetID], photonmap, scene, alpha);
 		}
 
 		// progressivePhotonMapping_target(hits, R0, iteration, nPhoton, alpha, scene, scene.cmpTargets[0], rand);
@@ -153,16 +154,19 @@ int main(void){
 
 
 	// composition
-	uint32_t target_raw = pass.addLayer();
-	uint32_t target_txr = pass.addLayer();
 	uint32_t composed = pass.addLayer();
-	{
-		std::cout <<"compositing image.";
+	std::cout <<"composed [" <<composed <<"]" <<std::endl;
+	for(int i=0; i<pass.length; i++)
+		pass.data(composed)[i] = pass.data(nontarget)[i];
+
+	for(uint32_t targetID=0; targetID<scene.cmpTargets.size(); targetID++){
+		uint32_t target_raw = pass.addLayer();
+		uint32_t target_txr = pass.addLayer();
 		std::cout <<"raw target component [" <<target_raw <<"], ";
 		std::cout <<"textured target component [" <<target_txr <<"], ";
-		std::cout <<"composed [" <<composed <<"]" <<std::endl;
+		
 
-		for(hitpoint hit : hits){
+		for(hitpoint hit : hits[targetID]){
 			glm::vec3 tau = hit.tau/(float)(hit.iteration);
 
 			double u = std::max(tau.x, std::max(tau.y, tau.z));
@@ -172,7 +176,7 @@ int main(void){
 		}
 
 		for(int i=0; i<pass.length; i++)
-			pass.data(composed)[i] = pass.data(target_txr)[i] + pass.data(nontarget)[i];
+			pass.data(composed)[i] += pass.data(target_txr)[i];
 	}
 
 
