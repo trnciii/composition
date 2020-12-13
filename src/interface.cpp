@@ -72,17 +72,23 @@ public:
 	hitpoint element(uint32_t i){return hits[i];}
 
 	std::string save(const std::string& s){
+		std::string result;
 		if(writeVector(hits, s))
-			return std::to_string(hits.size()) + "hitpoints saved.";
+			result = std::to_string(hits.size()) + "hitpoints saved.";
 		else
-			return "failed to save hitpoints";
+			result = "failed to save hitpoints";
+		std::cout <<result <<std::endl;
+		return result;
 	}
 
 	std::string load(const std::string& s){
+		std::string result;
 		if(readVector(hits, s))
-			return std::to_string(hits.size()) + " hitpoints loaded";
+			result = std::to_string(hits.size()) + " hitpoints loaded";
 		else
-			return "failed to load hitpoints";
+			result = "failed to load hitpoints";
+		std::cout <<result <<std::endl;
+		return result;
 	}
 };
 
