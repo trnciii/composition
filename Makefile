@@ -1,12 +1,11 @@
 SRCDIR = ./src
 OUTDIR = ./build
 LIBS = ./lib_static
-BADDONDIR = ./composition
 
 ifeq ($(OS),Windows_NT)
 
 blend: $(OUTDIR)/cmp_blend.pyd
-	cp $(OUTDIR)/cmp_blend.pyd $(BADDONDIR)/core/composition.pyd
+	cp $(OUTDIR)/cmp_blend.pyd ./composition/core/composition.pyd
 
 py: $(OUTDIR)/cmp_py.pyd
 	cp $(OUTDIR)/cmp_py.pyd composition.pyd
