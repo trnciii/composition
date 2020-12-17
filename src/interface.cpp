@@ -92,7 +92,20 @@ public:
 	}
 };
 
-hitpoints_wrap collectHitpoints_wrap(const int depth, const int w, const int h, const int nRay,
+hitpoints_wrap collectHitpoints_all_wrap(const int depth, const int w, const int h, const int nRay,
+	const Scene& scene, const uint32_t target)
+// todo: passing rng state
+{
+	std::vector<hitpoint> hits;
+	hits.reserve(w*h*nRay);
+	RNG rng(0);
+
+	collectHitpoints_target(hits, target, depth, w, h, nRay, scene, rng);
+
+	return hitpoints_wrap(hits);
+}
+
+hitpoints_wrap collectHitpoints_one_wrap(const int depth, const int w, const int h, const int nRay,
 	const Scene& scene, const uint32_t target)
 // todo: passing rng state
 {
@@ -181,7 +194,8 @@ BOOST_PYTHON_MODULE(composition) {
 	def("createScene", createScene);
 	def("renderReference", renderReference_wrap);
 	def("renderNonTarget", renderNonTarget_wrap);
-	def("collectHitpoints", collectHitpoints_wrap);
+	def("collectHitpoints", collectHitpoints_one_wrap);
+	def("collectHitpoints_all", collectHitpoints_all_wrap);
 	def("progressivePhotonMapping", progressivePhotonMapping_target);
 
 	// file.hpp

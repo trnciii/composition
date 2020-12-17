@@ -116,6 +116,54 @@ void collectHitpoints_all(std::vector<hitpoint>& hits,
 	}
 }
 
+void collectHitpoints_target(std::vector<hitpoint>& hits, 
+	const uint32_t targetID, const int targetDepth,
+	const int w, const int h, const int nRay,
+	const Scene& scene, RNG& rng)
+{
+	std::vector<uint32_t> others = scene.cmpTargets;
+	others.erase(others.begin()+targetID);
+
+	for(int i=0; i<w*h; i++){
+		int xi = i%w;
+		int yi = i/w;
+
+		for (int n=0; n<nRay; n++){
+			float x = (float) (2*(xi+rng.uniform())-w)/h;
+			float y = (float)-(2*(yi+rng.uniform())-h)/h;
+			
+			Ray ray = scene.camera.ray(x, y);
+			glm::vec3 throuput(1);
+			
+			float pTerminate = 1;
+			int d_all = 0;
+			int countTargetDepth = 0;
+
+			while(rng.uniform()<pTerminate){
+				d_all++;
+				const Intersection is = intersect(ray, scene);
+				const Material& mtl = scene.materials[is.mtlID];
+
+				if( mtl.type == Material::Type::EMIT ) break;
+
+				if( is.mtlID == scene.cmpTargets[targetID] ){
+					countTargetDepth++;
+
+					if( countTargetDepth == targetDepth ){
+						hits.push_back(hitpoint(is, throuput/(float)nRay, i, ray, d_all));
+						break;
+					}
+				}
+
+				sampleBSDF(ray, throuput, is, mtl, scene, rng);
+				throuput /= pTerminate;
+				pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+				if(10<d_all) pTerminate *= 0.5;
+			}
+		}
+	}
+}
+
 void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 	const uint32_t targetID, const int targetDepth,
 	const int w, const int h, const int nRay,
