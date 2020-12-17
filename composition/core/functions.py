@@ -1,7 +1,7 @@
 from . import composition as cmp
 
 def hitsToImage(hits, renderpass, id, color):
-    im = [0,0]*(3*renderpass.width*renderpass.height)
+    im = [0]*(3*renderpass.width*renderpass.height)
     for i in range(hits.size()):
         hit = hits.element(i)
         c = color(hit)
