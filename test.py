@@ -1,103 +1,129 @@
-import composition as cmp
+import bpy
+import importlib
+import numpy as np
+import composition
+importlib.reload(composition)
+col = composition.color
 
-def visualizeDistribution(hits, renderpass, id):
-	im = [0,0]*(3*renderpass.width*renderpass.height)
-	for i in range(hits.size()):
-		hit = hits.element(i)
-		im[3*hit.pixel  ] += hit.throuput.x
-		im[3*hit.pixel+1] += hit.throuput.y
-		im[3*hit.pixel+2] += hit.throuput.z
-	for i in range(w*h):
-		renderpass.set(id, i, im[3*i], im[3*i+1], im[3*i+2])
+path = "C:\\Users\\Rinne\\Drive\\workshop\\composition\\result\\"
+t1 = 'target1'
+t2 = 'target2'
+t1l = 'target1_linear'
+t2l = 'target2_linear'
+m1 = 'mask1'
+m2 = 'mask2'
+d1 = 'depth1'
+d2 = 'depth2'
+nt = 'nt'
+rf = 'referemce'
 
-def color1(hit):
-	u = (hit.tau.x + hit.tau.y + hit.tau.z)/hit.iteration
-	return [0.9, 0.2, 0.2] if u>2 else [0.5, 0.1, 0.1]
-
-def color2(hit):
-	u = (hit.tau.x + hit.tau.y + hit.tau.z)/hit.iteration
-	return [0.2, 0.9, 0.2] if u>2 else [0.1, 0.5, 0.1]
-
-def hitsToColor(hits, renderpass, id, color):
-	im = [0,0]*(3*renderpass.width*renderpass.height)
-	for i in range(hits.size()):
-		hit = hits.element(i)
-		c = color(hit)
-		im[3*hit.pixel  ] += hit.throuput.x * c[0]
-		im[3*hit.pixel+1] += hit.throuput.y * c[1]
-		im[3*hit.pixel+2] += hit.throuput.z * c[2]
-	for i in range(w*h):
-		renderpass.set(id, i, im[3*i], im[3*i+1], im[3*i+2])
-
-def hitsToRaw(hits, renderpass, id):
-    im = [0,0]*(3*renderpass.width*renderpass.height)
+def hitsToDepth(context, hits, key):
+    depth = [0]*(context.renderpass.width*context.renderpass.height)
+    count = [0]*(context.renderpass.width*context.renderpass.height)
     for i in range(hits.size()):
         hit = hits.element(i)
-        im[3*hit.pixel  ] += hit.throuput.x * hit.tau.x / hit.iteration
-        im[3*hit.pixel+1] += hit.throuput.y * hit.tau.y / hit.iteration
-        im[3*hit.pixel+2] += hit.throuput.z * hit.tau.z / hit.iteration
-    for i in range(w*h):
-        renderpass.set(id, i, im[3*i], im[3*i+1], im[3*i+2])
+        depth[hit.pixel] += hit.depth
+        count[hit.pixel] += 1
+    for i in range(context.renderpass.width*context.renderpass.height):
+#        d = depth[i]/count[i] if count[i] else 0
+        d = depth[i]/128
+        context.renderpass.set(context.bind[key], i, d, d, d)
+
+def purity(rad, ch):
+    a = (rad[0] + rad[1] + rad[2])/3
+    p = rad[ch]-a
+    if 0<p:
+        return p*10
+    else:
+        return 0
+
+def cel(hit):
+    l = [-hit.p.x, -hit.p.y, 6-hit.p.z]
+    dot = l[0]*hit.n.x + l[1]*hit.n.y + l[2]*hit.n.z
+    dot = 0.5*dot + 0.5
+    rad = col.radiance(hit)
+    m = min(rad)
+    M = max(rad)
+    g = purity(rad, 1)      
+#    return [g, g, g]
+    c = [0.3, 0.1, 0.03] if dot<0 else [0.8, 0.6, 0.1]
+    return [c[0], (1-g)*c[1]+g, c[2]]
+
+def mask(cmp, hits, key, nRay):
+    length = cmp.renderpass.width*cmp.renderpass.height
+    count = [0]*3*length
+
+    for i in range(hits.size()):
+        hit = hits.element(i)
+        count[hit.pixel] += 1
+
+    for i in range(length):
+        cmp.renderpass.set(cmp.bind[key], i, count[i]/nRay, 0, 0)
+    
+    cmp.copyImage(key)
+    
+def setAlpha(cmp, key_color, key_alpha, key_out):
+    ps = cmp.renderpass
+    im = composition.core.getImage(ps, cmp.bind[key_color])
+    a = composition.core.getImage(ps, cmp.bind[key_alpha])
+    for i in range(ps.width*ps.height):
+        im[4*i+3] = a[4*i]
+#    bpy.data.images[key_out].pixels = im
+    bpy.data.images[key_out].pixels = im
+    
+def depth(cmp, hits, key, nRay):
+    length = cmp.renderpass.width*cmp.renderpass.height
+    d = [0]*3*length
+    count = [0]*3*length
+    max = 0
+    for i in range(hits.size()):
+        hit = hits.element(i)
+        d[hit.pixel] += hit.depth
+        count[hit.pixel] += 1
+        max = hit.depth if hit.depth > max else max
+    for i in range(length):
+        if count[i] > 0:
+            cmp.renderpass.set(cmp.bind[key], i, d[i]/nRay, 0, 0)
+    cmp.copyImage(key)
+    return max
+
+print("---- start ----")
+
+hits1_ex = composition.core.Hits()
+hits2_ex = composition.core.Hits()
+hits1_total = composition.core.Hits()
+hits2_total = composition.core.Hits()
 
 
-print("---- START ----")
+#hits1_ex.load(path + "hits1")
+#hits2_ex.load(path + "hits2")
+hits1_total.load(path + "hits1_all")
+hits2_total.load(path + "hits2_all")
 
-dir = "C:\\Users\\Rinne\\Drive\\workshop\\composition\\result"
+cmp = composition.Context()
+cmp.bindImage(t1)
+cmp.bindImage(t2)
+cmp.bindImage(m1)
+cmp.bindImage(m2)
 
-w = 512
-h = 512
-spp = 2000
+#mask(cmp, hits1_ex, m1, 512)
+mask(cmp, hits1_total, m1, 64)
+#cmp.mask(hits1_total, m1, 64)
+#cmp.mask(hits2_total, m2, 64)
 
-target1 = 0
-target2 = 1
+#mask(cmp, hits2_ex, m2, 128)
+mask(cmp, hits2_total, m2, 64)
 
-renderpass = cmp.RenderPass(w,h)
-scene = cmp.Scene()
-cmp.createScene(scene)
-	
-###############################################
+cmp.hitsToImage(hits1_total, t1, col.normal)
+cmp.hitsToImage(hits2_total, t2, col.normal)
+#cmp.hitsToImage(hits2, t2, col.radiance)
 
-# reference 
-# id_rf = renderpass.addLayer()
-# cmp.renderReference(renderpass, id_rf ,spp,scene)
-# print("reference image renderd")
+setAlpha(cmp, t1, m1, t1)
+setAlpha(cmp, t2, m2, t2)
 
-# # non target
-# id_nt = renderpass.addLayer()
-# cmp.renderNonTarget(renderpass, id_nt ,spp, scene)
-# print("non target image renderd")
+del cmp
+del hits1_ex
+del hits2_ex
+del hits1_total, hits2_total
 
-# hitpoint
-nRay = 16
-hits1 = cmp.collectHitpoints(1, w, h, nRay, 1, scene, target1)
-hits2 = cmp.collectHitpoints(1, w, h, nRay, 1, scene, target2)
-
-id_ds1 = renderpass.addLayer()
-id_ds2 = renderpass.addLayer()
-visualizeDistribution(hits1, renderpass, id_ds1)
-visualizeDistribution(hits2, renderpass, id_ds2)
-
-# ppm to update hits
-R0 = 0.5
-alpha = 0.6
-iteration = 10
-nPhoton = 100000
-
-print("ppm with", iteration, "iterations")
-cmp.progressivePhotonMapping(hits1, R0, iteration, nPhoton, alpha, scene, target1)
-cmp.progressivePhotonMapping(hits2, R0, iteration, nPhoton, alpha, scene, target2)
-
-print("compose target contribution")
-id_t1 = renderpass.addLayer()
-id_t2 = renderpass.addLayer()
-hitsToColor(hits1, renderpass, id_t1, color1)
-hitsToColor(hits2, renderpass, id_t2, color2)
-
-id_raw1 = renderpass.addLayer()
-id_raw2 = renderpass.addLayer()
-hitsToRaw(hits1, renderpass, id_raw1)
-hitsToRaw(hits2, renderpass, id_raw2)
-
-print(bin( cmp.writeAllPass(renderpass, dir) ))
-
-print("---- END ----")
+print("---- end ----")
