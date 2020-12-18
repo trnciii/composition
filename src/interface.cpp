@@ -74,9 +74,9 @@ public:
 	std::string save(const std::string& s){
 		std::string result;
 		if(writeVector(hits, s))
-			result = std::to_string(hits.size()) + "hitpoints saved.";
+			result = "Saved hitpoints as " + s ": size = " std::to_string(hits.size());
 		else
-			result = "failed to save hitpoints";
+			result = "failed to save hitpoints: " + s;
 		std::cout <<result <<std::endl;
 		return result;
 	}
@@ -84,9 +84,9 @@ public:
 	std::string load(const std::string& s){
 		std::string result;
 		if(readVector(hits, s))
-			result = std::to_string(hits.size()) + " hitpoints loaded";
+			result = "Read hitpoints:" + s ": size = "std::to_string(hits.size());
 		else
-			result = "failed to load hitpoints";
+			result = "failed to read hitpoints: " + s;
 		std::cout <<result <<std::endl;
 		return result;
 	}
