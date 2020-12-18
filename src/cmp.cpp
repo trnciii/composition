@@ -14,6 +14,10 @@
 #include "kdtree.hpp"
 #include "render_sub.hpp"
 
+#pragma omp declare reduction (merge:\
+std::vector<Photon>, std::vector<hitpoint>\
+: omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()) )
+
 int createScene(Scene* s){
 	s->camera.pos = glm::vec3(0,-10,4);
 	s->camera.setDir(glm::vec3(0,1,0), glm::vec3(0,0,1));
@@ -99,20 +103,17 @@ void collectHitpoints_all(std::vector<hitpoint>& hits,
 	const int w, const int h, const int nRay,
 	const Scene& scene, RNG& rng)
 {
-	for(int i=0; i<w*h; i++){
-		int xi = i%w;
-		int yi = i/w;
+	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	for(int i=0; i<w*h*nRay; i++){
+		int p = i/nRay;
+		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
+		float y = (float)-(2*((p/w)+rng.uniform())-h)/h;
+		Ray ray = scene.camera.ray(x, y);
 
-		for (int n=0; n<nRay; n++){
-			float x = (float) (2*(xi+rng.uniform())-w)/h;
-			float y = (float)-(2*(yi+rng.uniform())-h)/h;
-			Ray ray = scene.camera.ray(x, y);
+		const Intersection is = intersect(ray, scene);
 
-			const Intersection is = intersect(ray, scene);
-
-			if( scene.materials[is.mtlID].type != Material::Type::EMIT )
-				hits.push_back(hitpoint(is, glm::vec3(1.0/(float)nRay), i, ray, 1));
-		}
+		if( scene.materials[is.mtlID].type != Material::Type::EMIT )
+			hits.push_back(hitpoint(is, glm::vec3(1.0/(float)nRay), p, ray, 1));
 	}
 }
 
@@ -124,42 +125,39 @@ void collectHitpoints_target(std::vector<hitpoint>& hits,
 	std::vector<uint32_t> others = scene.cmpTargets;
 	others.erase(others.begin()+targetID);
 
-	for(int i=0; i<w*h; i++){
-		int xi = i%w;
-		int yi = i/w;
+	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	for(int i=0; i<w*h*nRay; i++){
+		int p = i/nRay;
+		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
+		float y = (float)-(2*((p/w)+rng.uniform())-h)/h;
+		
+		Ray ray = scene.camera.ray(x, y);
+		glm::vec3 throuput(1);
+		
+		float pTerminate = 1;
+		int d_all = 0;
+		int countTargetDepth = 0;
 
-		for (int n=0; n<nRay; n++){
-			float x = (float) (2*(xi+rng.uniform())-w)/h;
-			float y = (float)-(2*(yi+rng.uniform())-h)/h;
-			
-			Ray ray = scene.camera.ray(x, y);
-			glm::vec3 throuput(1);
-			
-			float pTerminate = 1;
-			int d_all = 0;
-			int countTargetDepth = 0;
+		while(rng.uniform()<pTerminate){
+			d_all++;
+			const Intersection is = intersect(ray, scene);
+			const Material& mtl = scene.materials[is.mtlID];
 
-			while(rng.uniform()<pTerminate){
-				d_all++;
-				const Intersection is = intersect(ray, scene);
-				const Material& mtl = scene.materials[is.mtlID];
+			if( mtl.type == Material::Type::EMIT ) break;
 
-				if( mtl.type == Material::Type::EMIT ) break;
+			if( is.mtlID == scene.cmpTargets[targetID] ){
+				countTargetDepth++;
 
-				if( is.mtlID == scene.cmpTargets[targetID] ){
-					countTargetDepth++;
-
-					if( countTargetDepth == targetDepth ){
-						hits.push_back(hitpoint(is, throuput/(float)nRay, i, ray, d_all));
-						break;
-					}
+				if( countTargetDepth == targetDepth ){
+					hits.push_back(hitpoint(is, throuput/(float)nRay, p, ray, d_all));
+					break;
 				}
-
-				sampleBSDF(ray, throuput, is, mtl, scene, rng);
-				throuput /= pTerminate;
-				pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-				if(10<d_all) pTerminate *= 0.5;
 			}
+
+			sampleBSDF(ray, throuput, is, mtl, scene, rng);
+			throuput /= pTerminate;
+			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			if(10<d_all) pTerminate *= 0.5;
 		}
 	}
 }
@@ -172,66 +170,64 @@ void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 	std::vector<uint32_t> others = scene.cmpTargets;
 	others.erase(others.begin()+targetID);
 
-	for(int i=0; i<w*h; i++){
-		int xi = i%w;
-		int yi = i/w;
+	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	for(int i=0; i<w*h*nRay; i++){
+		int p = i/nRay;
+		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
+		float y = (float)-(2*((p/w)+rng.uniform())-h)/h;
+		
+		Ray ray = scene.camera.ray(x, y);
+		glm::vec3 throuput(1);
+		
+		float pTerminate = 1;
+		int d_all = 0;
+		int countTargetDepth = 0;
+		int countTargetDepth_others = 0;
 
-		for (int n=0; n<nRay; n++){
-			float x = (float) (2*(xi+rng.uniform())-w)/h;
-			float y = (float)-(2*(yi+rng.uniform())-h)/h;
-			
-			Ray ray = scene.camera.ray(x, y);
-			glm::vec3 throuput(1);
-			
-			float pTerminate = 1;
-			int d_all = 0;
-			int countTargetDepth = 0;
-			int countTargetDepth_others = 0;
+		hitpoint firstMe, firstOthers;
+		bool hasHitMe = false;
+		bool hasHitOthers = false;
+		int targetDepth_others = 1;
 
-			hitpoint firstMe, firstOthers;
-			bool hasHitMe = false;
-			bool hasHitOthers = false;
-			int targetDepth_others = 1;
+		while(rng.uniform()<pTerminate){
+		// for(int depth=0; depth<5; depth++){
+			d_all++;
+			const Intersection is = intersect(ray, scene);
+			const Material& mtl = scene.materials[is.mtlID];
 
-			while(rng.uniform()<pTerminate){
-			// for(int depth=0; depth<5; depth++){
-				d_all++;
-				const Intersection is = intersect(ray, scene);
-				const Material& mtl = scene.materials[is.mtlID];
+			if( mtl.type == Material::Type::EMIT ) break;
 
-				if( mtl.type == Material::Type::EMIT ) break;
+			if( is.mtlID == scene.cmpTargets[targetID] ){
+				countTargetDepth++;
 
-				if( is.mtlID == scene.cmpTargets[targetID] ){
-					countTargetDepth++;
-
-					if( countTargetDepth == targetDepth ){
-						hasHitMe = true;
-						firstMe = hitpoint(is, throuput/(float)nRay, i, ray, d_all);
-						// break;
-					}
+				if( countTargetDepth == targetDepth ){
+					hasHitMe = true;
+					firstMe = hitpoint(is, throuput/(float)nRay, p, ray, d_all);
+					// break;
 				}
-				else if(std::find(others.begin(), others.end(), is.mtlID) != others.end()){
-					countTargetDepth_others++;
-					if(countTargetDepth_others == targetDepth_others){
-						hasHitOthers = true;
-						firstOthers = hitpoint(is, throuput/(float)nRay, i, ray, d_all);
-					}
+			}
+			else if(std::find(others.begin(), others.end(), is.mtlID) != others.end()){
+				countTargetDepth_others++;
+				if(countTargetDepth_others == targetDepth_others){
+					hasHitOthers = true;
+					firstOthers = hitpoint(is, throuput/(float)nRay, p, ray, d_all);
 				}
-
-				if(hasHitOthers && hasHitMe) break;
-
-				sampleBSDF(ray, throuput, is, mtl, scene, rng);
-				throuput /= pTerminate;
-				pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-				if(10<d_all) pTerminate *= 0.5;
 			}
 
-			if(hasHitMe && !hasHitOthers) hits.push_back(firstMe);
-			else if(hasHitMe && hasHitOthers){
-				if(firstMe.depth>1)hits.push_back(firstMe);
-				else if(firstOthers.depth == 1 && firstMe.depth == 2)hits.push_back(firstMe);
-			}
+			if(hasHitOthers && hasHitMe) break;
+
+			sampleBSDF(ray, throuput, is, mtl, scene, rng);
+			throuput /= pTerminate;
+			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+			if(10<d_all) pTerminate *= 0.5;
 		}
+
+		if(hasHitMe && !hasHitOthers) hits.push_back(firstMe);
+		else if(hasHitMe && hasHitOthers){
+			if(firstMe.depth>1)hits.push_back(firstMe);
+			else if(firstOthers.depth == 1 && firstMe.depth == 2)hits.push_back(firstMe);
+		}
+
 	}
 }
 
@@ -240,6 +236,8 @@ Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
 	photons.reserve(10*nPhoton);
 
 	const Sphere& source = scene.spheres[scene.lights[0]];
+
+	#pragma omp parallel for reduction(merge: photons) schedule(dynamic)
 	for(int n=0; n<nPhoton; n++){
 		glm::vec3 ro, rd;
 		{
@@ -288,6 +286,8 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 	photons.reserve(10*nPhoton);
 
 	const Sphere& source = scene.spheres[scene.lights[0]];
+
+	#pragma omp parallel for reduction(merge: photons) schedule(dynamic)
 	for(int n=0; n<nPhoton; n++){
 		glm::vec3 ro, rd;
 		{
