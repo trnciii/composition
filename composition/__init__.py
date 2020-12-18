@@ -1,4 +1,3 @@
-import bpy
 from . import core
-from .interface import Context
+from .binterface import Context
 from . import color
