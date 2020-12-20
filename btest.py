@@ -64,7 +64,7 @@ def rampToImage(key, ramp):
     px = [0.0]*4*w*h
     
     for i in range(w):
-        c = ramp.evaluator()(i/w)
+        c = ramp.eval(i/w)
         
         for j in range(h):
             idx = j*w + i
@@ -142,10 +142,10 @@ ramp.print()
     
 rampToImage(tx, ramp)
 
-#remap = hitToRamp(sumRadianceRGB, ramp.evaluator())
+remap = hitToRamp(sumRadianceRGB, ramp.eval)
 #remap = col.mul(remap, col.radiance)
-remap = col.cel(ramp.evaluator(), [0, 0, 6])
-
+#remap = col.cel_specular(ramp.evaluator(), [0, 0, 6])
+#remap = col.mul(remap, col.radiance)
 
 print("converting hits to color")
 t0 = time.time()
