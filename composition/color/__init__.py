@@ -1,6 +1,7 @@
 from .basis import radiance
 from .basis import normal
 from .basis import const
+from .basis import cel
 
 from .Ramp import Ramp
 

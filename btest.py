@@ -38,18 +38,6 @@ def purity(rad, ch):
         return p*10
     else:
         return 0
-
-def cel(hit):
-    l = [-hit.p.x, -hit.p.y, 6-hit.p.z]
-    dot = l[0]*hit.n.x + l[1]*hit.n.y + l[2]*hit.n.z
-    dot = 0.5*dot + 0.5
-    rad = col.radiance(hit)
-    m = min(rad)
-    M = max(rad)
-    g = purity(rad, 1)      
-#    return [g, g, g]
-    c = [0.3, 0.1, 0.03] if dot<0 else [0.8, 0.6, 0.1]
-    return [c[0], (1-g)*c[1]+g, c[2]]
     
 def setAlpha(cmp, key_color, key_alpha, key_out):
     ps = cmp.renderpass
@@ -110,7 +98,7 @@ cmp.bindImage(d2)
 cmp.bindImage(nt)
 
 
-#cmp.load(nt, path+"nontarget")
+cmp.load(nt, path+"nontarget")
 
 #print("mask")
 #cmp.mask(hits1_total, m1, 64)
@@ -145,15 +133,18 @@ ramp_red0 = [(0, [0.1, 0.02, 0.02]),
     (0.3, [0.5, 0.1, 0.1]),
     (0.65, [0.8, 0.6, 0.6]),
     (1.5, [1, 1, 0.95])]
+    
+#ramp_brown = []
 
 # create a ramp
-ramp = col.Ramp(ramp_green2, 'linear')
+ramp = col.Ramp(ramp_red0, 'const')
 ramp.print()
     
 rampToImage(tx, ramp)
 
-remap = hitToRamp(sumRadianceRGB, ramp.evaluator())
-remap = col.mul(remap, col.radiance)
+#remap = hitToRamp(sumRadianceRGB, ramp.evaluator())
+#remap = col.mul(remap, col.radiance)
+remap = col.cel(ramp.evaluator(), [0, 0, 6])
 
 
 print("converting hits to color")
