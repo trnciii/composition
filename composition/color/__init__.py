@@ -1,7 +1,8 @@
 from .basis import radiance
 from .basis import normal
 from .basis import const
-from .basis import cel
+from .basis import cel_diffuse
+from .basis import cel_specular
 
 from .Ramp import Ramp
 
