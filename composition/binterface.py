@@ -33,6 +33,10 @@ class Context:
 	def copyImage(self, key):
 		bpy.data.images[key].pixels = core.getImage(self.renderpass, self.bind[key])
 
+	def copyAll(self):
+		for key in self.bind.keys():
+			self.copyImage(key)
+
 	def load(self, key, path):
 		if core.loadLayer(self.renderpass, self.bind[key], path):
 			print("Read an image")

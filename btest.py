@@ -1,9 +1,12 @@
 import bpy
+import functools
 import numpy as np
+import time
+
 import composition
 col = composition.color
 
-path = "C:\\Users\\Rinne\\Drive\\workshop\\composition\\result\\"
+path = bpy.path.abspath("//result\\")
 t1 = 'target1'
 t2 = 'target2'
 t1l = 'target1_linear'
@@ -14,18 +17,7 @@ d1 = 'depth1'
 d2 = 'depth2'
 nt = 'nt'
 rf = 'reference'
-
-def hitsToDepth(context, hits, key):
-    depth = [0]*(context.renderpass.width*context.renderpass.height)
-    count = [0]*(context.renderpass.width*context.renderpass.height)
-    for i in range(hits.size()):
-        hit = hits.element(i)
-        depth[hit.pixel] += hit.depth
-        count[hit.pixel] += 1
-    for i in range(context.renderpass.width*context.renderpass.height):
-#        d = depth[i]/count[i] if count[i] else 0
-        d = depth[i]/128
-        context.renderpass.set(context.bind[key], i, d, d, d)
+tx = 'texture'
 
 def allHitsToImage(cmp, h1, h2, k1, k2, c):
     cmp.hitsToImage(h1, k1, c)
@@ -67,16 +59,35 @@ def setAlpha(cmp, key_color, key_alpha, key_out):
         im[4*i+3] = a[4*i]
 #    bpy.data.images[key_out].pixels = im
     bpy.data.images[key_out].pixels = im
+
+def sumRadianceRGB(hit):
+    tau = col.radiance(hit)
+    return (tau[0] + tau[1] + tau[2])
+
+def hitToRamp(coord, ramp):
+    def f(hit):
+        return ramp(coord(hit))
+    return f
     
-def orange(hit):
-    tau = col.radiance(hit)
-    return [tau[0]*0.8, tau[1]*0.3, tau[2]*0.1]
+def rampToImage(key, ramp):
+    img = bpy.data.images[key]
+    w, h = img.size
+    print("ramp image size", w, h)
+    px = [0.0]*4*w*h
+    
+    for i in range(w):
+        c = ramp.evaluator()(i/w)
+        
+        for j in range(h):
+            idx = j*w + i
+            px[4*idx  ] = c[0]
+            px[4*idx+1] = c[1]
+            px[4*idx+2] = c[2]
+            px[4*idx+3] = 1
+    
+    img.pixels = px
 
-def green(hit):
-    tau = col.radiance(hit)
-    return [tau[0]*0.2, tau[1]*0.9, tau[2]*0.4]
 
-print("---- start ----")
 
 #hits1_ex = composition.core.Hits()
 #hits2_ex = composition.core.Hits()
@@ -87,6 +98,7 @@ hits2_total = composition.core.Hits()
 #hits2_ex.load(path + "hits2")
 hits1_total.load(path + "hits1_total")
 hits2_total.load(path + "hits2_total")
+print()
 
 cmp = composition.Context()
 cmp.bindImage(t1)
@@ -97,17 +109,68 @@ cmp.bindImage(d1)
 cmp.bindImage(d2)
 cmp.bindImage(nt)
 
-cmp.load(nt, path+"nontarget")
 
-cmp.mask(hits1_total, m1, 64)
-cmp.mask(hits2_total, m2, 64)
+#cmp.load(nt, path+"nontarget")
 
-cmp.depth(hits1_total, d1, 64)
-cmp.depth(hits2_total, d2, 64)
+#print("mask")
+#cmp.mask(hits1_total, m1, 64)
+#cmp.mask(hits2_total, m2, 64)
 
-cmp.hitsToImage(hits1_total, t1, col.normal)
-cmp.hitsToImage(hits2_total, t2, col.normal)
+#print("depth")
+#cmp.depth(hits1_total, d1, 64)
+#cmp.depth(hits2_total, d2, 64)
 
+# define consts
+const_orange = col.const(0.8, 0.3, 0.1)
+const_green = col.const(0.2, 0.9, 0.4)
+
+# define ramps
+ramp_green0 = [(0.07, [0.03, 0.1, 0.03]),
+    (0.3, [0.1, 0.5, 0.1 ]),
+    (0.5, [0.6, 0.8, 0.2]),
+    (0.8, [0.6, 0.8, 0.2]),
+    (1, [0.9, 1, 0.9])]
+    
+ramp_green1 = [(0.07, [0.03, 0.1, 0.03]),
+    (0.3, [0.1, 0.5, 0.1 ]),
+    (0.8, [0.6, 0.8, 0.2]),
+    (1, [0.9, 1, 0.9])]
+    
+ramp_green2 = [(0, [0.03, 0.1, 0.03]),
+    (0.07, [0.1, 0.5, 0.1 ]),
+    (0.3 , [0.6, 0.8, 0.2]),
+    (0.8 , [0.9, 1, 0.9])]
+
+ramp_red0 = [(0, [0.1, 0.02, 0.02]),
+    (0.3, [0.5, 0.1, 0.1]),
+    (0.65, [0.8, 0.6, 0.6]),
+    (1.5, [1, 1, 0.95])]
+
+# create a ramp
+ramp = col.Ramp(ramp_green2, 'linear')
+ramp.print()
+    
+rampToImage(tx, ramp)
+
+remap = hitToRamp(sumRadianceRGB, ramp.evaluator())
+remap = col.mul(remap, col.radiance)
+
+
+print("converting hits to color")
+t0 = time.time()
+
+cmp.hitsToImage(hits1_total, t1, remap)
+
+#ramp.mode = 'const'
+#remap = hitToRamp(sumRadianceRGB, ramp.evaluator())
+#cmp.hitsToImage(hits2_total, t2, remap)
+
+print("time:", time.time()-t0)
+
+
+# update scene and delete variables
+bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
+bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
 
 for name in dir():
     if not name.startswith('_'):
