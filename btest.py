@@ -69,15 +69,15 @@ cmp.bindImage(d2)
 cmp.bindImage(nt)
 
 
-cmp.load(nt, path+"nontarget")
+#cmp.load(nt, path+"nontarget")
 
 #print("mask")
-cmp.mask(hits1_total, m1, 64)
-cmp.mask(hits2_total, m2, 64)
+#cmp.mask(hits1_total, m1, 64)
+#cmp.mask(hits2_total, m2, 64)
 
 #print("depth")
-cmp.depth(hits1_total, d1, 64)
-cmp.depth(hits2_total, d2, 64)
+#cmp.depth(hits1_total, d1, 64)
+#cmp.depth(hits2_total, d2, 64)
 
 # define consts
 const_orange = col.basis.const(0.8, 0.3, 0.1)
@@ -123,7 +123,8 @@ t0 = time.time()
 
 #cmp.hitsToImage(hits1_total, t1, remap)
 
-ramp.mode = 'const'
+#ramp.mode = 'const'
+ramp.data = ramp_red0
 remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
 cmp.hitsToImage(hits2_total, t2, remap)
 
