@@ -3,6 +3,8 @@ from .basis import normal
 from .basis import const
 from .basis import cel_diffuse
 from .basis import cel_specular
+from .basis import sumRadianceRGB
+from .basis import ramp
 
 from .Ramp import Ramp
 

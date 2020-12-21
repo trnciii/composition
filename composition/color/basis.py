@@ -34,3 +34,12 @@ def cel_specular(ramp, p):
         d = dot(m, [hit.n.x, hit.n.y, hit.n.z])
         return ramp(0.5*d + 0.5)
     return f
+
+def sumRadianceRGB(hit):
+    tau = radiance(hit)
+    return (tau[0] + tau[1] + tau[2])
+
+def ramp(coord, ramp):
+    def f(hit):
+        return ramp(coord(hit))
+    return f
