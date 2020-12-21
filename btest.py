@@ -109,8 +109,8 @@ cmp.load(nt, path+"nontarget")
 #cmp.depth(hits2_total, d2, 64)
 
 # define consts
-const_orange = col.const(0.8, 0.3, 0.1)
-const_green = col.const(0.2, 0.9, 0.4)
+const_orange = col.basis.const(0.8, 0.3, 0.1)
+const_green = col.basis.const(0.2, 0.9, 0.4)
 
 # define ramps
 ramp_green0 = [(0.07, [0.03, 0.1, 0.03]),
@@ -137,15 +137,15 @@ ramp_red0 = [(0, [0.1, 0.02, 0.02]),
 #ramp_brown = []
 
 # create a ramp
-ramp = col.Ramp(ramp_red0, 'const')
+ramp = col.Ramp(ramp_red0, 'linear')
 ramp.print()
     
 rampToImage(tx, ramp)
 
-remap = hitToRamp(sumRadianceRGB, ramp.eval)
-#remap = col.mul(remap, col.radiance)
-#remap = col.cel_specular(ramp.evaluator(), [0, 0, 6])
-#remap = col.mul(remap, col.radiance)
+remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
+#remap = col.mul(remap, col.basis.radiance)
+#remap = col.cel_specular(ramp.eval, [0, 0, 6])
+#remap = col.mul(remap, col.basis.radiance)
 
 print("converting hits to color")
 t0 = time.time()
