@@ -48,34 +48,6 @@ def setAlpha(cmp, key_color, key_alpha, key_out):
 #    bpy.data.images[key_out].pixels = im
     bpy.data.images[key_out].pixels = im
 
-def sumRadianceRGB(hit):
-    tau = col.radiance(hit)
-    return (tau[0] + tau[1] + tau[2])
-
-def hitToRamp(coord, ramp):
-    def f(hit):
-        return ramp(coord(hit))
-    return f
-    
-def rampToImage(key, ramp):
-    img = bpy.data.images[key]
-    w, h = img.size
-    print("ramp image size", w, h)
-    px = [0.0]*4*w*h
-    
-    for i in range(w):
-        c = ramp.eval(i/w)
-        
-        for j in range(h):
-            idx = j*w + i
-            px[4*idx  ] = c[0]
-            px[4*idx+1] = c[1]
-            px[4*idx+2] = c[2]
-            px[4*idx+3] = 1
-    
-    img.pixels = px
-
-
 
 #hits1_ex = composition.core.Hits()
 #hits2_ex = composition.core.Hits()
@@ -140,7 +112,7 @@ ramp_red0 = [(0, [0.1, 0.02, 0.02]),
 ramp = col.Ramp(ramp_red0, 'linear')
 ramp.print()
     
-rampToImage(tx, ramp)
+composition.rampToImage(tx, ramp)
 
 remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
 #remap = col.mul(remap, col.basis.radiance)

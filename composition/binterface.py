@@ -1,5 +1,6 @@
 import bpy
 from . import core
+from . import color
 
 class Context:
 
@@ -72,3 +73,21 @@ class Context:
 		self.copyImage(key)
 		print("max depth of", hits , "is", max)
 		return max
+
+def rampToImage(key, ramp):
+    img = bpy.data.images[key]
+    w, h = img.size
+    print("ramp image size", w, h)
+    px = [0.0]*4*w*h
+    
+    for i in range(w):
+        c = ramp.eval(i/w)
+        
+        for j in range(h):
+            idx = j*w + i
+            px[4*idx  ] = c[0]
+            px[4*idx+1] = c[1]
+            px[4*idx+2] = c[2]
+            px[4*idx+3] = 1
+    
+    img.pixels = px
