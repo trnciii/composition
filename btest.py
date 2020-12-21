@@ -1,5 +1,4 @@
 import bpy
-import functools
 import numpy as np
 import time
 
@@ -73,12 +72,12 @@ cmp.bindImage(nt)
 cmp.load(nt, path+"nontarget")
 
 #print("mask")
-#cmp.mask(hits1_total, m1, 64)
-#cmp.mask(hits2_total, m2, 64)
+cmp.mask(hits1_total, m1, 64)
+cmp.mask(hits2_total, m2, 64)
 
 #print("depth")
-#cmp.depth(hits1_total, d1, 64)
-#cmp.depth(hits2_total, d2, 64)
+cmp.depth(hits1_total, d1, 64)
+cmp.depth(hits2_total, d2, 64)
 
 # define consts
 const_orange = col.basis.const(0.8, 0.3, 0.1)
@@ -109,7 +108,7 @@ ramp_red0 = [(0, [0.1, 0.02, 0.02]),
 #ramp_brown = []
 
 # create a ramp
-ramp = col.Ramp(ramp_red0, 'linear')
+ramp = col.Ramp(ramp_green2, 'linear')
 ramp.print()
     
 composition.rampToImage(tx, ramp)
@@ -122,11 +121,11 @@ remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
 print("converting hits to color")
 t0 = time.time()
 
-cmp.hitsToImage(hits1_total, t1, remap)
+#cmp.hitsToImage(hits1_total, t1, remap)
 
-#ramp.mode = 'const'
-#remap = hitToRamp(sumRadianceRGB, ramp.evaluator())
-#cmp.hitsToImage(hits2_total, t2, remap)
+ramp.mode = 'const'
+remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
+cmp.hitsToImage(hits2_total, t2, remap)
 
 print("time:", time.time()-t0)
 

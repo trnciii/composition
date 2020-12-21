@@ -14,16 +14,12 @@ class Ramp():
 		for pair in pairs:
 			self.pairs.append((pair[0], np.array(pair[1])))
 
-		self.setEval(mode)
+		if mode in self.evalTypes:
+			self.mode = mode
 
 	@property
 	def eval(self):
-		return self.__eval
-
-	def setEval(self, mode):
-		self.__mode = mode
-		self.__eval = self.evalTypes[self.__mode]
-		return self.eval
+		return self.evalTypes[self.mode]
 		
 	def evalConst(self, u):
 		c = self.pairs[0][1]
@@ -51,7 +47,7 @@ class Ramp():
 		return [0,0,0]
 
 	def print(self):
-		print("ramp")
+		print("ramp:", "mode =", self.mode)
 		for e in self.pairs:
 			print("--", e)
 		print()
