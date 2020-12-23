@@ -14,6 +14,7 @@ from .composition import writeAllPass
 from .composition import writeLayer
 from .composition import RenderPass
 from .composition import Scene
+from .composition import hitsToImage_cpp
 
 from .functions import hitsToImage
 from .functions import mask

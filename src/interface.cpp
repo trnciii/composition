@@ -140,10 +140,19 @@ void progressivePhotonMapping_target(hitpoints_wrap& hw,
 	}
 }
 
+void hitsToImage(hitpoints_wrap& hw, RenderPass& pass, const int layer, boost::python::object remap){
+	std::vector<glm::vec3> image(pass.length);
+	for(const hitpoint& hit : hw.hits){
+		glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
+		image[hit.pixel] += hit.weight * t;
+	}
+	pass.setLayer(layer, image.data());
+}
+
 BOOST_PYTHON_MODULE(composition) {
 	using namespace boost::python;
 
-	class_<glm::vec3>("vec3")
+	class_<glm::vec3>("vec3", init<float, float, float>())
 		.def_readwrite("x", &glm::vec3::x)
 		.def_readwrite("y", &glm::vec3::y)
 		.def_readwrite("z", &glm::vec3::z);
@@ -197,6 +206,7 @@ BOOST_PYTHON_MODULE(composition) {
 	def("collectHitpoints", collectHitpoints_one_wrap);
 	def("collectHitpoints_all", collectHitpoints_all_wrap);
 	def("progressivePhotonMapping", progressivePhotonMapping_target);
+	def("hitsToImage_cpp", hitsToImage);
 
 	// file.hpp
 	def("writeAllPass", writeAllPass);

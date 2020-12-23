@@ -1,17 +1,17 @@
 from . import composition as cmp
 
 def hitsToImage(hits, renderpass, id, color):
-    im = [0]*(3*renderpass.length)
+    im = [0]*3*renderpass.length
     for hit in hits.data:
         c = color(hit)
-        im[3*hit.pixel  ] += hit.weight.x * c[0]
-        im[3*hit.pixel+1] += hit.weight.y * c[1]
-        im[3*hit.pixel+2] += hit.weight.z * c[2]
+        im[3*hit.pixel  ] += hit.weight.x * c.x
+        im[3*hit.pixel+1] += hit.weight.y * c.y
+        im[3*hit.pixel+2] += hit.weight.z * c.z
     for i in range(renderpass.length):
         renderpass.set(id, i, im[3*i], im[3*i+1], im[3*i+2])
 
 def mask(hits, renderpass, id, nRay):
-	count = [0]*3*renderpass.length
+	count = [0]*renderpass.length
 
 	for hit in hits.data:
 		count[hit.pixel] += 1
@@ -20,8 +20,8 @@ def mask(hits, renderpass, id, nRay):
 		renderpass.set(id, i, count[i]/nRay, 0, 0)
 
 def depth(hits, renderpass, id, nRay):
-	d = [0]*3*renderpass.length
-	count = [0]*3*renderpass.length
+	d = [0]*renderpass.length
+	count = [0]*renderpass.length
 	max = 0
 
 	for hit in hits.data:

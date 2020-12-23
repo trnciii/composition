@@ -128,7 +128,7 @@ def target1():
     remap = col.mix(remap, col.basis.radiance, 0.8)
 
     cmp.hitsToImage(hits1, t1, remap)
-
+    
 def target2():
     ramp = col.Ramp(ramp_red0, 'linear')
 
@@ -137,11 +137,7 @@ def target2():
 
     remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
     remap = col.mix(remap, col.basis.radiance, 0.4)
-
-#    remap = col.mul(remap, col.basis.radiance)
-#    e = 0.6
-#    remap = col.pow(remap, col.basis.const(e, e, e))
-
+    
     cmp.hitsToImage(hits2, t2, remap)
 
 
@@ -149,11 +145,11 @@ def target2():
 #masks()
 
 print("converting hits to color")
-t0 = time.time()
+time0 = time.time()
 
 target1()
 target2()
 
-print("time:", time.time()-t0)
+print("time:", time.time()-time0)
 
 terminate()
