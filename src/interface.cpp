@@ -68,9 +68,6 @@ public:
 	hitpoints_wrap():hits(0){}
 	hitpoints_wrap(std::vector<hitpoint> h):hits(h){}
 
-	uint32_t size(){return hits.size();}
-	hitpoint element(uint32_t i){return hits[i];}
-
 	std::string save(const std::string& s){
 		std::string result;
 		if(writeVector(hits, s))
@@ -147,37 +144,40 @@ BOOST_PYTHON_MODULE(composition) {
 	using namespace boost::python;
 
 	class_<glm::vec3>("vec3")
-		.def_readonly("x", &glm::vec3::x)
-		.def_readonly("y", &glm::vec3::y)
-		.def_readonly("z", &glm::vec3::z);
+		.def_readwrite("x", &glm::vec3::x)
+		.def_readwrite("y", &glm::vec3::y)
+		.def_readwrite("z", &glm::vec3::z);
 
-	class_<std::vector<float>>("vec3s")
+	class_<std::vector<float>>("vec_float")
 		.def(vector_indexing_suite<std::vector<float>>());
 
 	class_<RenderPass>("RenderPass", init<int, int>())
 		.def_readonly("width", &RenderPass::width)
 		.def_readonly("height", &RenderPass::height)
+		.def_readonly("length", &RenderPass::length)
 		.def_readonly("nLayers", &RenderPass::nLayer)
 		.def("addLayer", &RenderPass::addLayer)
 		.def("clear", &RenderPass::clear)
 		.def("set", &RenderPass::setPixel);
 
 	class_<hitpoint>("hitpoint")
-		.def_readonly("p", &hitpoint::p)
-		.def_readonly("n", &hitpoint::n)
-		.def_readonly("wo", &hitpoint::wo)
-		.def_readonly("mtlID", &hitpoint::mtlID)
-		.def_readonly("pixel", &hitpoint::pixel)
-		.def_readonly("R", &hitpoint::R)
-		.def_readonly("N", &hitpoint::N)
-		.def_readonly("tau", &hitpoint::tau)
-		.def_readonly("weight", &hitpoint::weight)
-		.def_readonly("iteration", &hitpoint::iteration)
-		.def_readonly("depth", &hitpoint::depth);
+		.def_readwrite("p", &hitpoint::p)
+		.def_readwrite("n", &hitpoint::n)
+		.def_readwrite("wo", &hitpoint::wo)
+		.def_readwrite("mtlID", &hitpoint::mtlID)
+		.def_readwrite("pixel", &hitpoint::pixel)
+		.def_readwrite("R", &hitpoint::R)
+		.def_readwrite("N", &hitpoint::N)
+		.def_readwrite("tau", &hitpoint::tau)
+		.def_readwrite("weight", &hitpoint::weight)
+		.def_readwrite("iteration", &hitpoint::iteration)
+		.def_readwrite("depth", &hitpoint::depth);
+
+	class_<std::vector<hitpoint>>("vec_hitpoint")
+		.def(vector_indexing_suite<std::vector<hitpoint>>());
 
 	class_<hitpoints_wrap>("hitpoints")
-		.def("size", &hitpoints_wrap::size)
-		.def("element", &hitpoints_wrap::element)
+		.def_readonly("data", &hitpoints_wrap::hits)
 		.def("save", &hitpoints_wrap::save)
 		.def("load", &hitpoints_wrap::load);
 

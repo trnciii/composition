@@ -69,6 +69,9 @@ struct hitpoint{
 		R = R0;
 		tau = glm::vec3(0);
 	}
+
+	inline bool operator <(const hitpoint& b){return this->pixel < b.pixel;}
+	inline bool operator ==(const hitpoint& b){return this->pixel == b.pixel;}
 };
 
 struct Photon{

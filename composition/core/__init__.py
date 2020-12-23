@@ -7,7 +7,7 @@ from .composition import progressivePhotonMapping
 from .composition import renderNonTarget
 from .composition import renderReference
 from .composition import vec3
-from .composition import vec3s
+from .composition import vec_float
 from .composition import hitpoint as Hit
 from .composition import hitpoints as Hits
 from .composition import writeAllPass

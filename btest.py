@@ -25,7 +25,7 @@ hits2 = composition.core.Hits()
 #hits1.load(path + "hits1_selected_256")
 #hits2.load(path + "hits2_selected_256")
 
-hits1.load(path + "hits1_64")
+hits1.load(path + "hits1_256")
 hits2.load(path + "hits2_64")
 
 cmp = composition.Context()
@@ -67,7 +67,7 @@ def setAlpha(cmp, key_color, key_alpha, key_out):
     ps = cmp.renderpass
     im = composition.core.getImage(ps, cmp.bind[key_color])
     a = composition.core.getImage(ps, cmp.bind[key_alpha])
-    for i in range(ps.width*ps.height):
+    for i in range(ps.length):
         im[4*i+3] = a[4*i]
     bpy.data.images[key_out].pixels = im
 
@@ -118,14 +118,14 @@ ramp_red0 = [
 
 
 def target1():
-    ramp = col.Ramp(ramp_green2, 'linear')
+    ramp = col.Ramp(ramp_green2, 'const')
 
     ramp.print()
     composition.rampToImage(tx1, ramp)
 
     remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
-    remap = col.mul(remap, col.basis.radiance)
-#    remap = col.mix(remap, col.basis.radiance, 0.9)
+#    remap = col.mul(remap, col.basis.radiance)
+    remap = col.mix(remap, col.basis.radiance, 0.8)
 
     cmp.hitsToImage(hits1, t1, remap)
 
