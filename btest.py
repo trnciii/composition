@@ -16,11 +16,36 @@ d1 = 'depth1'
 d2 = 'depth2'
 nt = 'nt'
 rf = 'reference'
-tx = 'texture'
+tx1 = 'texture1'
+tx2 = 'texture2'
 
-def allHitsToImage(cmp, h1, h2, k1, k2, c):
-    cmp.hitsToImage(h1, k1, c)
-    cmp.hitsToImage(h2, k2, c)
+hits1 = composition.core.Hits()
+hits2 = composition.core.Hits()
+
+#hits1.load(path + "hits1_selected_256")
+#hits2.load(path + "hits2_selected_256")
+
+hits1.load(path + "hits1_64")
+hits2.load(path + "hits2_64")
+
+cmp = composition.Context()
+cmp.bindImage(t1)
+cmp.bindImage(t2)
+cmp.bindImage(m1)
+cmp.bindImage(m2)
+cmp.bindImage(d1)
+cmp.bindImage(d2)
+cmp.bindImage(nt)
+
+def terminate():
+    bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
+    bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
+
+    for name in dir():
+        if not name.startswith('_'):
+    #        print(name)
+            del globals()[name]
+    print("---- end ----")
     
 def ppm(cmp, h1, h2):
     R0 = 0.5
@@ -44,100 +69,91 @@ def setAlpha(cmp, key_color, key_alpha, key_out):
     a = composition.core.getImage(ps, cmp.bind[key_alpha])
     for i in range(ps.width*ps.height):
         im[4*i+3] = a[4*i]
-#    bpy.data.images[key_out].pixels = im
     bpy.data.images[key_out].pixels = im
 
 
-#hits1_ex = composition.core.Hits()
-#hits2_ex = composition.core.Hits()
-hits1_total = composition.core.Hits()
-hits2_total = composition.core.Hits()
+def masks():
+    print("mask")
+    cmp.mask(hits1, m1, 64)
+    cmp.mask(hits2, m2, 64)
 
-#hits1_ex.load(path + "hits1")
-#hits2_ex.load(path + "hits2")
-hits1_total.load(path + "hits1_total")
-hits2_total.load(path + "hits2_total")
-print()
+    print("depth")
+    cmp.depth(hits1, d1, 64)
+    cmp.depth(hits2, d2, 64)
 
-cmp = composition.Context()
-cmp.bindImage(t1)
-cmp.bindImage(t2)
-cmp.bindImage(m1)
-cmp.bindImage(m2)
-cmp.bindImage(d1)
-cmp.bindImage(d2)
-cmp.bindImage(nt)
-
-
-#cmp.load(nt, path+"nontarget")
-
-#print("mask")
-#cmp.mask(hits1_total, m1, 64)
-#cmp.mask(hits2_total, m2, 64)
-
-#print("depth")
-#cmp.depth(hits1_total, d1, 64)
-#cmp.depth(hits2_total, d2, 64)
 
 # define consts
 const_orange = col.basis.const(0.8, 0.3, 0.1)
 const_green = col.basis.const(0.2, 0.9, 0.4)
 
 # define ramps
-ramp_green0 = [(0.07, [0.03, 0.1, 0.03]),
+ramp_green0 = [
+    (0.07, [0.03, 0.1, 0.03]),
     (0.3, [0.1, 0.5, 0.1 ]),
     (0.5, [0.6, 0.8, 0.2]),
     (0.8, [0.6, 0.8, 0.2]),
-    (1, [0.9, 1, 0.9])]
-    
-ramp_green1 = [(0.07, [0.03, 0.1, 0.03]),
-    (0.3, [0.1, 0.5, 0.1 ]),
+    (1, [0.9, 1, 0.9])
+]
+
+ramp_green1 = [
+    (0.07, [0.03, 0.1, 0.03]),
+    (0.5, [0.1, 0.5, 0.1 ]),
     (0.8, [0.6, 0.8, 0.2]),
-    (1, [0.9, 1, 0.9])]
-    
-ramp_green2 = [(0, [0.03, 0.1, 0.03]),
+    (1, [0.9, 1, 0.9])
+]
+
+ramp_green2 = [
+    (0, [0.03, 0.1, 0.03]),
     (0.07, [0.1, 0.5, 0.1 ]),
     (0.3 , [0.6, 0.8, 0.2]),
-    (0.8 , [0.9, 1, 0.9])]
+    (0.8 , [0.9, 1, 0.9]),
+]
 
-ramp_red0 = [(0, [0.1, 0.02, 0.02]),
+ramp_red0 = [
+    (0, [0.1, 0.02, 0.02]),
     (0.3, [0.5, 0.1, 0.1]),
-    (0.65, [0.8, 0.6, 0.6]),
-    (1.5, [1, 1, 0.95])]
-    
-#ramp_brown = []
+    (0.65, [0.8, 0.7, 0.2]),
+    (1.5, [1, 1, 0.95])
+]
 
-# create a ramp
-ramp = col.Ramp(ramp_green2, 'linear')
-ramp.print()
-    
-composition.rampToImage(tx, ramp)
 
-remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
-#remap = col.mul(remap, col.basis.radiance)
-#remap = col.cel_specular(ramp.eval, [0, 0, 6])
-#remap = col.mul(remap, col.basis.radiance)
+def target1():
+    ramp = col.Ramp(ramp_green2, 'linear')
+
+    ramp.print()
+    composition.rampToImage(tx1, ramp)
+
+    remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
+    remap = col.mul(remap, col.basis.radiance)
+#    remap = col.mix(remap, col.basis.radiance, 0.9)
+
+    cmp.hitsToImage(hits1, t1, remap)
+
+def target2():
+    ramp = col.Ramp(ramp_red0, 'linear')
+
+    ramp.print()
+    composition.rampToImage(tx2, ramp)
+
+    remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
+    remap = col.mix(remap, col.basis.radiance, 0.4)
+
+#    remap = col.mul(remap, col.basis.radiance)
+#    e = 0.6
+#    remap = col.pow(remap, col.basis.const(e, e, e))
+
+    cmp.hitsToImage(hits2, t2, remap)
+
+
+#cmp.load(nt, path+"nontarget")
+#masks()
 
 print("converting hits to color")
 t0 = time.time()
 
-#cmp.hitsToImage(hits1_total, t1, remap)
-
-#ramp.mode = 'const'
-ramp.data = ramp_red0
-remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
-cmp.hitsToImage(hits2_total, t2, remap)
+target1()
+target2()
 
 print("time:", time.time()-t0)
 
-
-# update scene and delete variables
-bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
-bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
-
-for name in dir():
-    if not name.startswith('_'):
-#        print(name)
-        del globals()[name]
-
-print("---- end ----")
+terminate()
