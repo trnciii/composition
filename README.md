@@ -1,5 +1,7 @@
 # composition
 
 ## dependency
+this uses:
 * boost::python
-* python (3.7 for blender)
+* python
+* bledner(bpy)
