@@ -1,0 +1,14 @@
+*__pycache__
+result/
+build/
+text/
+
+*.o
+*.so
+*.pyd
+*.blend1
+*.blend2
+
+todo.txt
+main
+main.exe
