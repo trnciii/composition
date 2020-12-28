@@ -15,8 +15,8 @@
 #include "render_sub.hpp"
 
 #pragma omp declare reduction (merge:\
-std::vector<Photon>, std::vector<hitpoint>\
-: omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()) )
+std::vector<Photon>, std::vector<hitpoint>:\
+omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()) )
 
 int createScene(Scene* s){
 	s->camera.pos = glm::vec3(0,-10,4);
@@ -103,7 +103,7 @@ void collectHitpoints_all(std::vector<hitpoint>& hits,
 	const int w, const int h, const int nRay,
 	const Scene& scene, RNG& rng)
 {
-	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	// #pragma omp parallel for reduction(merge: hits) schedule(dynamic)
 	for(int i=0; i<w*h*nRay; i++){
 		int p = i/nRay;
 		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
@@ -125,7 +125,7 @@ void collectHitpoints_target(std::vector<hitpoint>& hits,
 	std::vector<uint32_t> others = scene.cmpTargets;
 	others.erase(others.begin()+targetID);
 
-	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	// #pragma omp parallel for reduction(merge: hits) schedule(dynamic)
 	for(int i=0; i<w*h*nRay; i++){
 		int p = i/nRay;
 		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
@@ -170,7 +170,7 @@ void collectHitpoints_target_one(std::vector<hitpoint>& hits,
 	std::vector<uint32_t> others = scene.cmpTargets;
 	others.erase(others.begin()+targetID);
 
-	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	// #pragma omp parallel for reduction(merge: hits) schedule(dynamic)
 	for(int i=0; i<w*h*nRay; i++){
 		int p = i/nRay;
 		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
@@ -237,7 +237,7 @@ Tree createPhotonmap_all(const Scene& scene, int nPhoton, RNG& rand){
 
 	const Sphere& source = scene.spheres[scene.lights[0]];
 
-	#pragma omp parallel for reduction(merge: photons) schedule(dynamic)
+	// #pragma omp parallel for reduction(merge: photons) schedule(dynamic)
 	for(int n=0; n<nPhoton; n++){
 		glm::vec3 ro, rd;
 		{
@@ -287,7 +287,7 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 	const Sphere& source = scene.spheres[scene.lights[0]];
 
-	#pragma omp parallel for reduction(merge: photons) schedule(dynamic)
+	// #pragma omp parallel for reduction(merge: photons) schedule(dynamic)
 	for(int n=0; n<nPhoton; n++){
 		glm::vec3 ro, rd;
 		{
