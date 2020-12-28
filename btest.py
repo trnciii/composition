@@ -26,7 +26,7 @@ hits2 = composition.core.Hits()
 #hits2.load(path + "hits2_selected_256")
 
 hits1.load(path + "hits1_256")
-hits2.load(path + "hits2_64")
+hits2.load(path + "hits2_256")
 
 cmp = composition.Context()
 cmp.bindImage(t1)
@@ -43,8 +43,9 @@ def terminate():
 
     for name in dir():
         if not name.startswith('_'):
-    #        print(name)
+            print(name)
             del globals()[name]
+    
     print("---- end ----")
     
 def ppm(cmp, h1, h2):
@@ -148,7 +149,7 @@ print("converting hits to color")
 time0 = time.time()
 
 target1()
-target2()
+#target2()
 
 print("time:", time.time()-time0)
 
