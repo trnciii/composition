@@ -3,6 +3,8 @@
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
+#include <execution>
+#include <algorithm>
 #include <string>
 
 #include "cmp.hpp"
@@ -63,15 +65,15 @@ void renderNonTarget_wrap(
 
 class hitpoints_wrap{
 public:
-	std::vector<hitpoint> hits;
+	std::vector<hitpoint> data;
 
-	hitpoints_wrap():hits(0){}
-	hitpoints_wrap(std::vector<hitpoint> h):hits(h){}
+	hitpoints_wrap():data(0){}
+	hitpoints_wrap(std::vector<hitpoint> h):data(h){}
 
 	std::string save(const std::string& s){
 		std::string result;
-		if(writeVector(hits, s))
-			result = "Saved hitpoints as " + s + ": size = " + std::to_string(hits.size());
+		if(writeVector(data, s))
+			result = "Saved hitpoints as " + s + ": size = " + std::to_string(data.size());
 		else
 			result = "failed to save hitpoints: " + s;
 		std::cout <<result <<std::endl;
@@ -80,8 +82,8 @@ public:
 
 	std::string load(const std::string& s){
 		std::string result;
-		if(readVector(hits, s))
-			result = "Read hitpoints:" + s + ": size = " + std::to_string(hits.size());
+		if(readVector(data, s))
+			result = "Read hitpoints:" + s + ": size = " + std::to_string(data.size());
 		else
 			result = "failed to read hitpoints: " + s;
 		std::cout <<result <<std::endl;
@@ -127,25 +129,37 @@ void progressivePhotonMapping_all(std::vector<hitpoint>& hits,
 	}
 }
 
-void progressivePhotonMapping_target(hitpoints_wrap& hw,
+void progressivePhotonMapping_target(hitpoints_wrap& hits,
 	const float R0, const int iteration, const int nPhoton, const float alpha,
 	const Scene& scene, const uint32_t target)
 {
 	RNG rng;
-	std::vector<hitpoint>& hits = hw.hits;
-	for(hitpoint& hit : hits)hit.clear(R0);
+	for(hitpoint& hit : hits.data)hit.clear(R0);
 	for(int i=0; i<iteration; i++){
 		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rng);
-		accumulateRadiance(hits, photonmap, scene, alpha);
+		accumulateRadiance(hits.data, photonmap, scene, alpha);
 	}
 }
 
-void hitsToImage(hitpoints_wrap& hw, RenderPass& pass, const int layer, boost::python::object remap){
+void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
+	const boost::python::object& remap)
+{
+	std::cout <<"using cpp for replacement" <<std::endl;
+
 	std::vector<glm::vec3> image(pass.length);
-	for(const hitpoint& hit : hw.hits){
-		glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
-		image[hit.pixel] += hit.weight * t;
-	}
+	std::vector<glm::vec3> replacement(hits.data.size());
+
+	std::transform(std::execution::par_unseq,
+		hits.data.begin(), hits.data.end(),
+		replacement.begin(),
+		[&remap](const hitpoint& hit){
+			glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
+			return hit.weight*t;
+		});
+
+	for(int i=0; i<hits.data.size(); i++)
+		image[hits.data[i].pixel] += replacement[i];
+
 	pass.setLayer(layer, image.data());
 }
 
@@ -186,7 +200,7 @@ BOOST_PYTHON_MODULE(composition) {
 		.def(vector_indexing_suite<std::vector<hitpoint>>());
 
 	class_<hitpoints_wrap>("hitpoints")
-		.def_readonly("data", &hitpoints_wrap::hits)
+		.def_readonly("data", &hitpoints_wrap::data)
 		.def("save", &hitpoints_wrap::save)
 		.def("load", &hitpoints_wrap::load);
 
