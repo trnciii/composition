@@ -1,11 +1,12 @@
 import bpy
 import numpy as np
 import time
+import os
 
 import composition
 col = composition.color
 
-path = bpy.path.abspath("//result\\")
+path = os.path.abspath(bpy.path.abspath('//') + '/result')
 t1 = 'target1'
 t2 = 'target2'
 t1l = 'target1_linear'
@@ -146,7 +147,7 @@ def target2():
 #masks()
 
 print("converting hits to color")
-time0 = time.time()
+time0 = time.timimpore()
 
 target1()
 #target2()
