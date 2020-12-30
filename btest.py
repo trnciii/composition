@@ -6,7 +6,7 @@ import os
 import composition
 col = composition.color
 
-path = os.path.abspath(bpy.path.abspath('//') + '/result')
+path = bpy.path.abspath('//result') + '/'
 t1 = 'target1'
 t2 = 'target2'
 t1l = 'target1_linear'
@@ -16,7 +16,8 @@ m2 = 'mask2'
 d1 = 'depth1'
 d2 = 'depth2'
 nt = 'nt'
-rf = 'reference'
+pt = 'rf_pt'
+ppm = 'rf_ppm'
 tx1 = 'texture1'
 tx2 = 'texture2'
 
@@ -37,6 +38,8 @@ cmp.bindImage(m2)
 cmp.bindImage(d1)
 cmp.bindImage(d2)
 cmp.bindImage(nt)
+cmp.bindImage(pt)
+cmp.bindImage(ppm)
 
 def terminate():
     bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
@@ -129,7 +132,7 @@ def target1():
 #    remap = col.mul(remap, col.basis.radiance)
     remap = col.mix(remap, col.basis.radiance, 0.8)
 
-    cmp.hitsToImage(hits1, t1, remap)
+    cmp.hitsToImage(hits1, t1, col.basis.radiance)
     
 def target2():
     ramp = col.Ramp(ramp_red0, 'linear')
@@ -140,16 +143,18 @@ def target2():
     remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
     remap = col.mix(remap, col.basis.radiance, 0.4)
     
-    cmp.hitsToImage(hits2, t2, remap)
+    cmp.hitsToImage(hits2, t2, col.basis.radiance)
 
 
-#cmp.load(nt, path+"nontarget")
-#masks()
+cmp.load(nt, os.path.abspath(path + 'nontarget'))
+cmp.load(pt , path + 'rf_pt')
+cmp.load(ppm, path + 'rf_ppm')
+masks()
 
 print("converting hits to color")
-time0 = time.timimpore()
+time0 = time.time()
 
-target1()
+#target1()
 #target2()
 
 print("time:", time.time()-time0)
