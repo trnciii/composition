@@ -5,9 +5,11 @@
 #include "data.hpp"
 #include "Scene.hpp"
 
-glm::vec3 offset(const glm::vec3& pos, const glm::vec3& dir){return pos + (dir*1e-3f);}
+inline glm::vec3 offset(const glm::vec3& pos, const glm::vec3& dir){
+	return pos + (dir*1e-3f);
+}
 
-void tangentspace(const glm::vec3 n, glm::vec3 basis[2]){
+inline void tangentspace(const glm::vec3 n, glm::vec3 basis[2]){
 	int sg =(n.z < 0) ?-1 :1;
 	float a = -1.0/(sg+n.z);
 	float b = n.x * n.y * a;
@@ -23,18 +25,18 @@ void tangentspace(const glm::vec3 n, glm::vec3 basis[2]){
 	);
 }
 
-float GGX_D(const float mn, const float a2){
+inline float GGX_D(const float mn, const float a2){
 	float cos2 = mn*mn;
 	float t = a2*cos2 + 1-cos2;
 	return (t>1e-4)? a2/(kPI*t*t) : 0;
 }
 
-float smith_mask(const glm::vec3& x, const glm::vec3& n, const float a2){
+inline float smith_mask(const glm::vec3& x, const glm::vec3& n, const float a2){
 	float xn2 = glm::dot(x,n); xn2 *= xn2;
 	return 2/(1+sqrt(1+a2*(1-xn2)/xn2));
 }
 
-float Fresnel_Schlick(float dot, float nr){
+inline float Fresnel_Schlick(float dot, float nr){
 	float r = (nr-1)/(nr+1); r *= r;
 	return r + (1-r)*pow(1-dot,5);
 }
@@ -43,12 +45,12 @@ inline glm::vec3 reflect(const glm::vec3 n, const glm::vec3 wi){
 	return -wi + 2*glm::dot(n, wi)*n;
 }
 
-inline glm::vec3 refract(const glm::vec3 n, const glm::vec3 wi, float nr){
+inline glm::vec3 refract(const glm::vec3 n, const glm::vec3 wi, const float nr){
 	float cos = glm::dot(n, wi);
-	float nwo = (float)sqrt(1-(1-cos*cos)*nr*nr);
+	float nwo = sqrt(1-(1-cos*cos)/nr/nr);
 	return nwo<0?
 		reflect(n, wi)
-		:-(wi - (n*cos))*nr - (n*(float)sqrt(nwo));
+		:-(wi - (n*cos))/nr - (n*(float)sqrt(nwo));
 }
 
 float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3 n, const Material& mtl){
@@ -173,7 +175,7 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 			throuput *= w*mtl.color;
 		}
 		else{
-			const glm::vec3 wo = refract(is.n, wi, 1/mtl.ior);
+			const glm::vec3 wo = refract(is.n, wi, is.backfacing? 1/mtl.ior : mtl.ior);
 
 			float gi = smith_mask(wi, is.n, a2);
 			float go = smith_mask(wo, is.n, a2);
