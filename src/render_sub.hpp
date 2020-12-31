@@ -30,15 +30,26 @@ float GGX_D(const float mn, const float a2){
 }
 
 float smith_mask(const glm::vec3& x, const glm::vec3& n, const float a2){
-	float xn2 = glm::dot(x,n);
-	xn2 *= xn2;
+	float xn2 = glm::dot(x,n); xn2 *= xn2;
 	return 2/(1+sqrt(1+a2*(1-xn2)/xn2));
 }
 
-// double Fresnel_Schlick(double dot, double ior_in, double ior_out){
-// 	double r = pow((ior_in - ior_out)/(ior_in + ior_out),2);
-// 	return r + (1-r)*pow(1-dot,5);
-// }
+float Fresnel_Schlick(float dot, float nr){
+	float r = (nr-1)/(nr+1); r *= r;
+	return r + (1-r)*pow(1-dot,5);
+}
+
+inline glm::vec3 reflect(const glm::vec3 n, const glm::vec3 wi){
+	return -wi + 2*glm::dot(n, wi)*n;
+}
+
+inline glm::vec3 refract(const glm::vec3 n, const glm::vec3 wi, float nr){
+	float cos = glm::dot(n, wi);
+	float nwo = (float)sqrt(1-(1-cos*cos)*nr*nr);
+	return nwo<0?
+		reflect(n, wi)
+		:-(wi - (n*cos))*nr - (n*(float)sqrt(nwo));
+}
 
 float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3 n, const Material& mtl){
 	if(mtl.type == Material::Type::LAMBERT){
@@ -121,12 +132,12 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		glm::vec3 tan[2];
 		tangentspace(is.n, tan);
 
-		float a2 = mtl.a*mtl.a;
+		const float a2 = mtl.a*mtl.a;
 
 		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), a2);
 		glm::vec3 m_w = m_tan.x*tan[0] + m_tan.y*tan[1] + m_tan.z*is.n;
 
-		const glm::vec3 wo = ray.d - 2*glm::dot(ray.d, m_w)*m_w;
+		const glm::vec3 wo = reflect(m_w, wi);
 
 		float gi = smith_mask(wi, is.n, a2);
 		float go = smith_mask(wo, is.n, a2);
@@ -136,6 +147,42 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		ray.o = offset(is.p, is.n);
 		ray.d = wo;
 		throuput *= w*mtl.color;
+	}
+
+	if(mtl.type == Material::Type::GLASS){
+		const glm::vec3 wi = -ray.d;
+		glm::vec3 tan[2];
+		tangentspace(is.n, tan);
+
+		const float a2 = mtl.a*mtl.a;
+
+		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), a2);
+		glm::vec3 m_w = m_tan.x*tan[0] + m_tan.y*tan[1] + m_tan.z*is.n;
+
+		const float F = Fresnel_Schlick(glm::dot(m_w, wi), is.backfacing? 1/mtl.ior : mtl.ior);
+
+		if(rand.uniform()<F){
+			const glm::vec3 wo = reflect(m_w, wi);
+
+			float gi = smith_mask(wi, is.n, a2);
+			float go = smith_mask(wo, is.n, a2);
+			float w = fabs( gi*go * glm::dot(wi, m_w)/(glm::dot(wi, is.n)*m_tan.z) );
+
+			ray.o = offset(is.p, is.n);
+			ray.d = wo;
+			throuput *= w*mtl.color;
+		}
+		else{
+			const glm::vec3 wo = refract(is.n, wi, 1/mtl.ior);
+
+			float gi = smith_mask(wi, is.n, a2);
+			float go = smith_mask(wo, is.n, a2);
+			float w = fabs( gi*go * glm::dot(wi, m_w)/(glm::dot(wi, is.n)*m_tan.z) );
+
+			ray.o = offset(is.p, -is.n);
+			ray.d = wo;
+			throuput *= w*mtl.color;
+		}
 	}
 }
 
@@ -152,7 +199,7 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
 
 		sampleBSDF(ray, throuput, is, mtl, scene, rand);
 		throuput /= pTerminate;
-		pTerminate *= 0.9*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		pTerminate *= 0.99*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 	}
 	return glm::vec3(0);
 }

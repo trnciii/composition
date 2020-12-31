@@ -22,13 +22,13 @@ struct Material{
 		LAMBERT,
 		// DIELECTRIC,
 		GGX_REFLECTION,
-		// GGX_REFRACTOIN,
+		GLASS,
 	};
 
 	Type type;
 	glm::vec3 color = glm::vec3(0.6, 0.6, 0.6);
 	float a = 0;
-	// double ior;
+	float ior;
 	
 	inline Material(Material::Type t):type(t){}
 };

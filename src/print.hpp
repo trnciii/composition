@@ -55,10 +55,12 @@ void print(const Material& m, const char* str = "\n"){
 	if(m.type == Material::Type::EMIT) std::cout <<"EMIT";
 	if(m.type == Material::Type::LAMBERT) std::cout <<"LAMBERT";
 	if(m.type == Material::Type::GGX_REFLECTION) std::cout <<"GGX";
+	if(m.type == Material::Type::GLASS) std::cout <<"GLASS";
 	
 	std::cout <<" | ";
 	print(m.color, " | ");
 	print(m.a, " | ");
+	print(m.ior, " | ");
 
 	std::cout <<str;
 }
