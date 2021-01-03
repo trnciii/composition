@@ -41,25 +41,13 @@ inline float Fresnel_Schlick(float dot, float nr){
 	return r + (1-r)*pow(1-dot,5);
 }
 
-inline glm::vec3 reflect(const glm::vec3 n, const glm::vec3 wi){
-	return -wi + 2*glm::dot(n, wi)*n;
-}
-
-inline glm::vec3 refract(const glm::vec3 n, const glm::vec3 wi, const float nr){
-	float cos = glm::dot(n, wi);
-	float nwo = sqrt(1-(1-cos*cos)/nr/nr);
-	return nwo<0?
-		reflect(n, wi)
-		:-(wi - (n*cos))/nr - (n*(float)sqrt(nwo));
-}
-
-float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3 n, const Material& mtl){
+float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3& n, const Material& mtl){
 	if(mtl.type == Material::Type::LAMBERT){
 		return 1/kPI;
 	}
 
 	if(mtl.type == Material::Type::GGX_REFLECTION){
-		glm::vec3 m = glm::normalize(wi+wo);
+		const glm::vec3 m = glm::normalize(wi+wo);
 		float a2 = mtl.a*mtl.a;
 
 		float D = GGX_D(glm::dot(n, m), a2);
@@ -67,6 +55,29 @@ float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3 n, cons
 		float go = smith_mask(wo, n, a2);
 		float F = 1;
 		return F * gi*go * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
+	}
+
+	if(mtl.type == Material::Type::GLASS){
+		// currently assuming the normal always direct outside
+
+		float a2 = mtl.a*mtl.a;
+		float gi = smith_mask(wi, n, a2);
+		float go = smith_mask(wo, n, a2);
+		
+		if(glm::dot(wi,n)>0){
+			const glm::vec3 m = glm::normalize(wi+wo);
+			float D = GGX_D(glm::dot(n, m), a2);
+			float F = Fresnel_Schlick(glm::dot(m, wi), mtl.ior);	
+			return F * gi*go * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
+		}
+		else{
+
+		// if(glm::dot(wi,n)<0){
+			const glm::vec3 m = glm::normalize(wo + mtl.ior*wi);
+			float D = GGX_D(glm::dot(n, -m), a2);
+			float F = Fresnel_Schlick(glm::dot(m, wi), mtl.ior);
+			return /*(1-F) **/ gi*go * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
+		}
 	}
 
 	return 0;
@@ -117,7 +128,8 @@ Intersection intersect(const Ray& ray, const Scene& scene){
 }
 
 void sampleBSDF(Ray& ray, glm::vec3& throuput,
-	const Intersection& is, const Material& mtl, const Scene& scene, RNG& rand, float* const p = nullptr)
+	const Intersection& is, const Material& mtl, const Scene& scene,
+	RNG& rand, float* const p = nullptr)
 {
 	if(mtl.type == Material::Type::LAMBERT){
 		glm::vec3 tan[2];
@@ -139,7 +151,7 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		glm::vec3 m_tan = sampleNDF_GGX(rand.uniform(), rand.uniform(), a2);
 		glm::vec3 m_w = m_tan.x*tan[0] + m_tan.y*tan[1] + m_tan.z*is.n;
 
-		const glm::vec3 wo = reflect(m_w, wi);
+		const glm::vec3 wo = -wi + 2*glm::dot(m_w, wi)*m_w;
 
 		float gi = smith_mask(wi, is.n, a2);
 		float go = smith_mask(wo, is.n, a2);
@@ -162,9 +174,13 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		glm::vec3 m_w = m_tan.x*tan[0] + m_tan.y*tan[1] + m_tan.z*is.n;
 
 		const float F = Fresnel_Schlick(glm::dot(m_w, wi), is.backfacing? 1/mtl.ior : mtl.ior);
+		const float nr = is.backfacing? 1/mtl.ior : mtl.ior;
 
-		if(rand.uniform()<F){
-			const glm::vec3 wo = reflect(m_w, wi);
+		const float cos = glm::dot(m_w, wi);
+		const float nwo2 = 1-(1-cos*cos)/nr/nr;
+
+		if(nwo2<=0 || rand.uniform()<F){
+			const glm::vec3 wo = -wi + 2*glm::dot(m_w, wi)*m_w;
 
 			float gi = smith_mask(wi, is.n, a2);
 			float go = smith_mask(wo, is.n, a2);
@@ -175,7 +191,7 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 			throuput *= w*mtl.color;
 		}
 		else{
-			const glm::vec3 wo = refract(is.n, wi, is.backfacing? 1/mtl.ior : mtl.ior);
+			const glm::vec3 wo = -(wi - (m_w*cos))/nr - (float)sqrt(nwo2)*m_w;
 
 			float gi = smith_mask(wi, is.n, a2);
 			float go = smith_mask(wo, is.n, a2);

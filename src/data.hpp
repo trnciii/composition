@@ -46,12 +46,12 @@ struct Intersection{
 struct hitpoint{
 	glm::vec3 p;
 	glm::vec3 n;
-	glm::vec3 wo; // ray direction << done
+	glm::vec3 wo; // ray direction
 	uint32_t mtlID;
 	uint32_t pixel;
-	float R; // current photon radius <<todo
-	int N = 0; // accumulated photon count <<todo
-	glm::vec3 tau = glm::vec3(0,0,0); // accumulated reflected flux <<todo
+	float R; // current photon radius
+	int N = 0; // accumulated photon count
+	glm::vec3 tau = glm::vec3(0,0,0); // accumulated reflected flux
 	glm::vec3 weight;
 	int iteration = 0;
 	int depth;

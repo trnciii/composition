@@ -42,11 +42,11 @@ int main(void){
 		return 0;
 	}
 
-	// render path traced reference
+	// // render path traced reference
 	uint32_t reference = pass.addLayer();
-	// loadLayer(pass, reference, outDir + "/reference");
+	loadLayer(pass, reference, outDir + "/reference");
 	{
-		std::cout <<"path tracing for reference [" <<reference <<"]" <<std::endl;
+		std::cout <<"reference path tracing [" <<reference <<"]" <<std::endl;
 
 		RNG* rngForEveryPixel = new RNG[width*height];
 		for(int i=0; i<width*height; i++)
@@ -57,6 +57,32 @@ int main(void){
 		delete[] rngForEveryPixel;
 	}
 
+	uint32_t ppm = pass.addLayer();
+	{
+		std::cout <<"reference photon mapping [" <<ppm <<"]" <<std::endl;
+		int nRay = 4;
+		int nPhoton = 1000;
+		int iteration = 10;
+		float alpha = 0.6;
+		float R0 = 1;
+		RNG rng(0);
+	
+		std::vector<hitpoint> hits;
+		hits.reserve(width*height*nRay);
+
+		collectHitpoints_all(hits, pass.width, pass.height, nRay, scene, rng);
+		for(hitpoint& hit : hits)hit.clear(R0);
+		for(int i=0; i<iteration; i++){
+			Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
+			accumulateRadiance(hits, photonmap, scene, alpha);
+		}
+
+		glm::vec3* image = pass.data(ppm);
+		for(hitpoint& hit : hits){
+			image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
+		}
+	}
+
 	{
 		const int digit = 8;
 		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPass(pass, outDir)) <<" / ";
@@ -65,31 +91,6 @@ int main(void){
 	}
 
 	return 0;
-
-	// uint32_t ppm = pass.addLayer();
-	// {
-	// 	int nRay = 4;
-	// 	int nPhoton = 100000;
-	// 	int iteration = 10;
-	// 	float alpha = 0.6;
-	// 	float R0 = 0.5;
-	// 	RNG rng(0);
-	
-	// 	std::vector<hitpoint> hits;
-	// 	hits.reserve(width*height*nRay);
-
-	// 	collectHitpoints_all(hits, pass.width, pass.height, nRay, scene, rng);
-	// 	for(hitpoint& hit : hits)hit.clear(R0);
-	// 	for(int i=0; i<iteration; i++){
-	// 		Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
-	// 		accumulateRadiance(hits, photonmap, scene, alpha);
-	// 	}
-
-	// 	glm::vec3* image = pass.data(ppm);
-	// 	for(hitpoint& hit : hits){
-	// 		image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
-	// 	}
-	// }
 
 	// render non target component with pt
 	const uint32_t nontarget = pass.addLayer();
@@ -157,7 +158,8 @@ int main(void){
 		}
 
 		// progressivePhotonMapping_target(hits, R0, iteration, nPhoton, alpha, scene, scene.cmpTargets[0], rand);
-		// writeVector(hits, outDir + "/hit_1_100itr");
+		std::string name = "hits" + std::to_string(targetID) + "_glass_64";
+		writeVector(hits, outDir + "/" + name);
 	}
 	// readVector(hits, outDir + "/hit_1_100itr");
 

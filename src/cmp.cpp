@@ -42,7 +42,7 @@ int createScene(Scene* s){
 	uint32_t target1 = s->newMaterial(Material::Type::GLASS);
 	// uint32_t target1 = s->newMaterial(Material::Type::LAMBERT);
 	s->materials[target1].color = glm::vec3(1);
-	s->materials[target1].a = 0.02;
+	s->materials[target1].a = 0.1;
 	s->materials[target1].ior = 2;
 	s->cmpTargets.push_back(target1);
 
@@ -342,9 +342,9 @@ void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const
 
 		std::vector<Tree::Result> nearPhotons = photonmap.searchNN(hit);
 		for(const Tree::Result& p : nearPhotons){
-			float photonFilter = 3*(1 - p.distance/hit.R) / (kPI*hit.R*hit.R); // cone
-			// double photonFilter = 1/(kPI*hit.R*hit.R); // constant
-			tauM += photonFilter * p.photon.ph * mtl.color * evalBSDF(p.photon.wi, hit.wo, hit.n, mtl);
+			float filter = 3*(1 - p.distance/hit.R) / (kPI*hit.R*hit.R); // cone
+			// float filter = 1/(kPI*hit.R*hit.R); // constant
+			tauM += filter * p.photon.ph * mtl.color * evalBSDF(p.photon.wi, hit.wo, hit.n, mtl);
 			M++;
 		}
 
