@@ -3,7 +3,7 @@
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
-#include <execution>
+// #include <execution>
 #include <algorithm>
 #include <string>
 
@@ -149,7 +149,7 @@ void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
 	std::vector<glm::vec3> image(pass.length);
 	std::vector<glm::vec3> replacement(hits.data.size());
 
-	std::transform(std::execution::par_unseq,
+	std::transform(/*std::execution::par_unseq,*/
 		hits.data.begin(), hits.data.end(),
 		replacement.begin(),
 		[&remap](const hitpoint& hit){
