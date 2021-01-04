@@ -49,6 +49,7 @@ ifeq ($(UNAME), Linux)
 # variations
 py: $(OUTDIR)/cmp_py.so
 	cp $(OUTDIR)/cmp_py.so composition.so
+	cp $(OUTDIR)/cmp_py.so ./composition/core/composition.so
 
 cpp: $(OUTDIR)/main
 	cp $(OUTDIR)/main main
