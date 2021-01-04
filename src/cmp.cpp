@@ -51,6 +51,10 @@ int createScene(Scene* s){
 	s->materials[target2].a = 0.04;
 	s->cmpTargets.push_back(target2);
 
+	uint32_t floor = s->newMaterial(Material::Type::GGX_REFLECTION);
+	s->materials[floor].color = glm::vec3(0.33);
+	s->materials[floor].a = 0.1;
+
 	// box
 	s->add(Sphere(glm::vec3(-1e4, 0, 0), 1e4-4, green)); // left
 	s->add(Sphere(glm::vec3( 1e4, 0, 0), 1e4-4, red)); // right
