@@ -1,8 +1,8 @@
 import bpy
 import math
 
-from . import core
-from . import color
+from .. import core
+from .. import color
 
 class Context:
 
