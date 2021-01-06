@@ -1,2 +1,3 @@
-from .binterface import Context
-from .binterface import rampToImage
+from .Context import Context 
+
+from .helper import rampToImage
