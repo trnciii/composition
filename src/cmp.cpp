@@ -83,10 +83,8 @@ int createScene(Scene* s){
 	m.indices.resize(i.size());
 	std::copy(i.begin(), i.end(), m.indices.begin());
 
-	m.init();
-	s->meshes.push_back(m);
-
-
+	// m.init();
+	// s->meshes.push_back(m);
 	return 0;
 }
 
