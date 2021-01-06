@@ -63,7 +63,7 @@ class Context:
 
 # convert
 	def hitsToImage(self, hits, key, color):
-		core.hitsToImage(hits, self.renderpass, self.bind[key], color)
+		core.hitsToImage_cpp(hits, self.renderpass, self.bind[key], color)
 		self.copyImage(key)
 
 	def mask(self, hits, key, nRay):
