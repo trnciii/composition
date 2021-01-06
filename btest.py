@@ -87,13 +87,6 @@ def masks():
     cmp.depth(hits1, d1, 64)
     cmp.depth(hits2, d2, 64)
     
-def sampleFromBImage(u, v, key):
-    im = bpy.data.images[key]
-    w, h = im.size
-    i = min(1, max(0, int(u*w)))
-    j = min(0, max(0, int(v*h)))
-    return composition.core.vec3(im.pixels[4*(j*h+i)], im.pixels[4*(j*h+i)+1], im.pixels[4*(j*h+i)+2])
-
 # define consts
 const_orange = col.basis.const(0.8, 0.3, 0.1)
 const_green = col.basis.const(0.2, 0.9, 0.4)
@@ -141,33 +134,52 @@ def target1():
 #    remap = col.mix(remap, col.basis.radiance, 0.8)
 
     cmp.hitsToImage(hits1, t1, remap)
+
+def sliceImage(key, y):
+    im = bpy.data.images[key]
+    w, h = im.size
     
+    p = [[0.]*3 for i in range(w)]
+    y = max(0, min(h-1, int(y*h)))
+    for x in range(w):
+        i = y*w+x
+        p[x][0] = im.pixels[4*i  ]
+        p[x][1] = im.pixels[4*i+1]
+        p[x][2] = im.pixels[4*i+2]
+    return p
+
+def sampleImage(p):
+    w = len(p)
+    
+    def f(hit):
+        u = col.basis.sumRadianceRGB(hit)
+        u = u**0.4
+        x = max(0, min(w-1, int(u*w)))
+        return composition.core.vec3(p[x][0], p[x][1], p[x][2])
+    return f
+
 def target2():
 
     ramp = col.Ramp(ramp_red0, 'linear')
     ramp.print()
     composition.rampToImage(tx2, ramp)
     
-    def f(hit):
-        u = col.basis.sumRadianceRGB(hit)
-        return sampleFromBImage(u, 0.5, tx1)
-    
-    cmp.hitsToImage(hits2, t2, f)
+    remap = col.basis.image(sliceImage('b', 0.5))
     
 #    remap = col.basis.ramp(col.b[asis.sumRadianceRGB, ramp.eval)
 #    remap = col.mix(remap, col.basis.radiance, 0.25)
 #    remap = col.mul(remap, col.basis.radiance)
     
-#    cmp.hitsToImage(hits2, t2, remap)
+    cmp.hitsToImage(hits2, t2, remap)
 
 
-cmp.load(nt, os.path.abspath(path + '/nontarget_floor'))
-masks()
+#cmp.load(nt, os.path.abspath(path + '/nontarget_floor'))
+#masks()
 
 print("converting hits to color")
 time0 = time.time()
 
-target1()
+#target1()
 target2()
 
 print("time:", time.time()-time0)

@@ -45,3 +45,13 @@ def ramp(coord, ramp):
 	def f(hit):
 		return ramp(coord(hit))
 	return f
+
+def image(p):
+    w = len(p)
+    
+    def f(hit):
+        u = sumRadianceRGB(hit)
+        u = u**0.4
+        x = max(0, min(w-1, int(u*w)))
+        return vec3(p[x][0], p[x][1], p[x][2])
+    return f
