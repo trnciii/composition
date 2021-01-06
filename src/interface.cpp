@@ -186,6 +186,7 @@ void addMesh(Scene& scene, const boost::python::list& vertices, const boost::pyt
 			(py::extract<uint32_t>(index[3]))});
 	}
 
+	m.init();
 	scene.meshes.push_back(m);
 }
 

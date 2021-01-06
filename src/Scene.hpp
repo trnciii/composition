@@ -37,9 +37,4 @@ struct Scene{
 		materials.push_back(Material(t));
 		return materials.size()-1;
 	}
-
-	inline void init(){
-		for(Mesh& m : meshes) m.init();
-	}
-
 };
