@@ -144,10 +144,13 @@ Intersection intersect(const Ray& ray, const Scene& scene){
 	for(const Sphere& s : scene.spheres)
 		s.intersect(&is, ray);
 
-	for(const Mesh& m : scene.meshes)
-		for(uint32_t i=0; i<m.indices.size(); i++)
-			intersect_triangle(&is, ray, m, i);
-
+	for(const Mesh& m : scene.meshes){
+		float t = m.box.distance(ray);
+		if(0<t && t<is.dist)
+			for(uint32_t i=0; i<m.indices.size(); i++)
+				intersect_triangle(&is, ray, m, i);
+	}
+		
 	if(glm::dot(is.n, ray.d)>0){
 		is.n *= -1.0f;
 		is.backfacing = true;

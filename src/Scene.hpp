@@ -38,4 +38,8 @@ struct Scene{
 		return materials.size()-1;
 	}
 
+	inline void init(){
+		for(Mesh& m : meshes) m.init();
+	}
+
 };

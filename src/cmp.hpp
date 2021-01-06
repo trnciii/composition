@@ -2,7 +2,7 @@
 
 #include "Scene.hpp"
 #include "Random.hpp"
-#include "kdtree.hpp"
+#include "accel.hpp"
 
 int createScene(Scene* s);
 

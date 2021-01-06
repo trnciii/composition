@@ -1,5 +1,6 @@
 #define IMPLEMENT_SPHERE
 #define IMPLEMENT_TREE
+#define IMPLEMENT_MESH
 #include "cmp.hpp"
 
 #include <stb/stb_image_write.h>
@@ -10,7 +11,6 @@
 #include <algorithm>
 
 #include "Random.hpp"
-#include "kdtree.hpp"
 #include "render_sub.hpp"
 
 #pragma omp declare reduction (merge:\
@@ -57,7 +57,7 @@ int createScene(Scene* s){
 	// box
 	s->add(Sphere(glm::vec3(-1e4, 0, 0), 1e4-4, green)); // left
 	s->add(Sphere(glm::vec3( 1e4, 0, 0), 1e4-4, red)); // right
-	s->add(Sphere(glm::vec3(0, 0, -1e4), 1e4, floor)); // bottom
+	s->add(Sphere(glm::vec3(0, 0, -1e4), 1e4, white)); // bottom
 	s->add(Sphere(glm::vec3(0, 0,  1e4), 1e4-8, white)); // top
 	s->add(Sphere(glm::vec3(0,  1e4, 0), 1e4-4, white)); // back
 	s->add(Sphere(glm::vec3( 1.5, 0.0, 1.2), 1.2, target1));
@@ -83,7 +83,9 @@ int createScene(Scene* s){
 	m.indices.resize(i.size());
 	std::copy(i.begin(), i.end(), m.indices.begin());
 
-	// s->meshes.push_back(m);
+	s->meshes.push_back(m);
+
+	s->init();
 
 	return 0;
 }

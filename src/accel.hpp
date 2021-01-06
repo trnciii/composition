@@ -5,11 +5,40 @@
 #include <vector>
 #include "data.hpp"
 
+struct Box{
+	glm::vec3 min;
+	glm::vec3 max;
+
+	inline void init(const glm::vec3& p){
+		min = p;
+		max = p;
+	}
+
+	inline void update(const glm::vec3& p){
+		min = glm::min(min, p);
+		max = glm::max(max, p);
+	}
+
+	inline int axis(){
+		glm::vec3 dim = max - min;
+		return (dim.y<dim.x && dim.z<dim.x)? 0 : ((dim.z<dim.y)? 1 : 2);
+	}
+
+	inline bool intersect(const glm::vec3& p, float r){
+		return (min.x - r < p.x && p.x < max.x + r
+			&& min.y - r < p.y && p.y < max.y + r
+			&& min.z - r < p.z && p.z < max.z + r);
+	}
+
+	bool dist_sub(float o, float d, float min, float max, float w[2])const;
+	float distance(const Ray &ray)const;
+
+};
+
 struct Tree{
 
 	struct Node{
-		glm::vec3 min;
-		glm::vec3 max;
+		Box box;
 
 		std::vector<Photon>::iterator begin;
 		uint32_t size;
@@ -17,23 +46,11 @@ struct Tree{
 
 		inline Node(const std::vector<Photon>::iterator b,
 			const std::vector<Photon>::iterator e)
-		:min(b[0].p), max(b[0].p), size(e-b), next(0), begin(b)
+		:size(e-b), next(0), begin(b)
 		{
-			for(int i=1; i<size; i++){
-				min = glm::min(min, begin[i].p);
-				max = glm::max(max, begin[i].p);
-			}
-		}
-
-		inline int axis(){
-			glm::vec3 dim = max - min;
-			return (dim.y<dim.x && dim.z<dim.x)? 0 : ((dim.z<dim.y)? 1 : 2);
-		}
-
-		inline bool intersect(glm::vec3 p, float r){
-			return (min.x - r < p.x && p.x < max.x + r
-				&& min.y - r < p.y && p.y < max.y + r
-				&& min.z - r < p.z && p.z < max.z + r);
+			if(size<1)return;
+			box.init(begin[0].p);
+			for(int i=1; i<size; i++)box.update(begin[i].p);
 		}
 	};
 
@@ -73,6 +90,46 @@ public:
 
 #ifdef IMPLEMENT_TREE
 
+////////////
+// BOX
+////////////
+
+float Box::distance(const Ray &ray)const{
+	float tx[2], ty[2], tz[2], t[2];
+	if(dist_sub(ray.o.x, ray.d.x, min.x, max.x, tx)
+		&& dist_sub(ray.o.y, ray.d.y, min.y, max.y, ty)
+		&& dist_sub(ray.o.z, ray.d.z, min.z, max.z, tz)
+		){
+		t[0] = (tx[0]<ty[0]) ?ty[0] :tx[0]; //get max
+		if(t[0]<tz[0]) t[0]=tz[0];
+
+		t[1] = (tx[1]<ty[1]) ?tx[1] :ty[1]; //get min
+		if(tz[1]<t[1]) t[1]=tz[1];
+
+		if(t[0]<=t[1])  return(0<t[0]) ?t[0]:t[1];
+	}
+	return -1;
+}
+
+bool Box::dist_sub(float o, float d, float min, float max, float w[2])const{
+	if(d==0) return min<o && o<max;
+
+	float temp[2] = {(max - o)/d, (min - o)/d};
+	if(temp[0]<temp[1]){
+		w[0] = temp[0];
+		w[1] = temp[1];
+	}
+	else{
+		w[0] = temp[1];
+		w[1] = temp[0];
+	}
+	return true;
+}
+
+////////////
+// TREE
+////////////
+
 void Tree::split(const std::vector<Photon>::iterator verts_begin,
 	const std::vector<Photon>::iterator verts_end,
 	const int axis)
@@ -84,14 +141,14 @@ void Tree::split(const std::vector<Photon>::iterator verts_begin,
 	{
 		Node node(verts_begin, verts_mid);
 		nodes.push_back(node);
-		if(nElements < node.size)split(verts_begin, verts_mid, node.axis());
+		if(nElements < node.size)split(verts_begin, verts_mid, node.box.axis());
 	}
 	
 	uint32_t p1 = nodes.size();
 	{
 		Node node(verts_mid, verts_end);
 		nodes.push_back(node);
-		if(nElements < node.size)split(verts_mid, verts_end, node.axis());
+		if(nElements < node.size)split(verts_mid, verts_end, node.box.axis());
 	}
 
 	uint32_t p2 = nodes.size();
@@ -107,7 +164,7 @@ bool Tree::build(){
 	
 	Node root(verts.begin(), verts.end());
 	nodes.push_back(root);
-	if(nElements < root.size) split(verts.begin(), verts.end(), root.axis());
+	if(nElements < root.size) split(verts.begin(), verts.end(), root.box.axis());
 	nodes[0].next = nodes.size();
 	return true;
 }
@@ -119,7 +176,7 @@ std::vector<Tree::Result> Tree::searchNN(const hitpoint& hit){
 
 	auto node = nodes.begin();
 	while(node < nodes.end()){
-		if(node->intersect(hit.p, hit.R)){
+		if(node->box.intersect(hit.p, hit.R)){
 			if(node->size <= nElements)
 				for(int i=0; i<node->size; i++){
 					Photon& photon = node->begin[i];
