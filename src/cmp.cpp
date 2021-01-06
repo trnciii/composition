@@ -39,7 +39,7 @@ int createScene(Scene* s){
 	uint32_t green = s->newMaterial(Material::Type::LAMBERT);
 	s->materials[green].color = glm::vec3(0.1, 0.85, 0.1);
 
-	uint32_t target1 = s->newMaterial(Material::Type::GLASS);
+	uint32_t target1 = s->newMaterial(Material::Type::GGX_REFLECTION);
 	// uint32_t target1 = s->newMaterial(Material::Type::LAMBERT);
 	s->materials[target1].color = glm::vec3(1);
 	s->materials[target1].a = 0.1;
@@ -52,13 +52,13 @@ int createScene(Scene* s){
 	s->cmpTargets.push_back(target2);
 
 	uint32_t floor = s->newMaterial(Material::Type::GGX_REFLECTION);
-	s->materials[floor].color = glm::vec3(0.33);
-	s->materials[floor].a = 0.1;
+	s->materials[floor].color = glm::vec3(0.5);
+	s->materials[floor].a = 0.01;
 
 	// box
 	s->add(Sphere(glm::vec3(-1e4, 0, 0), 1e4-4, green)); // left
 	s->add(Sphere(glm::vec3( 1e4, 0, 0), 1e4-4, red)); // right
-	s->add(Sphere(glm::vec3(0, 0, -1e4), 1e4, white)); // bottom
+	s->add(Sphere(glm::vec3(0, 0, -1e4), 1e4, floor)); // bottom
 	s->add(Sphere(glm::vec3(0, 0,  1e4), 1e4-8, white)); // top
 	s->add(Sphere(glm::vec3(0,  1e4, 0), 1e4-4, white)); // back
 	s->add(Sphere(glm::vec3( 1.5, 0.0, 1.2), 1.2, target1));
