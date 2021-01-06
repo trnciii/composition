@@ -19,3 +19,16 @@ def rampToImage(key, ramp):
             px[4*idx+3] = 1
     
     img.pixels = px
+
+def sliceImage(key, y):
+    im = bpy.data.images[key]
+    w, h = im.size
+    
+    p = [[0.]*3 for i in range(w)]
+    y = max(0, min(h-1, int(y*h)))
+    for x in range(w):
+        i = y*w+x
+        p[x][0] = im.pixels[4*i  ]
+        p[x][1] = im.pixels[4*i+1]
+        p[x][2] = im.pixels[4*i+2]
+    return p

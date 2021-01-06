@@ -30,7 +30,7 @@ hits2.load(path + "hits2_s_floor_64")
 #hits1.load(path + "hits1_256")
 #hits2.load(path + "hits2_256")
 
-cmp = composition.Context()
+cmp = composition.bi.Context()
 cmp.bindImage(t1)
 cmp.bindImage(t2)
 cmp.bindImage(m1)
@@ -53,13 +53,6 @@ def terminate():
     
     print("---- end ----")
     
-def ppm(cmp, h1, h2):
-    R0 = 0.5
-    itr = 1000
-    nPhoton = 10000
-    alpha = 0.6
-    cmp.ppm(cmp.target1, h1, R0, itr, nPhoton, alpha)
-    cmp.ppm(cmp.target2, h2, R0, itr, nPhoton, alpha)
 
 def purity(rad, ch):
     a = (rad[0] + rad[1] + rad[2])/3
@@ -127,26 +120,13 @@ def target1():
 #    ramp = col.Ramp([(0, [0.85, 0.3, 0.35]), (0.2, [0.45, 0.6, 0.9]), (1, [0.45, 0.6, 0.9])], 'const')
     
     ramp.print()
-    composition.rampToImage(tx1, ramp)
+    composition.bi.rampToImage(tx1, ramp)
 
     remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
 #    remap = col.mul(remap, col.basis.radiance)
 #    remap = col.mix(remap, col.basis.radiance, 0.8)
 
     cmp.hitsToImage(hits1, t1, remap)
-
-def sliceImage(key, y):
-    im = bpy.data.images[key]
-    w, h = im.size
-    
-    p = [[0.]*3 for i in range(w)]
-    y = max(0, min(h-1, int(y*h)))
-    for x in range(w):
-        i = y*w+x
-        p[x][0] = im.pixels[4*i  ]
-        p[x][1] = im.pixels[4*i+1]
-        p[x][2] = im.pixels[4*i+2]
-    return p
 
 def sampleImage(p):
     w = len(p)
@@ -162,9 +142,9 @@ def target2():
 
     ramp = col.Ramp(ramp_red0, 'linear')
     ramp.print()
-    composition.rampToImage(tx2, ramp)
+    composition.bi.rampToImage(tx2, ramp)
     
-    remap = col.basis.image(sliceImage('b', 0.5))
+    remap = col.basis.image(composition.bi.sliceImage('b', 0.5))
     
 #    remap = col.basis.ramp(col.b[asis.sumRadianceRGB, ramp.eval)
 #    remap = col.mix(remap, col.basis.radiance, 0.25)
