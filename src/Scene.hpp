@@ -1,10 +1,12 @@
 #pragma once
 
 #include <vector>
+#include <glm/glm.hpp>
 
 #include "Camera.hpp"
 #include "Sphere.hpp"
 #include "data.hpp"
+#include "Mesh.hpp"
 
 struct Scene{
 	Camera camera;
@@ -15,6 +17,8 @@ struct Scene{
 	
 	std::vector<Sphere> spheres;
 	std::vector<uint32_t> lights;
+
+	std::vector<Mesh> meshes;
 
 	inline Scene():materials(1, Material(Material::Type::EMIT)){}
 	

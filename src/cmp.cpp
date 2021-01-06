@@ -65,6 +65,14 @@ int createScene(Scene* s){
 	s->add(Sphere(glm::vec3(-1.5, 1.5, 1.5), 1.5, target2));
 	s->add(Sphere(glm::vec3(0,0,6), 0.5, light)); // light
 
+	Mesh m;
+	m.vertices.push_back({glm::vec3( 0, 0, 6), glm::vec3(0, -1, 0)});
+	m.vertices.push_back({glm::vec3(-4, 0, 1), glm::vec3(0, -1, 0)});
+	m.vertices.push_back({glm::vec3( 4, 0, 1), glm::vec3(0, -1, 0)});
+	m.indices.push_back({0, 1, 2, green});
+
+	s->meshes.push_back(m);
+
 	return 0;
 }
 

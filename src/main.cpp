@@ -52,10 +52,11 @@ int main(void){
 		for(int i=0; i<width*height; i++)
 			rngForEveryPixel[i] = RNG(i);
 
-		renderReference(pass.data(reference), width, height, 1000, scene, rngForEveryPixel);
+		renderReference(pass.data(reference), width, height, 200, scene, rngForEveryPixel);
 		// writeLayer(pass, reference, outDir + "/reference");
 		delete[] rngForEveryPixel;
 	}
+
 
 	uint32_t ppm = pass.addLayer();
 	{

@@ -111,6 +111,31 @@ glm::vec3 sampleNDF_GGX(float u1, float u2, const float a2, float* const p = nul
 	return glm::vec3(r*cos(u2), r*sin(u2), z);
 }
 
+void intersect_triangle(Intersection* is, const Ray& ray, const Mesh& m, const uint32_t i){
+	const Index& index = m.indices[i];
+	const Vertex& v0 = m.vertices[index.v0];
+	const Vertex& v1 = m.vertices[index.v1];
+	const Vertex& v2 = m.vertices[index.v2];
+
+	glm::vec3 e0 = v1.position - v0.position;
+	glm::vec3 e1 = v2.position - v0.position;
+	glm::vec3 o = ray.o - v0.position;
+	glm::vec3 q = glm::cross(e0, o);
+	glm::vec3 p = glm::cross(e1, ray.d);
+	float _det = 1/glm::dot(e0, p);
+
+	float s = glm::dot(o, p)*_det;
+	float t = glm::dot(ray.d, q)*_det;
+	float d = (0<s && 0<t && s+t<1)? glm::dot(q, e1)*_det : -1;
+
+	if(0<d && d<is->dist){
+		is->dist = d;
+		is->p = ray.o + d*ray.d;
+		is->n = glm::normalize((1-s-t)*v0.normal + s*v1.normal + t*v2.normal);
+		is->mtlID = index.mtlID;
+	}
+}
+
 Intersection intersect(const Ray& ray, const Scene& scene){
 	Intersection is;
 		is.dist = kHUGE;
@@ -118,6 +143,10 @@ Intersection intersect(const Ray& ray, const Scene& scene){
 
 	for(const Sphere& s : scene.spheres)
 		s.intersect(&is, ray);
+
+	for(const Mesh& m : scene.meshes)
+		for(uint32_t i=0; i<m.indices.size(); i++)
+			intersect_triangle(&is, ray, m, i);
 
 	if(glm::dot(is.n, ray.d)>0){
 		is.n *= -1.0f;
