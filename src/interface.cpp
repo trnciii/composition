@@ -11,6 +11,7 @@
 #include "RenderPass.hpp"
 #include "file.hpp"
 #include "data.hpp"
+#include "print.hpp"
 
 inline std::vector<float> getBlenderImage(RenderPass pass, const uint32_t layer){
 	// pass image in linear? space
@@ -163,9 +164,39 @@ void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
 	pass.setLayer(layer, image.data());
 }
 
+
+void addMesh(Scene& scene, const boost::python::list& vertices, const boost::python::list& indices){
+	namespace py = boost::python;
+
+	Mesh m;
+
+	for(int i=0; i<len(vertices); i++){
+		const boost::python::object& v = vertices[i];
+		m.vertices.push_back({
+			{py::extract<float>(v[0]), py::extract<float>(v[1]), py::extract<float>(v[2])},
+			{py::extract<float>(v[3]), py::extract<float>(v[4]), py::extract<float>(v[5])} });
+	}
+
+	for(int i=0; i<len(indices); i++){
+		const boost::python::object& index = indices[i];
+		m.indices.push_back({
+			(py::extract<uint32_t>(index[0])),
+			(py::extract<uint32_t>(index[1])),
+			(py::extract<uint32_t>(index[2])),
+			(py::extract<uint32_t>(index[3]))});
+	}
+
+	scene.meshes.push_back(m);
+}
+
+void print_scene(const Scene& scene){
+	print(scene);
+}
+
 BOOST_PYTHON_MODULE(composition) {
 	using namespace boost::python;
 
+	// basic data types
 	class_<glm::vec3>("vec3", init<float, float, float>())
 		.def_readwrite("x", &glm::vec3::x)
 		.def_readwrite("y", &glm::vec3::y)
@@ -174,14 +205,6 @@ BOOST_PYTHON_MODULE(composition) {
 	class_<std::vector<float>>("vec_float")
 		.def(vector_indexing_suite<std::vector<float>>());
 
-	class_<RenderPass>("RenderPass", init<int, int>())
-		.def_readonly("width", &RenderPass::width)
-		.def_readonly("height", &RenderPass::height)
-		.def_readonly("length", &RenderPass::length)
-		.def_readonly("nLayers", &RenderPass::nLayer)
-		.def("addLayer", &RenderPass::addLayer)
-		.def("clear", &RenderPass::clear)
-		.def("set", &RenderPass::setPixel);
 
 	class_<hitpoint>("hitpoint")
 		.def_readwrite("p", &hitpoint::p)
@@ -204,26 +227,41 @@ BOOST_PYTHON_MODULE(composition) {
 		.def("save", &hitpoints_wrap::save)
 		.def("load", &hitpoints_wrap::load);
 
-	class_<Scene>("Scene")
+
+	// scene
+	class_<Scene>("Scene");
 		// .def_readonly("cmpTargets", &Scene::);
-		.def("add", &Scene::add)
-		.def("newMaterial", &Scene::newMaterial);
+		// .def("add_sphere", &Scene::add_sphere)
+		// .def("add_mesh", &Scene::add_mesh)
+		// .def("newMaterial", &Scene::newMaterial);
 
-
-	// this - data
-	def("getImage", getBlenderImage);
-
-	// this - main functions
 	def("createScene", createScene);
+	def("addMesh", addMesh);
+	def("print_scene", print_scene);
+
+
+	// render pass
+	class_<RenderPass>("RenderPass", init<int, int>())
+		.def_readonly("width", &RenderPass::width)
+		.def_readonly("height", &RenderPass::height)
+		.def_readonly("length", &RenderPass::length)
+		.def_readonly("nLayers", &RenderPass::nLayer)
+		.def("addLayer", &RenderPass::addLayer)
+		.def("clear", &RenderPass::clear)
+		.def("set", &RenderPass::setPixel);
+
+	def("getImage", getBlenderImage);
+	
+	def("writeAllPass", writeAllPass);
+	def("writeLayer", writeLayer);
+	def("loadLayer", loadLayer);
+
+	// renderers
 	def("renderReference", renderReference_wrap);
 	def("renderNonTarget", renderNonTarget_wrap);
 	def("collectHitpoints", collectHitpoints_one_wrap);
 	def("collectHitpoints_all", collectHitpoints_all_wrap);
 	def("progressivePhotonMapping", progressivePhotonMapping_target);
+	
 	def("hitsToImage_cpp", hitsToImage);
-
-	// file.hpp
-	def("writeAllPass", writeAllPass);
-	def("writeLayer", writeLayer);
-	def("loadLayer", loadLayer);
 }

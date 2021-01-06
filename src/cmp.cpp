@@ -1,5 +1,4 @@
 #define IMPLEMENT_SPHERE
-#define IMPLEMENT_SCENE
 #define IMPLEMENT_TREE
 #include "cmp.hpp"
 
@@ -66,12 +65,25 @@ int createScene(Scene* s){
 	s->add(Sphere(glm::vec3(0,0,6), 0.5, light)); // light
 
 	Mesh m;
-	m.vertices.push_back({glm::vec3( 0, 0, 6), glm::vec3(0, -1, 0)});
-	m.vertices.push_back({glm::vec3(-4, 0, 1), glm::vec3(0, -1, 0)});
-	m.vertices.push_back({glm::vec3( 4, 0, 1), glm::vec3(0, -1, 0)});
-	m.indices.push_back({0, 1, 2, green});
+	std::vector<Vertex> v = {
+		{{-4, 0, 6}, {0, -1, 0}},
+		{{-4, 0, 2}, {0, -1, 0}},
+		{{ 4, 0, 2}, {0, -1, 0}},
+		{{ 4, 0, 6}, {0, -1, 0}}
+	};
 
-	s->meshes.push_back(m);
+	std::vector<Index> i = {
+		{0, 1, 2, green},
+		{2, 3, 0, red}
+	};
+	
+	m.vertices.resize(v.size());
+	std::copy(v.begin(), v.end(), m.vertices.begin());
+
+	m.indices.resize(i.size());
+	std::copy(i.begin(), i.end(), m.indices.begin());
+
+	// s->meshes.push_back(m);
 
 	return 0;
 }

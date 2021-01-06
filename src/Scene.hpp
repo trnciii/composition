@@ -22,26 +22,20 @@ struct Scene{
 
 	inline Scene():materials(1, Material(Material::Type::EMIT)){}
 	
-	void add(Sphere s);
-	uint32_t newMaterial(Material::Type t);
+	inline void add(Sphere s){
+		if(materials.size() <= s.mtlID) return;
+
+		if(materials[s.mtlID].type == Material::Type::EMIT)
+			lights.push_back(spheres.size());
+
+		spheres.push_back(s);
+	}
+
+	inline void add(Mesh m){meshes.push_back(m);}
+
+	inline uint32_t newMaterial(Material::Type t){
+		materials.push_back(Material(t));
+		return materials.size()-1;
+	}
 
 };
-
-
-#ifdef IMPLEMENT_SCENE
-
-void Scene::add(Sphere s){
-	if(materials.size() <= s.mtlID) return;
-
-	if(materials[s.mtlID].type == Material::Type::EMIT)
-		lights.push_back(spheres.size());
-
-	spheres.push_back(s);
-}
-
-uint32_t Scene::newMaterial(Material::Type t){
-	materials.push_back(Material(t));
-	return materials.size()-1;
-}
-
-#endif

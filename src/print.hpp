@@ -47,7 +47,7 @@ void print(const Ray& a, const char* s = "\n"){
 void print(const Sphere& sph, const char* str = "\n"){
 	print(sph.p, " | ");
 	print(sph.r, " | ");
-	std::cout <<"mtl: " <<std::setw(2) <<sph.mtlID <<str <<std::flush;
+	printf("mtl: %2d%s", sph.mtlID, str);
 }
 
 void print(const Material& m, const char* str = "\n"){
@@ -69,6 +69,24 @@ void print(const Camera& a, const char* str="\n"){
 	print(a.pos, " | ");
 	print(a.basis[2], " | ");
 	print(a.flen, str);
+}
+
+void print(const Mesh& m, const char* str="\n"){
+	printf("positions\n");
+	for(const Vertex& v : m.vertices){
+		print(v.position);
+	}
+
+	printf("normals\n");
+	for(const Vertex& v : m.vertices)print(v.normal);
+
+	printf("faces\n");
+	for(const Index& index : m.indices){
+		print(index.v0, " | ");
+		print(index.v1, " | ");
+		print(index.v2, " | ");
+		printf("mtl: %2d%s", index.mtlID, str);
+	}
 }
 
 void print(const Scene& s){
@@ -93,6 +111,12 @@ void print(const Scene& s){
 	for(int i=0; i<s.spheres.size(); i++){
 		printf("[%2d]", i);
 		print(s.spheres[i]);
+	}
+	printBr();
+
+	for(int i=0; i<s.meshes.size(); i++){
+		printf("mesh[%2d]\n", i);
+		print(s.meshes[i]);
 	}
 	printBr();
 	
