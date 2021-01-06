@@ -23,7 +23,8 @@ from .composition import collectHitpoints
 from .composition import collectHitpoints_all
 from .composition import progressivePhotonMapping
 from .composition import renderNonTarget
-from .composition import renderReference
+from .composition import pt_ref
+from .composition import ppm_ref
 from .composition import hitsToImage_cpp
 
 

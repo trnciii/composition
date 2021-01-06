@@ -32,7 +32,7 @@ inline std::vector<float> getBlenderImage(RenderPass pass, const uint32_t layer)
 	return f;
 }
 
-void renderReference_wrap(
+void pt_ref(
 	RenderPass& pass, const int layer, const int spp, const Scene& scene)
 {
 	glm::vec3* const result = pass.data(layer);
@@ -46,6 +46,28 @@ void renderReference_wrap(
 	renderReference(result, w, h, spp, scene, rngForEveryPixel);
 
 	delete[] rngForEveryPixel;
+}
+
+void ppm_ref(RenderPass& pass, const int layer,
+	int nRay, int nPhoton, int iteration, float alpha, float R0,
+	const Scene& scene)
+{
+
+	RNG rng(0);
+
+	std::vector<hitpoint> hits;
+	hits.reserve(pass.length*nRay);
+
+	collectHitpoints_all(hits, pass.width, pass.height, nRay, scene, rng);
+	for(hitpoint& hit : hits)hit.clear(R0);
+	for(int i=0; i<iteration; i++){
+		Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
+		accumulateRadiance(hits, photonmap, scene, alpha);
+	}
+
+	glm::vec3* image = pass.data(layer);
+	for(hitpoint& hit : hits)
+		image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
 }
 
 void renderNonTarget_wrap(
@@ -194,7 +216,7 @@ void print_scene(const Scene& scene){
 	print(scene);
 }
 
-BOOST_PYTHON_MODULE(composition) {
+BOOST_PYTHON_MODULE(composition){
 	using namespace boost::python;
 
 	// basic data types
@@ -258,7 +280,8 @@ BOOST_PYTHON_MODULE(composition) {
 	def("loadLayer", loadLayer);
 
 	// renderers
-	def("renderReference", renderReference_wrap);
+	def("pt_ref", pt_ref);
+	def("ppm_ref", ppm_ref);
 	def("renderNonTarget", renderNonTarget_wrap);
 	def("collectHitpoints", collectHitpoints_one_wrap);
 	def("collectHitpoints_all", collectHitpoints_all_wrap);

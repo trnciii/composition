@@ -45,8 +45,18 @@ class Context:
 			self.copyImage(key)
 
 # rendering
-	def renderReference(self, key, spp):
-		core.renderReference(self.renderpass, self.bind[key], spp, self.scene)
+	def pt_ref(self, key, spp):
+		core.pt_ref(self.renderpass, self.bind[key], spp, self.scene)
+		self.copyImage(key)
+
+	def ppm_ref(self, key):
+		nRay = 8
+		nPhoton = int(1e6)
+		iteration = 10000
+		alpha = 0.6
+		R0 = 1.0
+		
+		core.ppm_ref(self.renderpass, self.bind[key], nRay, nPhoton, iteration, alpha, R0, self.scene)
 		self.copyImage(key)
 		
 	def renderNonTarget(self, key, spp):
