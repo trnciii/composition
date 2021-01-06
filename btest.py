@@ -2,6 +2,7 @@ import bpy
 import numpy as np
 import time
 import os
+import numpy as np
 
 import composition
 col = composition.color
@@ -9,26 +10,25 @@ col = composition.color
 path = bpy.path.abspath('//result') + '/'
 t1 = 'target1'
 t2 = 'target2'
-t1l = 'target1_linear'
-t2l = 'target2_linear'
+t1s = 'target1s'
+t2s = 'target2s'
 m1 = 'mask1'
 m2 = 'mask2'
 d1 = 'depth1'
 d2 = 'depth2'
 nt = 'nt'
-pt = 'rf_pt'
-ppm = 'rf_ppm'
+rf = 'reference'
 tx1 = 'texture1'
 tx2 = 'texture2'
 
 hits1 = composition.core.Hits()
 hits2 = composition.core.Hits()
 
-#hits1.load(path + "hits1_selected_256")
-#hits2.load(path + "hits2_selected_256")
+hits1.load(path + "hits1_s_floor_64")
+hits2.load(path + "hits2_s_floor_64")
 
-hits1.load(path + "hits1_256")
-hits2.load(path + "hits2_256")
+#hits1.load(path + "hits1_256")
+#hits2.load(path + "hits2_256")
 
 cmp = composition.Context()
 cmp.bindImage(t1)
@@ -38,8 +38,9 @@ cmp.bindImage(m2)
 cmp.bindImage(d1)
 cmp.bindImage(d2)
 cmp.bindImage(nt)
-cmp.bindImage(pt)
-cmp.bindImage(ppm)
+cmp.bindImage(rf)
+cmp.bindImage(t1s)
+cmp.bindImage(t2s)
 
 def terminate():
     bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
@@ -85,7 +86,13 @@ def masks():
     print("depth")
     cmp.depth(hits1, d1, 64)
     cmp.depth(hits2, d2, 64)
-
+    
+def sampleFromBImage(u, v, key):
+    im = bpy.data.images[key]
+    w, h = im.size
+    i = min(1, max(0, int(u*w)))
+    j = min(0, max(0, int(v*h)))
+    return composition.core.vec3(im.pixels[4*(j*h+i)], im.pixels[4*(j*h+i)+1], im.pixels[4*(j*h+i)+2])
 
 # define consts
 const_orange = col.basis.const(0.8, 0.3, 0.1)
@@ -121,41 +128,47 @@ ramp_red0 = [
     (1.5, [1, 1, 0.95])
 ]
 
-
 def target1():
     ramp = col.Ramp(ramp_green2, 'const')
 
+#    ramp = col.Ramp([(0, [0.85, 0.3, 0.35]), (0.2, [0.45, 0.6, 0.9]), (1, [0.45, 0.6, 0.9])], 'const')
+    
     ramp.print()
     composition.rampToImage(tx1, ramp)
 
     remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
 #    remap = col.mul(remap, col.basis.radiance)
-    remap = col.mix(remap, col.basis.radiance, 0.8)
+#    remap = col.mix(remap, col.basis.radiance, 0.8)
 
-    cmp.hitsToImage(hits1, t1, col.basis.radiance)
+    cmp.hitsToImage(hits1, t1, remap)
     
 def target2():
-    ramp = col.Ramp(ramp_red0, 'linear')
 
+    ramp = col.Ramp(ramp_red0, 'linear')
     ramp.print()
     composition.rampToImage(tx2, ramp)
-
-    remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
-    remap = col.mix(remap, col.basis.radiance, 0.4)
     
-    cmp.hitsToImage(hits2, t2, col.basis.radiance)
+    def f(hit):
+        u = col.basis.sumRadianceRGB(hit)
+        return sampleFromBImage(u, 0.5, tx1)
+    
+    cmp.hitsToImage(hits2, t2, f)
+    
+#    remap = col.basis.ramp(col.b[asis.sumRadianceRGB, ramp.eval)
+#    remap = col.mix(remap, col.basis.radiance, 0.25)
+#    remap = col.mul(remap, col.basis.radiance)
+    
+#    cmp.hitsToImage(hits2, t2, remap)
 
 
-cmp.load(nt, os.path.abspath(path + 'nontarget'))
-cmp.load(pt , path + 'rf_pt')
-cmp.load(ppm, path + 'rf_ppm')
+cmp.load(nt, os.path.abspath(path + '/nontarget_floor'))
 masks()
 
 print("converting hits to color")
 time0 = time.time()
 
-#target1()
-#target2()
+target1()
+target2()
 
 print("time:", time.time()-time0)
 
