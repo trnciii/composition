@@ -53,7 +53,7 @@ class Context:
 		return core.collectHitpoints(self.eyeDepth, self.w, self.h, nRay, self.scene, target)
 
 	def ppm_radiance(self, target, hits, param):
-		core.progressivePhotonMapping(hits, param.R0, param.itration, param.nPhoton, param.alpha, self.scene, target)
+		core.progressivePhotonMapping(hits, param.R0, param.itr, param.nPhoton, param.alpha, self.scene, target)
 
 # convert
 	def hitsToImage(self, hits, key, color):
