@@ -4,14 +4,6 @@ from .. import core
 
 class Context:
 
-	# ppm
-	nRay = 128
-	R0 = 0.5
-	iteration = 100
-	nPhoton = 100000
-	alpha = 0.6
-	eyeDepth = 1
-
 	def __init__(self):
 		self.w = 512
 		self.h = 512
@@ -49,14 +41,8 @@ class Context:
 		core.pt_ref(self.renderpass, self.bind[key], spp, self.scene)
 		self.copyImage(key)
 
-	def ppm_ref(self, key):
-		nRay = 8
-		nPhoton = int(1e6)
-		iteration = 10000
-		alpha = 0.6
-		R0 = 1.0
-		
-		core.ppm_ref(self.renderpass, self.bind[key], nRay, nPhoton, iteration, alpha, R0, self.scene)
+	def ppm_ref(self, key, param):
+		core.ppm(self.renderpass, self.bind[key], param, self.scene)
 		self.copyImage(key)
 		
 	def renderNonTarget(self, key, spp):
@@ -66,8 +52,8 @@ class Context:
 	def genHits(self, target, nRay):
 		return core.collectHitpoints(self.eyeDepth, self.w, self.h, nRay, self.scene, target)
 
-	def ppm(self, target, hits, R0, itr, nPhoton, alpha):
-		core.progressivePhotonMapping(hits, R0, itr, nPhoton, alpha, self.scene, target)
+	def ppm_radiance(self, target, hits, param):
+		core.progressivePhotonMapping(hits, param.R0, param.itration, param.nPhoton, param.alpha, self.scene, target)
 
 # convert
 	def hitsToImage(self, hits, key, color):

@@ -32,3 +32,6 @@ from .composition import hitsToImage_cpp
 from .functions import hitsToImage
 from .functions import mask
 from .functions import depth
+
+from .helper import PPMParam
+from .helper import ppm
