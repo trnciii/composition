@@ -38,7 +38,7 @@ class Context:
 
 # rendering
 	def pt_ref(self, key, spp):
-		core.pt_ref(self.renderpass, self.bind[key], spp, self.scene)
+		core.pt(self.renderpass, self.bind[key], spp, self.scene)
 		self.copyImage(key)
 
 	def ppm_ref(self, key, param):

@@ -32,7 +32,7 @@ inline std::vector<float> getBlenderImage(RenderPass pass, const uint32_t layer)
 	return f;
 }
 
-void pt_ref(
+void pt(
 	RenderPass& pass, const int layer, const int spp, const Scene& scene)
 {
 	glm::vec3* const result = pass.data(layer);
@@ -48,7 +48,7 @@ void pt_ref(
 	delete[] rngForEveryPixel;
 }
 
-void ppm_ref(RenderPass& pass, const int layer,
+void ppm(RenderPass& pass, const int layer,
 	int nRay, int nPhoton, int iteration, float alpha, float R0,
 	const Scene& scene)
 {
@@ -280,8 +280,8 @@ BOOST_PYTHON_MODULE(composition){
 	def("loadLayer", loadLayer);
 
 	// renderers
-	def("pt_ref", pt_ref);
-	def("ppm_ref", ppm_ref);
+	def("pt", pt);
+	def("ppm", ppm);
 	def("renderNonTarget", renderNonTarget_wrap);
 	def("collectHitpoints", collectHitpoints_one_wrap);
 	def("collectHitpoints_all", collectHitpoints_all_wrap);
