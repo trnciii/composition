@@ -5,7 +5,7 @@
 #include "data.hpp"
 
 struct Camera{
-	glm::vec3 pos;
+	glm::vec3 pos = glm::vec3(0);
 	glm::vec3 basis[3] = {glm::vec3(1,0,0), glm::vec3(0,0,1), glm::vec3(0,-1,0)};
 	float flen = 2;
 
