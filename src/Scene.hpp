@@ -37,4 +37,9 @@ struct Scene{
 		materials.push_back(Material(t));
 		return materials.size()-1;
 	}
+
+	inline uint32_t addMaterial(Material m){
+		materials.push_back(m);
+		return materials.size()-1;
+	}
 };

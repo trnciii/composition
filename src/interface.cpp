@@ -240,15 +240,28 @@ BOOST_PYTHON_MODULE(composition){
 
 
 	// scene
-	class_<Scene>("Scene");
+	class_<Scene>("Scene")
+		.def_readwrite("materials", &Scene::materials)
+		.def("addMaterial", &Scene::addMaterial);
 		// .def_readonly("cmpTargets", &Scene::);
-		// .def("add_sphere", &Scene::add_sphere)
-		// .def("add_mesh", &Scene::add_mesh)
 		// .def("newMaterial", &Scene::newMaterial);
 
 	def("createScene", createScene);
 	def("addMesh", addMesh);
 	def("print_scene", print_scene);
+
+	enum_<Material::Type>("MtlType")
+		.value("emit", Material::Type::EMIT)
+		.value("lambert", Material::Type::LAMBERT)
+		.value("glossy", Material::Type::GGX_REFLECTION)
+		.value("glass", Material::Type::GLASS)
+		.export_values();
+
+	class_<Material>("Material", init<Material::Type>())
+		.def_readwrite("type", &Material::type)
+		.def_readwrite("color", &Material::color)
+		.def_readwrite("a", &Material::a)
+		.def_readwrite("ior", &Material::ior);
 
 
 	// render pass
