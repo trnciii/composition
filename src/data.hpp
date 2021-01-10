@@ -25,12 +25,10 @@ struct Material{
 		GLASS,
 	};
 
-	Type type;
+	Type type = Type::EMIT;
 	glm::vec3 color = glm::vec3(0.6, 0.6, 0.6);
-	float a = 0;
-	float ior;
-	
-	inline Material(Material::Type t):type(t){}
+	float a = 0.2;
+	float ior = 1.5;
 };
 
 // ray - object intersection info

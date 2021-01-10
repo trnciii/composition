@@ -24,14 +24,14 @@ struct Mesh{
 	
 	Box box;
 
-	void init();
+	void update();
 };
 
 #ifdef IMPLEMENT_MESH
 
-void Mesh::init(){
+void Mesh::update(){
 	if(indices.size()<1)return;
-	box.init(vertices[indices[0].v0].position);
+	box.update(vertices[indices[0].v0].position);
 	for(const Index& index : indices){
 		box.update(vertices[index.v0].position);
 		box.update(vertices[index.v1].position);

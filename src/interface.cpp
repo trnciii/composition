@@ -196,7 +196,7 @@ void addMesh(Scene& scene, const boost::python::list& vertices, const boost::pyt
 			(py::extract<uint32_t>(index[3]))});
 	}
 
-	m.init();
+	m.update();
 	scene.meshes.push_back(m);
 }
 
@@ -257,7 +257,7 @@ BOOST_PYTHON_MODULE(composition){
 		.value("glass", Material::Type::GLASS)
 		.export_values();
 
-	class_<Material>("Material", init<Material::Type>())
+	class_<Material>("Material")
 		.def_readwrite("type", &Material::type)
 		.def_readwrite("color", &Material::color)
 		.def_readwrite("a", &Material::a)

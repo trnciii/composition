@@ -25,34 +25,52 @@ int createScene(Scene* s){
 	s->materials[s->environment].type = Material::Type::EMIT;
 	s->materials[s->environment].color = glm::vec3(0.05);
 
+	Material mLight;
+		mLight.type = Material::Type::EMIT;
+		mLight.color = glm::vec3(30);
 
-	uint32_t light = s->newMaterial(Material::Type::EMIT);
-	s->materials[light].color = glm::vec3(30);
+	uint32_t light = s->addMaterial(mLight);
 
-	uint32_t white = s->newMaterial(Material::Type::LAMBERT);
-	s->materials[white].color = glm::vec3(0.6);
+	Material mWhite;
+		mWhite.type = Material::Type::LAMBERT;
+		mWhite.color = glm::vec3(0.6);
 
-	uint32_t red = s->newMaterial(Material::Type::LAMBERT);
-	s->materials[red].color = glm::vec3(0.85, 0.1, 0.1);
+	uint32_t white = s->addMaterial(mWhite);
 
-	uint32_t green = s->newMaterial(Material::Type::LAMBERT);
-	s->materials[green].color = glm::vec3(0.1, 0.85, 0.1);
+	Material mRed;
+		mRed.type = Material::Type::LAMBERT;
+		mRed.color = glm::vec3(0.85, 0.1, 0.1);
 
-	uint32_t target1 = s->newMaterial(Material::Type::GGX_REFLECTION);
-	// uint32_t target1 = s->newMaterial(Material::Type::LAMBERT);
-	s->materials[target1].color = glm::vec3(1);
-	s->materials[target1].a = 0.1;
-	s->materials[target1].ior = 2;
+	uint32_t red = s->addMaterial(mRed);
+
+	Material mGreen;
+		mGreen.type = Material::Type::LAMBERT;
+		mGreen.color = 	glm::vec3(0.1, 0.85, 0.1);
+
+	uint32_t green = s->addMaterial(mGreen);
+
+	Material mTarget1;
+		mTarget1.type = Material::Type::GGX_REFLECTION;
+		mTarget1.color = glm::vec3(1);
+		mTarget1.a = 0.1;
+
+	uint32_t target1 = s->addMaterial(mTarget1);
 	s->cmpTargets.push_back(target1);
 
-	uint32_t target2 = s->newMaterial(Material::Type::GGX_REFLECTION);
-	s->materials[target2].color = glm::vec3(1);
-	s->materials[target2].a = 0.04;
+	Material mTarget2;
+		mTarget2.type = Material::Type::GGX_REFLECTION;
+		mTarget2.color = glm::vec3(1);
+		mTarget2.a = 0.04;
+
+	uint32_t target2 = s->addMaterial(mTarget2);
 	s->cmpTargets.push_back(target2);
 
-	uint32_t floor = s->newMaterial(Material::Type::GGX_REFLECTION);
-	s->materials[floor].color = glm::vec3(0.5);
-	s->materials[floor].a = 0.01;
+	Material mFloor;
+		mFloor.type = Material::Type::GGX_REFLECTION;
+		mFloor.color = glm::vec3(0.5);
+		mFloor.a = 0.01;
+
+	uint32_t floor = s->addMaterial(mFloor);
 
 	// box
 	s->add(Sphere(glm::vec3(-1e4, 0, 0), 1e4-4, green)); // left
@@ -83,8 +101,8 @@ int createScene(Scene* s){
 	m.indices.resize(i.size());
 	std::copy(i.begin(), i.end(), m.indices.begin());
 
-	// m.init();
-	// s->meshes.push_back(m);
+	m.update();
+	s->meshes.push_back(m);
 	return 0;
 }
 

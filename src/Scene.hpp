@@ -20,7 +20,7 @@ struct Scene{
 
 	std::vector<Mesh> meshes;
 
-	inline Scene():materials(1, Material(Material::Type::EMIT)){}
+	inline Scene():materials(1, Material()){}
 	
 	inline void add(Sphere s){
 		if(materials.size() <= s.mtlID) return;
@@ -32,11 +32,6 @@ struct Scene{
 	}
 
 	inline void add(Mesh m){meshes.push_back(m);}
-
-	inline uint32_t newMaterial(Material::Type t){
-		materials.push_back(Material(t));
-		return materials.size()-1;
-	}
 
 	inline uint32_t addMaterial(Material m){
 		materials.push_back(m);
