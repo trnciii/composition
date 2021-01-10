@@ -275,6 +275,8 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 }
 
 Tree createPhotonmap(const Scene& scene, int nPhoton, RNG& rand){
+	if(scene.lights.size()==0) return Tree();
+
 	std::vector<Photon> photons;
 	photons.reserve(10*nPhoton);
 
@@ -325,6 +327,8 @@ Tree createPhotonmap(const Scene& scene, int nPhoton, RNG& rand){
 }
 
 Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targetID, RNG& rand){
+	if(scene.lights.size()==0) return Tree();
+
 	std::vector<Photon> photons;
 	photons.reserve(10*nPhoton);
 
