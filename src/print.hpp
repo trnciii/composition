@@ -70,8 +70,8 @@ void print(const Material& m, const char* str = "\n"){
 }
 
 void print(const Camera& a, const char* str="\n"){
-	print(a.pos, " | ");
-	print(a.basis[2], " | ");
+	print(a.pos);
+	for(int i=0; i<3; i++) print(a.basis[i]);
 	print(a.flen, str);
 }
 
@@ -118,8 +118,8 @@ void print(const Scene& s){
 	printBr();
 
 	for(int i=0; i<s.meshes.size(); i++){
-		printf("mesh[%2d]\n", i);
-		print(s.meshes[i]);
+		printf("mesh[%2d] %d vertices, %d triangles\n",
+			i, s.meshes[i].vertices.size(), s.meshes[i].indices.size());
 	}
 	printBr();
 	
