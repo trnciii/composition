@@ -59,8 +59,12 @@ void print(const Material& m, const char* str = "\n"){
 	
 	std::cout <<" | ";
 	print(m.color, " | ");
-	print(m.a, " | ");
-	print(m.ior, " | ");
+
+	if(m.type == Material::Type::GGX_REFLECTION || Material::Type::GLASS)
+		print(m.a, " | ");
+	
+	if(m.type == Material::Type::GLASS)
+		print(m.ior, " | ");
 
 	std::cout <<str;
 }
