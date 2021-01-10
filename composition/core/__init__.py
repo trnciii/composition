@@ -20,7 +20,7 @@ from .composition import writeLayer
 
 # renderers
 from .composition import pt
-from .composition import renderNonTarget
+from .composition import pt_notTarget
 from .composition import collectHits_target_exclusive
 from .composition import collectHits_target
 from .composition import hitsToImage_cpp

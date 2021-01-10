@@ -70,7 +70,7 @@ void ppm(RenderPass& pass, const int layer,
 		image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
 }
 
-void renderNonTarget_wrap(
+void pt_notTarget(
 	RenderPass& pass, const int layer, const int spp, const Scene& scene)
 {
 	glm::vec3* const result = pass.data(layer);
@@ -270,7 +270,7 @@ BOOST_PYTHON_MODULE(composition){
 	// renderers
 	def("pt", pt);
 	def("ppm", ppm);
-	def("renderNonTarget", renderNonTarget_wrap);
+	def("pt_notTarget", pt_notTarget);
 
 	def("collectHits_target_exclusive", collectHits_target_exclusive_wrap);
 	def("collectHits_target", collectHits_target_wrap);

@@ -45,8 +45,8 @@ class Context:
 		core.ppm(self.renderpass, self.bind[key], param, self.scene)
 		self.copyImage(key)
 		
-	def renderNonTarget(self, key, spp):
-		core.renderNonTarget(self.renderpass, self.bind[key], spp, self.scene)
+	def pt_nt(self, key, spp):
+		core.pt_notTarget(self.renderpass, self.bind[key], spp, self.scene)
 		self.copyImage(key)
 
 	def genHits_ex(self, target, nRay):
