@@ -118,7 +118,7 @@ void print(const Scene& s){
 	printBr();
 
 	for(int i=0; i<s.meshes.size(); i++){
-		printf("mesh[%2d] %d vertices, %d triangles\n",
+		printf("mesh[%2d] %lu vertices, %lu triangles\n",
 			i, s.meshes[i].vertices.size(), s.meshes[i].indices.size());
 	}
 	printBr();
