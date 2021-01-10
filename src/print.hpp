@@ -72,13 +72,12 @@ void print(const Camera& a, const char* str="\n"){
 }
 
 void print(const Mesh& m, const char* str="\n"){
-	printf("positions\n");
-	for(const Vertex& v : m.vertices){
-		print(v.position);
-	}
 
-	printf("normals\n");
-	for(const Vertex& v : m.vertices)print(v.normal);
+	printf("vertices\n");
+	for(const Vertex& v : m.vertices){
+		print(v.position, " | ");
+		print(v.normal);
+	}
 
 	printf("faces\n");
 	for(const Index& index : m.indices){
