@@ -153,13 +153,13 @@ def target2():
     cmp.hitsToImage(hits2, t2, remap)
 
 
-#cmp.load(nt, os.path.abspath(path + '/nontarget_floor'))
-#masks()
+cmp.load(nt, os.path.abspath(path + '/nontarget_floor'))
+masks()
 
 print("converting hits to color")
 time0 = time.time()
 
-#target1()
+target1()
 target2()
 
 print("time:", time.time()-time0)

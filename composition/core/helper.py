@@ -18,3 +18,6 @@ class PPMParam:
 
 def ppm(renderpass, id, param, scene):
 	composition.ppm(renderpass, id, param.nRay, param.nPhoton, param.itr, param.alpha, param.R0, scene)
+
+def radiance_target(hits, target, param, scene):
+	composition.radiance_target(hits, param.R0, param.itr, param.nPhoton, param.alpha, scene, target)

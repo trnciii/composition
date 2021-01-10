@@ -49,11 +49,14 @@ class Context:
 		core.renderNonTarget(self.renderpass, self.bind[key], spp, self.scene)
 		self.copyImage(key)
 
-	def genHits(self, target, nRay):
-		return core.collectHitpoints(self.eyeDepth, self.w, self.h, nRay, self.scene, target)
+	def genHits_ex(self, target, nRay):
+		return core.collectHits_target_exclusive(1, self.w, self.h, nRay, self.scene, target)
 
-	def ppm_radiance(self, target, hits, param):
-		core.progressivePhotonMapping(hits, param.R0, param.itr, param.nPhoton, param.alpha, self.scene, target)
+	def genHits(self, target, nRay):
+		return core.collectHits_target(1, self.w, self.h, nRay, self.scene, target)
+
+	def ppm_radiance(self, hits, target, param):
+		core.radiance_target(hits, target, param, self.scene)
 
 # convert
 	def hitsToImage(self, hits, key, color):

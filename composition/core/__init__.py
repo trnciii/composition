@@ -19,18 +19,19 @@ from .composition import writeAllPass
 from .composition import writeLayer
 
 # renderers
-from .composition import collectHitpoints
-from .composition import collectHitpoints_all
-from .composition import progressivePhotonMapping
-from .composition import renderNonTarget
 from .composition import pt
-# from .composition import ppm as ppm_wo
+from .composition import renderNonTarget
+from .composition import collectHits_target_exclusive
+from .composition import collectHits_target
 from .composition import hitsToImage_cpp
 
+# wrapped renderers
+from .helper import PPMParam
+from .helper import ppm
+from .helper import radiance_target
 
+
+# composite
 from .functions import hitsToImage
 from .functions import mask
 from .functions import depth
-
-from .helper import PPMParam
-from .helper import ppm

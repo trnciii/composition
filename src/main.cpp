@@ -84,30 +84,20 @@ int main(void){
 		}
 	}
 
-	{
-		const int digit = 8;
-		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPass(pass, outDir)) <<" / ";
-		for(int i=digit; 0<i; --i) std::cout <<(i<=pass.nLayer)? "1" : "0";
-		std::cout <<std::endl;
-	}
-
-	return 0;
-
 	// render non target component with pt
 	const uint32_t nontarget = pass.addLayer();
-	loadLayer(pass, nontarget, outDir + "/nontarget");
-	// {
-	// 	std::cout <<"path tracing for non-target component [" <<nontarget <<"]" <<std::endl;
+	{
+		std::cout <<"path tracing for non-target component [" <<nontarget <<"]" <<std::endl;
 
-	// 	RNG* rngForEveryPixel = new RNG[width*height];
-	// 	for(int i=0; i<width*height; i++)
-	// 		rngForEveryPixel[i] = RNG(i);
+		RNG* rngForEveryPixel = new RNG[width*height];
+		for(int i=0; i<width*height; i++)
+			rngForEveryPixel[i] = RNG(i);
 
-	// 	renderNonTarget(pass.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
+		renderNonTarget(pass.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
 
-	// 	delete[] rngForEveryPixel;
-	// 	writeLayer(pass, nontarget, outDir + "/nontarget");
-	// }
+		delete[] rngForEveryPixel;
+		writeLayer(pass, nontarget, outDir + "/nontarget");
+	}
 	
 
 	// collect hitpoints
@@ -122,23 +112,13 @@ int main(void){
 		hits[targetID].reserve(width*height*nRay);
 
 		// uint32_t targetID = 0;
-		collectHitpoints_target_one(hits[targetID], targetID, nDepth,
+		collectHitpoints_target_exclusive(hits[targetID], targetID, nDepth,
 			pass.width, pass.height, nRay, scene, rng);
 
 		// save hitpoints
 		// if(writeVector(hits, outDir + "/hit_2")) std::cout <<"hitpoints saved" <<std::endl;
 	}
 
-	// readVector(hits, outDir + "/hit_1");
-
-	// visualize weight of hits
-	// uint32_t weights = pass.addLayer();
-	// std::cout <<"visualization of weights [" <<weights <<"]" <<std::endl;
-	// {	
-	// 	std::vector<glm::vec3> im_d(pass.length);
-	// 	for(hitpoint& hit : hits) im_d[hit.pixel] += hit.weight;
-	// 	pass.setLayer(weights, im_d.begin());
-	// }
 
 	// ppm
 	// todo: takeover RNG state. currently hits are cleared before this iterations.

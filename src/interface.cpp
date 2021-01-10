@@ -114,7 +114,7 @@ public:
 	}
 };
 
-hitpoints_wrap collectHitpoints_all_wrap(const int depth, const int w, const int h, const int nRay,
+hitpoints_wrap collectHits_target_wrap(const int depth, const int w, const int h, const int nRay,
 	const Scene& scene, const uint32_t target)
 // todo: passing rng state
 {
@@ -127,7 +127,7 @@ hitpoints_wrap collectHitpoints_all_wrap(const int depth, const int w, const int
 	return hitpoints_wrap(hits);
 }
 
-hitpoints_wrap collectHitpoints_one_wrap(const int depth, const int w, const int h, const int nRay,
+hitpoints_wrap collectHits_target_exclusive_wrap(const int depth, const int w, const int h, const int nRay,
 	const Scene& scene, const uint32_t target)
 // todo: passing rng state
 {
@@ -135,24 +135,12 @@ hitpoints_wrap collectHitpoints_one_wrap(const int depth, const int w, const int
 	hits.reserve(w*h*nRay);
 	RNG rng(0);
 
-	collectHitpoints_target_one(hits, target, depth, w, h, nRay, scene, rng);
+	collectHitpoints_target_exclusive(hits, target, depth, w, h, nRay, scene, rng);
 
 	return hitpoints_wrap(hits);
 }
 
-void progressivePhotonMapping_all(std::vector<hitpoint>& hits, 
-	const float R0, const int iteration, const int nPhoton, const float alpha,
-	const Scene& scene)
-{
-	RNG rng;
-	for(hitpoint& hit : hits)hit.clear(R0);
-	for(int i=0; i<iteration; i++){
-		Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
-		accumulateRadiance(hits, photonmap, scene, alpha);
-	}
-}
-
-void progressivePhotonMapping_target(hitpoints_wrap& hits,
+void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 	const float R0, const int iteration, const int nPhoton, const float alpha,
 	const Scene& scene, const uint32_t target)
 {
@@ -283,9 +271,10 @@ BOOST_PYTHON_MODULE(composition){
 	def("pt", pt);
 	def("ppm", ppm);
 	def("renderNonTarget", renderNonTarget_wrap);
-	def("collectHitpoints", collectHitpoints_one_wrap);
-	def("collectHitpoints_all", collectHitpoints_all_wrap);
-	def("progressivePhotonMapping", progressivePhotonMapping_target);
+
+	def("collectHits_target_exclusive", collectHits_target_exclusive_wrap);
+	def("collectHits_target", collectHits_target_wrap);
+	def("radiance_target", progressiveRadianceEstimate_target);
 	
 	def("hitsToImage_cpp", hitsToImage);
 }
