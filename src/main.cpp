@@ -52,7 +52,7 @@ int main(void){
 		for(int i=0; i<width*height; i++)
 			rngForEveryPixel[i] = RNG(i);
 
-		renderReference(pass.data(reference), width, height, 200, scene, rngForEveryPixel);
+		pathTracing(pass.data(reference), width, height, 200, scene, rngForEveryPixel);
 		// writeLayer(pass, reference, outDir + "/reference");
 		delete[] rngForEveryPixel;
 	}
@@ -71,10 +71,10 @@ int main(void){
 		std::vector<hitpoint> hits;
 		hits.reserve(width*height*nRay);
 
-		collectHitpoints_all(hits, pass.width, pass.height, nRay, scene, rng);
+		collectHitpoints(hits, pass.width, pass.height, nRay, scene, rng);
 		for(hitpoint& hit : hits)hit.clear(R0);
 		for(int i=0; i<iteration; i++){
-			Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
+			Tree photonmap = createPhotonmap(scene, nPhoton, rng);
 			accumulateRadiance(hits, photonmap, scene, alpha);
 		}
 
@@ -93,7 +93,7 @@ int main(void){
 		for(int i=0; i<width*height; i++)
 			rngForEveryPixel[i] = RNG(i);
 
-		renderNonTarget(pass.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
+		pathTracing_notTarget(pass.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
 
 		delete[] rngForEveryPixel;
 		writeLayer(pass, nontarget, outDir + "/nontarget");

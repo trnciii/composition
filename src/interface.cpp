@@ -43,7 +43,7 @@ void pt(
 	for(int i=0; i<w*h; i++)
 		rngForEveryPixel[i] = RNG(i);
 
-	renderReference(result, w, h, spp, scene, rngForEveryPixel);
+	pathTracing(result, w, h, spp, scene, rngForEveryPixel);
 
 	delete[] rngForEveryPixel;
 }
@@ -58,10 +58,10 @@ void ppm(RenderPass& pass, const int layer,
 	std::vector<hitpoint> hits;
 	hits.reserve(pass.length*nRay);
 
-	collectHitpoints_all(hits, pass.width, pass.height, nRay, scene, rng);
+	collectHitpoints(hits, pass.width, pass.height, nRay, scene, rng);
 	for(hitpoint& hit : hits)hit.clear(R0);
 	for(int i=0; i<iteration; i++){
-		Tree photonmap = createPhotonmap_all(scene, nPhoton, rng);
+		Tree photonmap = createPhotonmap(scene, nPhoton, rng);
 		accumulateRadiance(hits, photonmap, scene, alpha);
 	}
 
@@ -81,7 +81,7 @@ void renderNonTarget_wrap(
 	for(int i=0; i<w*h; i++)
 		rngForEveryPixel[i] = RNG(i);
 
-	renderNonTarget(result, w, h, spp, scene, rngForEveryPixel);
+	pathTracing_notTarget(result, w, h, spp, scene, rngForEveryPixel);
 
 	delete[] rngForEveryPixel;
 }
