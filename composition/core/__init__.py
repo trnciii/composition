@@ -11,6 +11,9 @@ from .composition import createScene
 from .composition import addMesh
 from .composition import print_scene
 
+from .composition import Camera
+from .composition import setCamera
+
 from .composition import Material
 from .composition import MtlType
 

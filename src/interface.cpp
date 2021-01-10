@@ -176,28 +176,45 @@ void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
 
 
 void addMesh(Scene& scene, const boost::python::list& vertices, const boost::python::list& indices){
-	namespace py = boost::python;
+	using namespace  boost::python;
 
 	Mesh m;
 
 	for(int i=0; i<len(vertices); i++){
 		const boost::python::object& v = vertices[i];
 		m.vertices.push_back({
-			{py::extract<float>(v[0]), py::extract<float>(v[1]), py::extract<float>(v[2])},
-			{py::extract<float>(v[3]), py::extract<float>(v[4]), py::extract<float>(v[5])} });
+			{extract<float>(v[0]), extract<float>(v[1]), extract<float>(v[2])},
+			{extract<float>(v[3]), extract<float>(v[4]), extract<float>(v[5])} });
 	}
 
 	for(int i=0; i<len(indices); i++){
 		const boost::python::object& index = indices[i];
 		m.indices.push_back({
-			(py::extract<uint32_t>(index[0])),
-			(py::extract<uint32_t>(index[1])),
-			(py::extract<uint32_t>(index[2])),
-			(py::extract<uint32_t>(index[3]))});
+			(extract<uint32_t>(index[0])),
+			(extract<uint32_t>(index[1])),
+			(extract<uint32_t>(index[2])),
+			(extract<uint32_t>(index[3]))});
 	}
 
 	m.update();
 	scene.meshes.push_back(m);
+}
+
+void setCamera(Camera& camera, const boost::python::list& m, float focal){
+	using namespace boost::python;
+
+	camera.flen = focal;
+
+	if(len(m)!=16){
+		std::cout <<"wrong input" <<std::endl;
+		return;
+	}
+
+	camera.pos = glm::vec3(extract<float>(m[3]), extract<float>(m[7]), extract<float>(m[11]));
+
+	camera.basis[0] = glm::vec3(extract<float>(m[0]), extract<float>(m[4]), extract<float>(m[8]));
+	camera.basis[1] = glm::vec3(extract<float>(m[1]), extract<float>(m[5]), extract<float>(m[9]));
+	camera.basis[2] = glm::vec3(extract<float>(m[2]), extract<float>(m[6]), extract<float>(m[10]));
 }
 
 void print_scene(const Scene& scene){
@@ -241,6 +258,7 @@ BOOST_PYTHON_MODULE(composition){
 
 	// scene
 	class_<Scene>("Scene")
+		.def_readwrite("camera", &Scene::camera)
 		.def_readwrite("materials", &Scene::materials)
 		.def("addMaterial", &Scene::addMaterial);
 		// .def_readonly("cmpTargets", &Scene::);
@@ -249,6 +267,13 @@ BOOST_PYTHON_MODULE(composition){
 	def("createScene", createScene);
 	def("addMesh", addMesh);
 	def("print_scene", print_scene);
+
+	class_<Camera>("Camera")
+		.def_readwrite("position", &Camera::pos)
+		.def_readwrite("focalLength", &Camera::flen)
+		.def("setSpace", &Camera::setDir);
+
+	def("setCamera", setCamera);
 
 	enum_<Material::Type>("MtlType")
 		.value("emit", Material::Type::EMIT)

@@ -12,10 +12,19 @@ class Context:
 		self.bind = {}
 
 		self.scene = core.Scene()
-		core.createScene(self.scene);
 
 		self.target1 = 0
 		self.target2 = 1
+
+# scene
+	def addMesh(self, vertices, indices):
+		core.addMesh(self.scene, list(vertices), list(indices))
+
+	def setCamera(self, mat, f):
+		core.setCamera(self.scene.camera, mat, f)
+
+	def createBox(self):
+		core.createScene(self.scene)
 
 # image
 	def bindImage(self, key):
