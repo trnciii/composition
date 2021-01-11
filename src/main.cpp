@@ -43,20 +43,27 @@ int main(void){
 	}
 
 	// // render path traced reference
-	uint32_t reference = pass.addLayer();
-	loadLayer(pass, reference, outDir + "/reference");
+	uint32_t pt = pass.addLayer();
 	{
-		std::cout <<"reference path tracing [" <<reference <<"]" <<std::endl;
+		std::cout <<"reference path tracing [" <<pt <<"]" <<std::endl;
 
 		RNG* rngForEveryPixel = new RNG[width*height];
 		for(int i=0; i<width*height; i++)
 			rngForEveryPixel[i] = RNG(i);
 
-		pathTracing(pass.data(reference), width, height, 200, scene, rngForEveryPixel);
+		pathTracing(pass.data(pt), width, height, 200, scene, rngForEveryPixel);
 		// writeLayer(pass, reference, outDir + "/reference");
 		delete[] rngForEveryPixel;
 	}
 
+	{
+		const int digit = 8;
+		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPass(pass, outDir)) <<" / ";
+		for(int i=digit; 0<i; --i) std::cout <<(i<=pass.nLayer)? "1" : "0";
+		std::cout <<std::endl;
+	}
+
+	return 0;
 
 	uint32_t ppm = pass.addLayer();
 	{

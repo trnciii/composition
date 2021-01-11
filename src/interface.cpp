@@ -210,11 +210,11 @@ void setCamera(Camera& camera, const boost::python::list& m, float focal){
 		return;
 	}
 
-	camera.pos = glm::vec3(extract<float>(m[3]), extract<float>(m[7]), extract<float>(m[11]));
+	camera.position = glm::vec3(extract<float>(m[3]), extract<float>(m[7]), extract<float>(m[11]));
 
-	camera.basis[0] = glm::vec3(extract<float>(m[0]), extract<float>(m[4]), extract<float>(m[8]));
-	camera.basis[1] = glm::vec3(extract<float>(m[1]), extract<float>(m[5]), extract<float>(m[9]));
-	camera.basis[2] = glm::vec3(extract<float>(m[2]), extract<float>(m[6]), extract<float>(m[10]));
+	camera.toWorld[0] = glm::vec3(extract<float>(m[ 0]), extract<float>(m[ 4]), extract<float>(m[ 8]));
+	camera.toWorld[1] = glm::vec3(extract<float>(m[ 1]), extract<float>(m[ 5]), extract<float>(m[ 9]));
+	camera.toWorld[2] = glm::vec3(extract<float>(m[ 2]), extract<float>(m[ 6]), extract<float>(m[10]));
 }
 
 void print_scene(const Scene& scene){
@@ -269,7 +269,8 @@ BOOST_PYTHON_MODULE(composition){
 	def("print_scene", print_scene);
 
 	class_<Camera>("Camera")
-		.def_readwrite("position", &Camera::pos)
+		.def_readwrite("toWorld", &Camera::toWorld)
+		.def_readwrite("position", &Camera::position)
 		.def_readwrite("focalLength", &Camera::flen)
 		.def("setSpace", &Camera::setDir);
 

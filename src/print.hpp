@@ -39,6 +39,13 @@ void print(const glm::vec3& a, const char* s = "\n"){
 	print(a.z, s);
 }
 
+void print(const glm::vec4& a, const char* s = "\n"){
+	print(a.x, " ");
+	print(a.y, " ");
+	print(a.z, " ");
+	print(a.w, s);
+}
+
 void print(const Ray& a, const char* s = "\n"){
 	print(a.o, "  | ");
 	print(a.d, s);
@@ -70,8 +77,9 @@ void print(const Material& m, const char* str = "\n"){
 }
 
 void print(const Camera& a, const char* str="\n"){
-	print(a.pos);
-	for(int i=0; i<3; i++) print(a.basis[i]);
+	glm::mat3 w = glm::transpose(a.toWorld);
+	print(a.position);
+	for(int i=0; i<3; i++){print(w[i]);}
 	print(a.flen, str);
 }
 

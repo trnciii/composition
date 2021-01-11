@@ -18,7 +18,7 @@ std::vector<Photon>, std::vector<hitpoint>:\
 omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()) )
 
 int createScene(Scene* s){
-	s->camera.pos = glm::vec3(0,-10,4);
+	s->camera.position = glm::vec3(0, -10, 4);
 	s->camera.setDir(glm::vec3(0,1,0), glm::vec3(0,0,1));
 	s->camera.flen = 2;
 
