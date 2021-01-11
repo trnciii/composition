@@ -47,10 +47,10 @@ class Context:
 		self.copyImage(key)
 
 	def genHits_ex(self, target, nRay):
-		return core.collectHits_target_exclusive(1, self.w, self.h, nRay, self.scene,data, target)
+		return core.collectHits_target_exclusive(1, self.w, self.h, nRay, self.scene.data, target)
 
 	def genHits(self, target, nRay):
-		return core.collectHits_target(1, self.w, self.h, nRay, self.scene,data, target)
+		return core.collectHits_target(1, self.w, self.h, nRay, self.scene.data, target)
 
 	def ppm_radiance(self, hits, target, param):
 		core.radiance_target(hits, target, param, self.scene.data)
