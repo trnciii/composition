@@ -78,7 +78,7 @@ def createMaterial(key):
         m = composition.Material()
         m.type = composition.MtlType.glossy
         m.color = composition.vec3(c[0], c[1], c[2])
-        m.alpha = a
+        m.a = a*a
         return m
     
     print('could not convert material')
