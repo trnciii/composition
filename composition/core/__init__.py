@@ -6,16 +6,6 @@ from .composition import hitpoint as Hit
 from .composition import hitpoints as Hits
 
 # scene
-from .composition import Scene
-from .composition import Camera
-
-from .composition import addMesh
-from .composition import addSphere
-from .composition import setCamera
-
-from .composition import createScene
-from .composition import print_scene
-
 from .composition import Material
 from .composition import MtlType
 
@@ -37,7 +27,6 @@ from .composition import hitsToImage_cpp
 from .helper import PPMParam
 from .helper import ppm
 from .helper import radiance_target
-
 
 # composite
 from .functions import hitsToImage

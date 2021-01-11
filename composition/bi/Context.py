@@ -1,6 +1,7 @@
 import bpy
 
 from .. import core
+from . import Scene
 
 class Context:
 
@@ -11,27 +12,10 @@ class Context:
 		self.renderpass = core.RenderPass(self.w, self.h)
 		self.bind = {}
 
-		self.scene = core.Scene()
+		self.scene = Scene.Scene()
 
 		self.target1 = 0
 		self.target2 = 1
-
-# scene
-	def addMesh(self, vertices, indices):
-		core.addMesh(self.scene, list(vertices), list(indices))
-
-	def addSphere(self, x, y, z, r, m):
-		core.addSphere(self.scene, x, y, z, r, m)
-
-	def setCamera(self, key):
-		cam = bpy.data.objects[key]
-		cam.data.sensor_fit = 'VERTICAL'
-		f = 2*cam.data.lens/cam.data.sensor_height
-		mat = sum([list(r) for r in cam.matrix_world], [])
-		core.setCamera(self.scene.camera, mat, f)
-
-	def createBoxScene(self):
-		core.createScene(self.scene)
 
 # image
 	def bindImage(self, key):
@@ -54,25 +38,25 @@ class Context:
 
 # rendering
 	def pt_ref(self, key, spp):
-		core.pt(self.renderpass, self.bind[key], spp, self.scene)
+		core.pt(self.renderpass, self.bind[key], spp, self.scene.data)
 		self.copyImage(key)
 
 	def ppm_ref(self, key, param):
-		core.ppm(self.renderpass, self.bind[key], param, self.scene)
+		core.ppm(self.renderpass, self.bind[key], param, self.scene.data)
 		self.copyImage(key)
 		
 	def pt_nt(self, key, spp):
-		core.pt_notTarget(self.renderpass, self.bind[key], spp, self.scene)
+		core.pt_notTarget(self.renderpass, self.bind[key], spp, self.scene.data)
 		self.copyImage(key)
 
 	def genHits_ex(self, target, nRay):
-		return core.collectHits_target_exclusive(1, self.w, self.h, nRay, self.scene, target)
+		return core.collectHits_target_exclusive(1, self.w, self.h, nRay, self.scene,data, target)
 
 	def genHits(self, target, nRay):
-		return core.collectHits_target(1, self.w, self.h, nRay, self.scene, target)
+		return core.collectHits_target(1, self.w, self.h, nRay, self.scene,data, target)
 
 	def ppm_radiance(self, hits, target, param):
-		core.radiance_target(hits, target, param, self.scene)
+		core.radiance_target(hits, target, param, self.scene.data)
 
 # convert
 	def hitsToImage(self, hits, key, color):
