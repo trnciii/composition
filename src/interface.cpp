@@ -204,6 +204,14 @@ void addSphere(Scene& scene, float x, float y, float z, float r, uint32_t m){
 	scene.add(Sphere(glm::vec3(x, y, z), r, m));
 }
 
+void addTarget(Scene& scene, uint32_t i){
+	scene.cmpTargets.push_back(i);
+}
+
+void setEnvironment(Scene& scene, Material m){
+	scene.materials[0] = m;
+}
+
 void setCamera(Camera& camera, const boost::python::list& m, float focal){
 	using namespace boost::python;
 
@@ -271,6 +279,8 @@ BOOST_PYTHON_MODULE(composition){
 	def("createScene", createScene);
 	def("addMesh", addMesh);
 	def("addSphere", addSphere);
+	def("addTarget", addTarget);
+	def("setEnvironment", setEnvironment);
 	def("setCamera", setCamera);
 	def("print_scene", print_scene);
 

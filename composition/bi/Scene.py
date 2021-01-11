@@ -11,6 +11,12 @@ class Scene:
 	def addMaterial(self, m):
 		return self.data.addMaterial(m)
 
+	def setEnvironment(self, m):
+		composition.setEnvironment(self.data, m)
+
+	def addTarget(self, key):
+		composition.addTarget(self.data, self.mtlBinding[key])
+
 	def addMesh(self, key):
 		o = bpy.data.objects[key]
 		if o.type != 'MESH':

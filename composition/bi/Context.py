@@ -14,9 +14,6 @@ class Context:
 
 		self.scene = Scene.Scene()
 
-		self.target1 = 0
-		self.target2 = 1
-
 # image
 	def bindImage(self, key):
 		id = self.renderpass.addLayer()
