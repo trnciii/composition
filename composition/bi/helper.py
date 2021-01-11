@@ -53,7 +53,6 @@ def findShader(key):
 
 def createMaterial(key):
     shader = findShader(key)
-    print(shader)
     
     if(shader.type == 'EMISSION'):
         c = shader.inputs[0].default_value

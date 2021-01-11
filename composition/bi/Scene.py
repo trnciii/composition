@@ -1,5 +1,6 @@
 import bpy
 from ..core import composition
+from . import helper
 
 class Scene:
 	def __init__(self):
@@ -11,8 +12,16 @@ class Scene:
 	def addMesh(self, vertices, indices):
 		composition.addMesh(self.data, list(vertices), list(indices))
 
-	def addSphere(self, x, y, z, r, m:composition.Material):
+	def addSphere_sub(self, x, y, z, r, m:composition.Material):
 		composition.addSphere(self.data, float(x), float(y), float(z), float(r), m)
+
+	def addSphere(self, key):
+	    o = bpy.data.objects[key]
+	    if not len(o.material_slots) > 0 :return
+
+	    m = self.addMaterial(helper.createMaterial(o.material_slots[0].name))
+	    l = o.location
+	    self.addSphere_sub(l.x, l.y, l.z, sum(o.scale)/3, m)
 
 	def setCamera(self, key):
 		cam = bpy.data.objects[key]
