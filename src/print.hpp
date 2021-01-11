@@ -126,8 +126,21 @@ void print(const Scene& s){
 	printBr();
 
 	for(int i=0; i<s.meshes.size(); i++){
-		printf("mesh[%2d] %lu vertices, %lu triangles\n",
+		std::vector<uint32_t> mtls;
+		for(Index i : s.meshes[i].indices){
+			if(std::find(mtls.begin(), mtls.end(), i.mtlID) == mtls.end())
+				mtls.push_back(i.mtlID);
+		}
+
+		printf("mesh[%2d] %lu vertices, %lu triangles, ",
 			i, s.meshes[i].vertices.size(), s.meshes[i].indices.size());
+		
+		printf("materials [");
+		for(int i=0; i<mtls.size(); i++){
+			std::cout <<mtls[i];
+			if(i!=mtls.size()-1)std::cout <<", ";
+		}
+		std::cout <<"]" <<std::endl;
 	}
 	printBr();
 	

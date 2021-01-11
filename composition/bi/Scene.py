@@ -12,43 +12,46 @@ class Scene:
 		return self.data.addMaterial(m)
 
 	def addMesh(self, key):
-		print('in addMesh')
-		if bpy.data.objects[key].type != 'MESH':
+		o = bpy.data.objects[key]
+		if o.type != 'MESH':
 			print('not a mesh')
 			return
-		
-		o = bpy.data.objects[key].data
 
-		mtl_names = [m.name for m in o.materials]
-		for name in mtl_names:
-			if name not in self.mtlBinding.keys():
-				mtl = helper.createMaterial(name)
-				self.mtlBinding[name] = self.data.addMaterial(mtl)
+		if not len(o.material_slots)>0:
+			print('no materials')
 		
-		for i in self.mtlBinding:
-			print(i)
+		###
+		mesh = bpy.data.objects[key].data
+		names = [m.name for m in mesh.materials]
+
+		for name in names:
+			if name not in self.mtlBinding.keys():
+				self.mtlBinding[name] = self.data.addMaterial(helper.createMaterial(name))
 		  
-		m = bpy.data.objects[key].data
 		OW = bpy.data.objects[key].matrix_world
 
-		coes = np.array([[OW @ v.co] for v in m.vertices])
-		normals = np.array([[ (OW @ v.normal - OW.to_translation()).normalized() ] for v in m.vertices])
+		coes = np.array([[OW @ v.co] for v in mesh.vertices])
+		normals = np.array([[ (OW @ v.normal - OW.to_translation()).normalized() ] for v in mesh.vertices])
 
-		vertices = np.array([ [coes[i], normals[i]] for i in range(len(m.vertices)) ]).reshape(-1, 6)
-		indices = [[p.vertices[0], p.vertices[1], p.vertices[2], self.mtlBinding[o.materials[p.material_index].name]] for p in m.polygons]
+		vertices = np.array([ [coes[i], normals[i]] for i in range(len(mesh.vertices)) ]).reshape(-1, 6)
+		indices = [[ p.vertices[0], p.vertices[1], p.vertices[2],\
+			self.mtlBinding[names[p.material_index]] ] for p in mesh.polygons]
 		
 		composition.addMesh(self.data, list(vertices), list(indices))
 
-	def addSphere_sub(self, x, y, z, r, m:composition.Material):
-		composition.addSphere(self.data, float(x), float(y), float(z), float(r), m)
-
 	def addSphere(self, key):
 		o = bpy.data.objects[key]
-		if not len(o.material_slots) > 0 :return
+		if not len(o.material_slots) > 0:
+			print('no materials')
+			return
+		
+		###
+		name = o.material_slots[0].name
+		if name not in self.mtlBinding.keys():
+			self.mtlBinding[name] = self.data.addMaterial(helper.createMaterial(name))
 
-		m = self.addMaterial(helper.createMaterial(o.material_slots[0].name))
 		l = o.location
-		self.addSphere_sub(l.x, l.y, l.z, sum(o.scale)/3, m)
+		composition.addSphere(self.data, l.x, l.y, l.z, sum(o.scale)/3, self.mtlBinding[name])
 
 	def setCamera(self, key):
 		cam = bpy.data.objects[key]
@@ -61,4 +64,7 @@ class Scene:
 		composition.createScene(self.data)
 
 	def print(self):
+		print('material binding')
+		for k in self.mtlBinding.keys():
+			print('[{:2}]'.format(self.mtlBinding[k]), k)
 		composition.print_scene(self.data)
