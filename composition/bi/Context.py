@@ -20,10 +20,17 @@ class Context:
 	def addMesh(self, vertices, indices):
 		core.addMesh(self.scene, list(vertices), list(indices))
 
-	def setCamera(self, mat, f):
+	def addSphere(self, x, y, z, r, m):
+		core.addSphere(self.scene, x, y, z, r, m)
+
+	def setCamera(self, key):
+		cam = bpy.data.objects[key]
+		cam.data.sensor_fit = 'VERTICAL'
+		f = 2*cam.data.lens/cam.data.sensor_height
+		mat = sum([list(r) for r in cam.matrix_world], [])
 		core.setCamera(self.scene.camera, mat, f)
 
-	def createBox(self):
+	def createBoxScene(self):
 		core.createScene(self.scene)
 
 # image

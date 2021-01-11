@@ -200,6 +200,10 @@ void addMesh(Scene& scene, const boost::python::list& vertices, const boost::pyt
 	scene.meshes.push_back(m);
 }
 
+void addSphere(Scene& scene, float x, float y, float z, float r, uint32_t m){
+	scene.add(Sphere(glm::vec3(x, y, z), r, m));
+}
+
 void setCamera(Camera& camera, const boost::python::list& m, float focal){
 	using namespace boost::python;
 
@@ -266,6 +270,8 @@ BOOST_PYTHON_MODULE(composition){
 
 	def("createScene", createScene);
 	def("addMesh", addMesh);
+	def("addSphere", addSphere);
+	def("setCamera", setCamera);
 	def("print_scene", print_scene);
 
 	class_<Camera>("Camera")
@@ -273,8 +279,6 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("position", &Camera::position)
 		.def_readwrite("focalLength", &Camera::flen)
 		.def("setSpace", &Camera::setDir);
-
-	def("setCamera", setCamera);
 
 	enum_<Material::Type>("MtlType")
 		.value("emit", Material::Type::EMIT)

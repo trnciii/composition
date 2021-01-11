@@ -7,12 +7,14 @@ from .composition import hitpoints as Hits
 
 # scene
 from .composition import Scene
-from .composition import createScene
-from .composition import addMesh
-from .composition import print_scene
-
 from .composition import Camera
+
+from .composition import addMesh
+from .composition import addSphere
 from .composition import setCamera
+
+from .composition import createScene
+from .composition import print_scene
 
 from .composition import Material
 from .composition import MtlType
