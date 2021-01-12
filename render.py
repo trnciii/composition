@@ -23,6 +23,21 @@ def terminate():
             del globals()[name]
     
     print("---- end ----")
+    
+ramp_green = [
+    (0, [0.03, 0.1, 0.03]),
+    (0.07, [0.1, 0.5, 0.1 ]),
+    (0.3 , [0.6, 0.8, 0.2]),
+    (0.8 , [0.9, 1, 0.9]),
+]
+
+ramp_red = [
+    (0, [0.1, 0.02, 0.02]),
+    (0.3, [0.5, 0.1, 0.1]),
+    (0.65, [0.8, 0.7, 0.2]),
+    (1.5, [1, 1, 0.95])
+]
+
 
 path = bpy.path.abspath('//result') + '/'
 t0 = 'target1'
@@ -40,6 +55,7 @@ tx1 = 'texture2'
 
 cmp = composition.bi.Context()
 cmp.bindImage(rf)
+cmp.bindImage(nt)
 cmp.bindImage(t0)
 cmp.bindImage(t1)
 
@@ -56,8 +72,11 @@ cmp.scene.addSphere('Sphere.002')
 cmp.scene.addSphere('Sphere')
 
 cmp.scene.addMesh('floor')
-cmp.scene.addMesh('left_proxi')
-cmp.scene.addMesh('back_proxi')
+#cmp.scene.addMesh('left_proxi')
+#cmp.scene.addMesh('back_proxi')
+cmp.scene.addMesh('left')
+cmp.scene.addMesh('back')
+cmp.scene.addMesh('right')
 #cmp.scene.addMesh('Suzanne')
 
 cmp.scene.addTarget('target1')
@@ -70,15 +89,31 @@ time0 = time.time()
 
 cmp.pt_ref(rf, 500)
 
-nRay = 16
-hits0 = cmp.genHits_ex(0, nRay)
-hits1 = cmp.genHits_ex(1, nRay)
+cmp.pt_nt(nt, 500)
 
-cmp.hitsToImage(hits0, t0, col.basis.const(1, 1, 1))
-cmp.hitsToImage(hits1, t1, col.basis.const(1, 1, 1))
 
-#param = composition.core.PPMParam()
-#cmp.ppm_ref(rf, param)
+param = composition.core.PPMParam()
+param.nRay = 64
+param.nPhoton = 100000
+param.itr = 5000
+
+hits0 = cmp.genHits_ex(0, param.nRay)
+hits1 = cmp.genHits_ex(1, param.nRay)
+
+cmp.ppm_radiance(hits0, 0, param)
+cmp.ppm_radiance(hits1, 1, param)
+
+hits0.save(path + "hits0_new_64")
+hits1.save(path + "hits1_new_64")
+
+ramp0 = col.Ramp(ramp_red, 'const')
+ramp1 = col.Ramp(ramp_green, 'linear')
+
+remap0 = col.basis.ramp(col.basis.sumRadianceRGB, ramp0.eval)
+remap1 = col.basis.ramp(col.basis.sumRadianceRGB, ramp1.eval)
+
+cmp.hitsToImage(hits0, t0, remap0)
+cmp.hitsToImage(hits1, t1, remap1)
 
 print(time.time() - time0)
 
