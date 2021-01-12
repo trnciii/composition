@@ -87,17 +87,20 @@ cmp.scene.print()
 time.sleep(0.2)
 time0 = time.time()
 
-print('pt')
-cmp.pt_ref(rf, 500)
+#print('pt')
+#cmp.pt_ref(rf, 500)
 
 print('pt_nt')
-cmp.pt_nt(nt, 500)
+cmp.pt_nt(nt, 50)
+
+print(time0 - time.time())
+terminate()
 
 
 param = composition.core.PPMParam()
 param.nRay = 64
-param.nPhoton = 1000
-param.itr = 50
+param.nPhoton = 10000
+param.itr = 1000
 
 print('genHits')
 hits0 = cmp.genHits_ex(0, param.nRay)
