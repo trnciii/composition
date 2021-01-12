@@ -32,7 +32,6 @@ struct Box{
 
 	bool dist_sub(float o, float d, float min, float max, float w[2])const;
 	float distance(const Ray &ray)const;
-
 };
 
 struct Tree{
