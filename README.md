@@ -16,8 +16,10 @@ We can edit the material with any info on the surface including its radiance, an
 ## dependency
 This uses
 
-* boost::python
-* bledner(bpy)
+* [bledner](https://www.blender.org/) (bpy)
+* [Boost.Python](https://www.boost.org/doc/libs/1_75_0/libs/python/doc/html/index.html)
+* [glm](https://github.com/g-truc/glm)
+* [stb](https://github.com/nothings/stb) (stb_image_write.h)
 
 ## todo
 
