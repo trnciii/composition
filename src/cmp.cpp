@@ -102,7 +102,7 @@ int createScene(Scene* s){
 	std::copy(i.begin(), i.end(), m.indices.begin());
 
 	m.update();
-	for(int i=0; i<200; i++)s->meshes.push_back(m);
+	s->meshes.push_back(m);
 	return 0;
 }
 
