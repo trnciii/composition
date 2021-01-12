@@ -87,19 +87,23 @@ cmp.scene.print()
 time.sleep(0.2)
 time0 = time.time()
 
+print('pt')
 cmp.pt_ref(rf, 500)
 
+print('pt_nt')
 cmp.pt_nt(nt, 500)
 
 
 param = composition.core.PPMParam()
 param.nRay = 64
-param.nPhoton = 100000
-param.itr = 5000
+param.nPhoton = 1000
+param.itr = 50
 
+print('genHits')
 hits0 = cmp.genHits_ex(0, param.nRay)
 hits1 = cmp.genHits_ex(1, param.nRay)
 
+print('radiance estimate')
 cmp.ppm_radiance(hits0, 0, param)
 cmp.ppm_radiance(hits1, 1, param)
 
@@ -112,6 +116,7 @@ ramp1 = col.Ramp(ramp_green, 'linear')
 remap0 = col.basis.ramp(col.basis.sumRadianceRGB, ramp0.eval)
 remap1 = col.basis.ramp(col.basis.sumRadianceRGB, ramp1.eval)
 
+print('conversion')
 cmp.hitsToImage(hits0, t0, remap0)
 cmp.hitsToImage(hits1, t1, remap1)
 

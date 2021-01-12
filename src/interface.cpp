@@ -6,6 +6,7 @@
 // #include <execution>
 #include <algorithm>
 #include <string>
+#include <omp.h>
 
 #include "cmp.hpp"
 #include "RenderPass.hpp"
@@ -53,15 +54,18 @@ void ppm(RenderPass& pass, const int layer,
 	const Scene& scene)
 {
 
-	RNG rng(0);
+	int nThreads = omp_get_max_threads();
+	std::vector<RNG> rngs(0);
+	for(int i=0; i<nThreads+1; i++)
+		rngs.push_back(RNG(i));
 
 	std::vector<hitpoint> hits;
 	hits.reserve(pass.length*nRay);
 
-	collectHitpoints(hits, pass.width, pass.height, nRay, scene, rng);
+	collectHitpoints(hits, pass.width, pass.height, nRay, scene, rngs[nThreads]);
 	for(hitpoint& hit : hits)hit.clear(R0);
 	for(int i=0; i<iteration; i++){
-		Tree photonmap = createPhotonmap(scene, nPhoton, rng);
+		Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
 		accumulateRadiance(hits, photonmap, scene, alpha);
 	}
 
@@ -144,10 +148,14 @@ void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 	const float R0, const int iteration, const int nPhoton, const float alpha,
 	const Scene& scene, const uint32_t target)
 {
-	RNG rng;
+	int nThreads = omp_get_max_threads();
+	std::vector<RNG> rngs(0);
+	for(int i=0; i<nThreads; i++)
+		rngs.push_back(RNG(i));
+
 	for(hitpoint& hit : hits.data)hit.clear(R0);
 	for(int i=0; i<iteration; i++){
-		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rng);
+		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rngs.data(), nThreads);
 		accumulateRadiance(hits.data, photonmap, scene, alpha);
 	}
 }
@@ -273,8 +281,6 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("camera", &Scene::camera)
 		.def_readwrite("materials", &Scene::materials)
 		.def("addMaterial", &Scene::addMaterial);
-		// .def_readonly("cmpTargets", &Scene::);
-		// .def("newMaterial", &Scene::newMaterial);
 
 	def("createScene", createScene);
 	def("addMesh", addMesh);

@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iostream>
 #include <bitset>
+#include <omp.h>
 
 #include "RenderPass.hpp"
 #include "Random.hpp"
@@ -42,7 +43,7 @@ int main(void){
 		return 0;
 	}
 
-	// // render path traced reference
+	// render path traced reference
 	uint32_t pt = pass.addLayer();
 	{
 		std::cout <<"reference path tracing [" <<pt <<"]" <<std::endl;
@@ -56,32 +57,28 @@ int main(void){
 		delete[] rngForEveryPixel;
 	}
 
-	{
-		const int digit = 8;
-		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPass(pass, outDir)) <<" / ";
-		for(int i=digit; 0<i; --i) std::cout <<(i<=pass.nLayer)? "1" : "0";
-		std::cout <<std::endl;
-	}
-
-	return 0;
 
 	uint32_t ppm = pass.addLayer();
 	{
 		std::cout <<"reference photon mapping [" <<ppm <<"]" <<std::endl;
 		int nRay = 4;
-		int nPhoton = 1000;
+		int nPhoton = 10000;
 		int iteration = 10;
 		float alpha = 0.6;
 		float R0 = 1;
-		RNG rng(0);
-	
+
+		int nThreads = omp_get_max_threads();
+		std::vector<RNG> rngs(0);
+		for(int i=0; i<nThreads+1; i++)
+			rngs.push_back(RNG(i));
+
 		std::vector<hitpoint> hits;
 		hits.reserve(width*height*nRay);
-
-		collectHitpoints(hits, pass.width, pass.height, nRay, scene, rng);
+		collectHitpoints(hits, pass.width, pass.height, nRay, scene, rngs[nThreads]);
 		for(hitpoint& hit : hits)hit.clear(R0);
+
 		for(int i=0; i<iteration; i++){
-			Tree photonmap = createPhotonmap(scene, nPhoton, rng);
+			Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
 			accumulateRadiance(hits, photonmap, scene, alpha);
 		}
 
@@ -135,13 +132,18 @@ int main(void){
 		float alpha = 0.6;
 		float R0 = 0.5;
 
+		int nThreads = omp_get_max_threads();
+		std::vector<RNG> rngs(0);
+		for(int i=0; i<nThreads; i++)
+			rngs.push_back(RNG(i));
+
 		std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
 
 		// uint32_t targetID = 0;
 
 		for(hitpoint& hit : hits[targetID])hit.clear(R0);
 		for(int i=0; i<iteration; i++){
-			Tree photonmap = createPhotonmap_target(scene, nPhoton, targetID, rand);
+			Tree photonmap = createPhotonmap_target(scene, nPhoton, targetID, rngs.data(), nThreads);
 			accumulateRadiance(hits[targetID], photonmap, scene, alpha);
 		}
 

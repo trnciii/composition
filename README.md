@@ -25,7 +25,7 @@ This uses
 
 ### soon
 * embed necessary info in hitpoints
-* parallelize photon tracing
+* manage rng seed
 
 ### future
 * represent suffix path distribution with gaussian parameters or something

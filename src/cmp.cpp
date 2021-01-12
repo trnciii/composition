@@ -4,7 +4,7 @@
 #include "cmp.hpp"
 
 #include <stb/stb_image_write.h>
-
+#include <omp.h>
 #include <iostream>
 #include <string>
 #include <glm/glm.hpp>
@@ -102,7 +102,7 @@ int createScene(Scene* s){
 	std::copy(i.begin(), i.end(), m.indices.begin());
 
 	m.update();
-	// s->meshes.push_back(m);
+	for(int i=0; i<200; i++)s->meshes.push_back(m);
 	return 0;
 }
 
@@ -274,7 +274,7 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 	}
 }
 
-Tree createPhotonmap(const Scene& scene, int nPhoton, RNG& rand){
+Tree createPhotonmap(const Scene& scene, int nPhoton, RNG* rngs, int nThreads){
 	if(scene.lights.size()==0) return Tree();
 
 	std::vector<Photon> photons;
@@ -282,8 +282,10 @@ Tree createPhotonmap(const Scene& scene, int nPhoton, RNG& rand){
 
 	const Sphere& source = scene.spheres[scene.lights[0]];
 
-	// #pragma omp parallel for reduction(merge: photons) schedule(dynamic)
+	#pragma omp parallel for reduction(merge: photons) schedule(dynamic) num_threads(nThreads)
 	for(int n=0; n<nPhoton; n++){
+		RNG& rand = rngs[omp_get_thread_num()];
+
 		glm::vec3 ro, rd;
 		{
 			glm::vec3 N = sampleUniformSphere(rand.uniform(), rand.uniform());
@@ -326,7 +328,7 @@ Tree createPhotonmap(const Scene& scene, int nPhoton, RNG& rand){
 	return tree;
 }
 
-Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targetID, RNG& rand){
+Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targetID, RNG* rngs, int nThreads){
 	if(scene.lights.size()==0) return Tree();
 
 	std::vector<Photon> photons;
@@ -334,8 +336,10 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 	const Sphere& source = scene.spheres[scene.lights[0]];
 
-	// #pragma omp parallel for reduction(merge: photons) schedule(dynamic)
+	#pragma omp parallel for reduction(merge: photons) schedule(dynamic) num_threads(nThreads)
 	for(int n=0; n<nPhoton; n++){
+		RNG& rand = rngs[omp_get_thread_num()];
+
 		glm::vec3 ro, rd;
 		{
 			glm::vec3 N = sampleUniformSphere(rand.uniform(), rand.uniform());
