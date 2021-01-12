@@ -39,17 +39,16 @@ struct Tree{
 	struct Node{
 		Box box;
 
-		std::vector<Photon>::iterator begin;
-		uint32_t size;
+		const uint32_t begin;
+		const uint32_t size;
 		uint32_t next;
 
-		inline Node(const std::vector<Photon>::iterator b,
-			const std::vector<Photon>::iterator e)
+		inline Node(const Tree* const tree, const uint32_t b, const uint32_t e)
 		:size(e-b), next(0), begin(b)
 		{
 			if(size<1)return;
-			box.init(begin[0].p);
-			for(int i=1; i<size; i++)box.update(begin[i].p);
+			box.init(tree->verts[begin].p);
+			for(int i=begin+1; i<begin + size; i++)box.update(tree->verts[i].p);
 		}
 	};
 
@@ -69,9 +68,7 @@ private:
 	std::vector<Node> nodes;
 	const uint32_t nElements = 1000;
 
-	void split(const std::vector<Photon>::iterator verts_begin,
-		const std::vector<Photon>::iterator verts_end,
-		const int axis);
+	void split(const uint32_t verts_begin, const uint32_t verts_end, const int axis);
 
 public:
 
@@ -129,25 +126,23 @@ bool Box::dist_sub(float o, float d, float min, float max, float w[2])const{
 // TREE
 ////////////
 
-void Tree::split(const std::vector<Photon>::iterator verts_begin,
-	const std::vector<Photon>::iterator verts_end,
-	const int axis)
-{
-	std::sort(verts_begin, verts_end, [axis](Photon a, Photon b){return a.p[axis] < b.p[axis];});	
-	std::vector<Photon>::iterator verts_mid =  verts_begin+(verts_end-verts_begin)/2; // split by count
+void Tree::split(const uint32_t begin, const uint32_t end, const int axis){
+	std::sort(verts.begin()+begin, verts.begin()+end,
+		[axis](Photon a, Photon b){return a.p[axis] < b.p[axis];});	
+	const uint32_t mid =  begin+(end-begin)/2; // split by count
 
 	uint32_t p0 = nodes.size();
 	{
-		Node node(verts_begin, verts_mid);
+		Node node(this, begin, mid);
 		nodes.push_back(node);
-		if(nElements < node.size)split(verts_begin, verts_mid, node.box.axis());
+		if(nElements < node.size)split(begin, mid, node.box.axis());
 	}
 	
 	uint32_t p1 = nodes.size();
 	{
-		Node node(verts_mid, verts_end);
+		Node node(this, mid, end);
 		nodes.push_back(node);
-		if(nElements < node.size)split(verts_mid, verts_end, node.box.axis());
+		if(nElements < node.size)split(mid, end, node.box.axis());
 	}
 
 	uint32_t p2 = nodes.size();
@@ -161,9 +156,9 @@ bool Tree::build(){
 
 	if(verts.size() < 1) return false;
 	
-	Node root(verts.begin(), verts.end());
+	Node root(this, 0, verts.size());
 	nodes.push_back(root);
-	if(nElements < root.size) split(verts.begin(), verts.end(), root.box.axis());
+	if(nElements < root.size) split(0, verts.size(), root.box.axis());
 	nodes[0].next = nodes.size();
 	return true;
 }
@@ -173,22 +168,22 @@ std::vector<Tree::Result> Tree::searchNN(const hitpoint& hit){
 
 	std::vector<Tree::Result> result;
 
-	auto node = nodes.begin();
-	while(node < nodes.end()){
-		if(node->box.intersect(hit.p, hit.R)){
-			if(node->size <= nElements)
-				for(int i=0; i<node->size; i++){
-					Photon& photon = node->begin[i];
+	uint32_t i = 0;
+	while(i < nodes.size()){
+		if(nodes[i].box.intersect(hit.p, hit.R)){
+			if(nodes[i].size <= nElements)
+				for(int j=nodes[i].begin; j<nodes[i].begin + nodes[i].size; j++){
+					Photon& photon = verts[j];
 					glm::vec3 d = photon.p - hit.p;
 					float l = length(d);
 					d /= l;
 
 					if(l < hit.R && dot(hit.n, d) < hit.R*hit.R*0.01)
-						result.push_back(Tree::Result(node->begin[i], l));
+						result.push_back(Tree::Result(photon, l));
 				}
-			node++;
+			i++;
 		}
-		else node += node->next;
+		else i += nodes[i].next;
 	}
 
 	return result;
