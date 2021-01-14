@@ -68,7 +68,9 @@ cmp.scene.setEnvironment(env)
 
 # light
 cmp.scene.addSphere('Sphere.001')
-cmp.scene.addSphere('Sphere.002')
+
+# targets
+cmp.scene.addMesh('Sphere.002')
 cmp.scene.addSphere('Sphere')
 
 cmp.scene.addMesh('floor')
@@ -91,16 +93,20 @@ time0 = time.time()
 #cmp.pt_ref(rf, 500)
 
 print('pt_nt')
-cmp.pt_nt(nt, 50)
-
-print(time0 - time.time())
-terminate()
+cmp.pt_nt(nt, 500)
 
 
-param = composition.core.PPMParam()
-param.nRay = 64
-param.nPhoton = 10000
-param.itr = 1000
+param_preview = composition.core.PPMParam()
+param_preview.nRay = 16
+param_preview.nPhoton = 10000
+param_preview.itr = 100
+
+param_final = composition.core.PPMParam()
+param_final.nRay = 256
+param_final.nPhoton = 100000
+param_final.itr = 10000
+
+param = param_preview
 
 print('genHits')
 hits0 = cmp.genHits_ex(0, param.nRay)
@@ -108,10 +114,10 @@ hits1 = cmp.genHits_ex(1, param.nRay)
 
 print('radiance estimate')
 cmp.ppm_radiance(hits0, 0, param)
-cmp.ppm_radiance(hits1, 1, param)
+hits0.save(path + "hits1_bump_flat_" + str(param.nRay))
 
-hits0.save(path + "hits0_new_64")
-hits1.save(path + "hits1_new_64")
+cmp.ppm_radiance(hits1, 1, param)
+hits1.save(path + "hits2_bump_flat_" + str(param.nRay))
 
 ramp0 = col.Ramp(ramp_red, 'const')
 ramp1 = col.Ramp(ramp_green, 'linear')
@@ -120,8 +126,8 @@ remap0 = col.basis.ramp(col.basis.sumRadianceRGB, ramp0.eval)
 remap1 = col.basis.ramp(col.basis.sumRadianceRGB, ramp1.eval)
 
 print('conversion')
-cmp.hitsToImage(hits0, t0, remap0)
-cmp.hitsToImage(hits1, t1, remap1)
+cmp.hitsToImage(hits0, t0, col.basis.radiance)
+cmp.hitsToImage(hits1, t1, col.basis.radiance)
 
 print(time.time() - time0)
 
