@@ -24,8 +24,11 @@ tx2 = 'texture2'
 hits1 = composition.core.Hits()
 hits2 = composition.core.Hits()
 
-hits1.load(path + "hits1_s_floor_64")
-hits2.load(path + "hits2_s_floor_64")
+hits1.load(path + "hits1_bump_flat_16")
+hits2.load(path + "hits2_bump_flat_16")
+
+#hits1.load(path + "hits1_s_floor_64")
+#hits2.load(path + "hits2_s_floor_64")
 
 #hits1.load(path + "hits1_256")
 #hits2.load(path + "hits2_256")
@@ -109,6 +112,7 @@ ramp_green2 = [
 
 ramp_red0 = [
     (0, [0.1, 0.02, 0.02]),
+    (0.25, [0.4, 0.8, 0.5]),
     (0.3, [0.5, 0.1, 0.1]),
     (0.65, [0.8, 0.7, 0.2]),
     (1.5, [1, 1, 0.95])
@@ -140,15 +144,20 @@ def sampleImage(p):
 
 def target2():
 
-    ramp = col.Ramp(ramp_red0, 'linear')
+    ramp = col.Ramp(ramp_red0, 'const')
     ramp.print()
     composition.bi.rampToImage(tx2, ramp)
-    
-    remap = col.basis.image(composition.bi.sliceImage('b', 0.5))
-    
-#    remap = col.basis.ramp(col.b[asis.sumRadianceRGB, ramp.eval)
+ 
+    def u(hit):
+        return col.basis.sumRadianceRGB(hit)**0.5
+        
+    remap = col.basis.ramp(u, ramp.eval)
 #    remap = col.mix(remap, col.basis.radiance, 0.25)
 #    remap = col.mul(remap, col.basis.radiance)
+   
+#    remap = col.basis.image(composition.bi.sliceImage('b', 0.5))
+#    remap = col.pow(remap, col.basis.const(2,2,2))
+   
     
     cmp.hitsToImage(hits2, t2, remap)
 
@@ -159,10 +168,10 @@ def target2():
 print("converting hits to color")
 time0 = time.time()
 
-cmp.hitsToImage(hits1, t1, col.basis.const(1, 1, 1))
+#cmp.hitsToImage(hits2, t2, col.basis.radiance)
 
-#target1()
-#target2()
+target1()
+target2()
 
 print("time:", time.time()-time0)
 

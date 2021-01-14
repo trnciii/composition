@@ -155,6 +155,7 @@ void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 
 	for(hitpoint& hit : hits.data)hit.clear(R0);
 	for(int i=0; i<iteration; i++){
+		if(i%100==0)std::cout <<i <<", " <<std::flush;
 		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rngs.data(), nThreads);
 		accumulateRadiance(hits.data, photonmap, scene, alpha);
 	}
