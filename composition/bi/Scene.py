@@ -57,7 +57,7 @@ class Scene:
 			self.mtlBinding[name] = self.data.addMaterial(helper.createMaterial(name))
 
 		l = o.location
-		composition.addSphere(self.data, l.x, l.y, l.z, sum(o.scale)/3, self.mtlBinding[name])
+		composition.addSphere(self.data, l.x, l.y, l.z, sum(o.dimensions)/6, self.mtlBinding[name])
 
 	def setCamera(self, key):
 		cam = bpy.data.objects[key]
