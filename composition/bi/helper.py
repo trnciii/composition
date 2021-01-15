@@ -1,25 +1,36 @@
 import bpy
 import math
 from ..core import composition
+from ..color.RampData import RampData
 
 def rampToImage(key, ramp):
+    
+    def case_RampData():
+        d = 2**(math.ceil(math.log(ramp.data[-1][0], 2)))
+        c = ramp.eval(d*i/w)
+        return [c.x, c.y, c.z, 1]
+    
+    def case_image():
+        d = len(ramp)
+        return ramp[max(0, min(w-1, int(d*i/w)))] + [1]
+    
     img = bpy.data.images[key]
     w, h = img.size
-    print("ramp image size", w, h)
-    px = [0.0]*4*w*h
-    d = 2**(math.ceil(math.log(ramp.data[-1][0], 2)))
-
+    px = [[0.0]*4 for i in range(w*h)]
+    
     for i in range(w):
-        c = ramp.eval(d*i/w)
-        
+        c = [1., 0., 1.]
+        if isinstance(ramp, RampData):
+            c = case_RampData()
+        if isinstance(ramp, list):
+            c = case_image()
+
         for j in range(h):
             idx = j*w + i
-            px[4*idx  ] = c.x
-            px[4*idx+1] = c.y
-            px[4*idx+2] = c.z
-            px[4*idx+3] = 1
-    
-    img.pixels = px
+            px[idx] = c
+             
+    img.pixels = sum(px, [])
+
 
 def sliceImage(key, y):
     im = bpy.data.images[key]

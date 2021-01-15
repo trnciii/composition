@@ -1,4 +1,4 @@
-from ..core import vec3
+from ..core.composition import vec3
 from .RampData import RampData
 from . import basis
 
@@ -47,13 +47,14 @@ def sumRadianceRGB(hit):
 	return tau.x + tau.y + tau.z
 
 def ramp(coord, data):
-	if type(data) is RampData:
+	if isinstance(data, RampData):
 		def f(hit):
 			return data.eval(coord(hit))
 
 		return f
 	
-	if type(data) is list:
+    # case [[r, g, b], ...]
+	if isinstance(data, list):
 		w = len(data)
 		im = [vec3(p[0], p[1], p[2]) for p in data]
 

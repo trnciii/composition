@@ -121,25 +121,30 @@ def target1():
 #    remap = col.mul(remap, col.basis.radiance)
 #    remap = col.mix(remap, col.basis.radiance, 0.8)
 
+    tPrev = time.time()
     cmp.hitsToImage(hits1, t1, remap)
-
+    print(time.time() - tPrev)
 
 def target2():
-
+    
     ramp = col.RampData(ramp_red0, 'const')
     print(ramp)
-    composition.bi.rampToImage(tx2, ramp)
  
     def u(hit):
         return col.basis.sumRadianceRGB(hit)**0.4
 
-    remap = col.basis.ramp(u, ramp.eval)
+    remap = col.basis.ramp(u, ramp)
     # remap = col.mix(remap, col.basis.radiance, 0.25)
     remap = col.mul(remap, col.basis.radiance)
     remap = col.mul(remap, col.basis.const(6, 6, 6))
-    
-    arr = composition.bi.sliceImage('a.png', 0.5)
-    remap = col.basis.ramp(u, arr)
+
+
+    ## image
+#    ramp = composition.bi.sliceImage('a.png', 0.5)
+#    remap = col.basis.ramp(u, ramp)
+
+
+    composition.bi.rampToImage(tx2, ramp)
     
     tPrev = time.time()
     cmp.hitsToImage(hits2, t2, remap)
