@@ -62,12 +62,23 @@ void ppm(RenderPass& pass, const int layer,
 	std::vector<hitpoint> hits;
 	hits.reserve(pass.length*nRay);
 
+	std::cout <<"collecting hitpoints" <<std::endl;
+
 	collectHitpoints(hits, pass.width, pass.height, nRay, scene, rngs[nThreads]);
 	for(hitpoint& hit : hits)hit.clear(R0);
+	
+	std::cout <<"radiance estimation\n"
+	<<"|--------- --------- --------- --------- |\n"
+	<<"|" <<std::flush;
+
 	for(int i=0; i<iteration; i++){
+		if((i*40)%iteration < 39) std::cout <<"+" <<std::flush;
+
 		Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
 		accumulateRadiance(hits, photonmap, scene, alpha);
 	}
+
+	std::cout <<"|\n" <<std::endl;
 
 	glm::vec3* image = pass.data(layer);
 	for(hitpoint& hit : hits)
@@ -154,11 +165,16 @@ void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 		rngs.push_back(RNG(i));
 
 	for(hitpoint& hit : hits.data)hit.clear(R0);
+
+	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
+
 	for(int i=0; i<iteration; i++){
-		if(i%100==0)std::cout <<i <<", " <<std::flush;
+		if((i*40)%iteration < 39) std::cout <<"+" <<std::flush;
+		
 		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rngs.data(), nThreads);
 		accumulateRadiance(hits.data, photonmap, scene, alpha);
 	}
+	std::cout <<"|\n" <<std::endl;
 }
 
 void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
