@@ -27,11 +27,20 @@ class Context:
 		for key in self.bind.keys():
 			self.copyImage(key)
 
+	def save(self, key, path):
+		if(core.writeLayer(self.renderpass, self.bind[key], path)):
+			print("Save layer", key)
+			print(">>", path)
+		else:
+			print("failed to save a layer")
+
 	def load(self, key, path):
 		if core.loadLayer(self.renderpass, self.bind[key], path):
-			print("Read an image")
+			print("Read a layer as image")
 			print(">>", path)
 			self.copyImage(key)
+		else:
+			print("failed to read a layer")
 
 # rendering
 	def pt_ref(self, key, spp):
