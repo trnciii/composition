@@ -36,16 +36,6 @@ def setAlpha(cmp, key_color, key_alpha, key_out):
     bpy.data.images[key_out].pixels = im
 
 
-def masks():
-    print("mask")
-    cmp.mask(hits1, m1, 64)
-    cmp.mask(hits2, m2, 64)
-
-    print("depth")
-    cmp.depth(hits1, d1, 64)
-    cmp.depth(hits2, d2, 64)
-
-
 path = bpy.path.abspath('//result') + '/'
 t1 = 'target1'
 t2 = 'target2'
@@ -111,6 +101,16 @@ ramp_red0 = [
     (1.5, [1, 1, 0.95])
 ]
 
+def masks():
+    print("mask")
+    cmp.mask(hits1, m1, 64)
+    cmp.mask(hits2, m2, 64)
+
+    print("depth")
+    cmp.depth(hits1, d1, 64)
+    cmp.depth(hits2, d2, 64)
+
+
 def target1():
     ramp = col.Ramp(ramp_green2, 'const')
     
@@ -131,7 +131,7 @@ def target2():
     composition.bi.rampToImage(tx2, ramp)
  
     def u(hit):
-        return col.basis.sumRadianceRGB(hit)**0.5
+        return col.basis.sumRadianceRGB(hit)**0.4
 
     remap = col.basis.ramp(u, ramp.eval)
     # remap = col.mix(remap, col.basis.radiance, 0.25)

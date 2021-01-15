@@ -105,8 +105,10 @@ def main():
 
     time.sleep(0.2)
     time0 = time.time()
+
     #print('pt'); #cmp.pt_ref(rf, 500)
-    #print('pt_nt'); cmp.pt_nt(nt, 500)
+    
+    print('pt_nt'); cmp.pt_nt(nt, 500)
 
     # print('ppm ref'); cmp.ppm_ref(rf, param)
 
