@@ -7,44 +7,6 @@ import numpy as np
 import composition
 col = composition.color
 
-path = bpy.path.abspath('//result') + '/'
-t1 = 'target1'
-t2 = 'target2'
-t1s = 'target1s'
-t2s = 'target2s'
-m1 = 'mask1'
-m2 = 'mask2'
-d1 = 'depth1'
-d2 = 'depth2'
-nt = 'nt'
-rf = 'reference'
-tx1 = 'texture1'
-tx2 = 'texture2'
-
-hits1 = composition.core.Hits()
-hits2 = composition.core.Hits()
-
-hits1.load(path + "hits1_bump_flat_16")
-hits2.load(path + "hits2_bump_flat_16")
-
-#hits1.load(path + "hits1_s_floor_64")
-#hits2.load(path + "hits2_s_floor_64")
-
-#hits1.load(path + "hits1_256")
-#hits2.load(path + "hits2_256")
-
-cmp = composition.bi.Context()
-cmp.bindImage(t1)
-cmp.bindImage(t2)
-cmp.bindImage(m1)
-cmp.bindImage(m2)
-cmp.bindImage(d1)
-cmp.bindImage(d2)
-cmp.bindImage(nt)
-cmp.bindImage(rf)
-cmp.bindImage(t1s)
-cmp.bindImage(t2s)
-
 def terminate():
     bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
     bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
@@ -82,7 +44,38 @@ def masks():
     print("depth")
     cmp.depth(hits1, d1, 64)
     cmp.depth(hits2, d2, 64)
-    
+
+
+path = bpy.path.abspath('//result') + '/'
+t1 = 'target1'
+t2 = 'target2'
+t1s = 'target1s'
+t2s = 'target2s'
+m1 = 'mask1'
+m2 = 'mask2'
+d1 = 'depth1'
+d2 = 'depth2'
+nt = 'nt'
+rf = 'reference'
+tx1 = 'texture1'
+tx2 = 'texture2'
+
+cmp = composition.bi.Context()
+cmp.bindImage(t1)
+cmp.bindImage(t2)
+cmp.bindImage(m1)
+cmp.bindImage(m2)
+cmp.bindImage(d1)
+cmp.bindImage(d2)
+cmp.bindImage(nt)
+cmp.bindImage(rf)
+cmp.bindImage(t1s)
+cmp.bindImage(t2s)
+
+
+hits1 = composition.core.Hits()
+hits2 = composition.core.Hits()
+
 # define consts
 const_orange = col.basis.const(0.8, 0.3, 0.1)
 const_green = col.basis.const(0.2, 0.9, 0.4)
@@ -120,8 +113,6 @@ ramp_red0 = [
 
 def target1():
     ramp = col.Ramp(ramp_green2, 'const')
-
-#    ramp = col.Ramp([(0, [0.85, 0.3, 0.35]), (0.2, [0.45, 0.6, 0.9]), (1, [0.45, 0.6, 0.9])], 'const')
     
     ramp.print()
     composition.bi.rampToImage(tx1, ramp)
@@ -132,15 +123,6 @@ def target1():
 
     cmp.hitsToImage(hits1, t1, remap)
 
-def sampleImage(p):
-    w = len(p)
-    
-    def f(hit):
-        u = col.basis.sumRadianceRGB(hit)
-        u = u**0.4
-        x = max(0, min(w-1, int(u*w)))
-        return composition.core.vec3(p[x][0], p[x][1], p[x][2])
-    return f
 
 def target2():
 
@@ -150,28 +132,31 @@ def target2():
  
     def u(hit):
         return col.basis.sumRadianceRGB(hit)**0.5
-        
-#    remap = col.basis.ramp(u, ramp.eval)
-#    remap = col.mix(remap, col.basis.radiance, 0.25)
-#    remap = col.mul(remap, col.basis.radiance)
+
+    remap = col.basis.ramp(u, ramp.eval)
+    # remap = col.mix(remap, col.basis.radiance, 0.25)
+    # remap = col.mul(remap, col.basis.radiance)
    
-    remap = col.basis.image(composition.bi.sliceImage('e.png', 0.5))
-#    remap = col.pow(remap, col.basis.const(2,2,2))
+    # remap = col.basis.image(composition.bi.sliceImage('e.png', 0.5))
+    # remap = col.pow(remap, col.basis.const(2,2,2))
 
     cmp.hitsToImage(hits2, t2, remap)
 
 
-#cmp.load(nt, os.path.abspath(path + '/nontarget_floor'))
-#masks()
+def main():
 
-print("converting hits to color")
-time0 = time.time()
+    hits1.load(path + "hits1_bump_flat_16")
+    hits2.load(path + "hits2_bump_flat_16")
 
-#cmp.hitsToImage(hits2, t2, col.basis.radiance)
 
-#target1()
-target2()
+    time0 = time.time()
 
-print("time:", time.time()-time0)
+    target1()
+    target2()
 
-terminate()
+    print("time:", time.time()-time0)
+
+    terminate()
+    return
+
+main()
