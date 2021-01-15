@@ -1,7 +1,60 @@
 import bpy
 import numpy as np
 from ..core import composition
-from . import helper
+
+def findShaders(key):
+    tree = bpy.data.materials[key].node_tree
+    links = tree.links
+    nodes = tree.nodes
+    names = [n.name for n in nodes]
+    
+    shaders = [] 
+    for l in links:
+        t = l.to_node
+        f = l.from_node
+        if type(t) is bpy.types.ShaderNodeOutputMaterial:
+            if t.is_active_output and l.to_socket.name == 'Surface':
+                shaders.append(f)
+    
+    return shaders
+
+def interpretShader(shader):
+    
+    if(shader.type == 'EMISSION'):
+        c = shader.inputs[0].default_value
+        s = shader.inputs[1].default_value
+        
+        m = composition.Material()
+        m.type = composition.MtlType.emit
+        m.color = composition.vec3(c[0]*s, c[1]*s, c[2]*s)
+        return m
+        
+    if(shader.type == 'BSDF_DIFFUSE'):
+        c = shader.inputs['Color'].default_value
+        
+        m = composition.Material()
+        m.type = composition.MtlType.lambert
+        m.color = composition.vec3(c[0], c[1], c[2])
+        return m
+    
+    if(shader.type == 'BSDF_GLOSSY'):
+        c = shader.inputs['Color'].default_value
+        a = shader.inputs['Roughness'].default_value
+        
+        m = composition.Material()
+        m.type = composition.MtlType.glossy
+        m.color = composition.vec3(c[0], c[1], c[2])
+        m.a = a*a
+        return m
+
+def createMaterial(key):
+    shaders = findShaders(key)
+
+    if len(shaders)>0:
+        return interpretShader(shaders[0])
+    
+    print('could not convert material')
+
 
 class Scene:
 	def __init__(self):
@@ -25,6 +78,7 @@ class Scene:
 
 		if not len(o.material_slots)>0:
 			print('no materials')
+			return
 		
 		###
 		mesh = bpy.data.objects[key].data
@@ -32,7 +86,7 @@ class Scene:
 
 		for name in names:
 			if name not in self.mtlBinding.keys():
-				self.mtlBinding[name] = self.data.addMaterial(helper.createMaterial(name))
+				self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
 		  
 		OW = bpy.data.objects[key].matrix_world
 
@@ -54,7 +108,7 @@ class Scene:
 		###
 		name = o.material_slots[0].name
 		if name not in self.mtlBinding.keys():
-			self.mtlBinding[name] = self.data.addMaterial(helper.createMaterial(name))
+			self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
 
 		l = o.location
 		composition.addSphere(self.data, l.x, l.y, l.z, sum(o.dimensions)/6, self.mtlBinding[name])
