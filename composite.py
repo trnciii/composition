@@ -135,8 +135,9 @@ def target2():
 
     remap = col.basis.ramp(u, ramp.eval)
     # remap = col.mix(remap, col.basis.radiance, 0.25)
-    # remap = col.mul(remap, col.basis.radiance)
-   
+    remap = col.mul(remap, col.basis.radiance)
+    remap = col.mul(remap, col.basis.const(6, 6, 6))
+    
     # remap = col.basis.image(composition.bi.sliceImage('e.png', 0.5))
     # remap = col.pow(remap, col.basis.const(2,2,2))
 
