@@ -112,12 +112,12 @@ def masks():
 
 
 def target1():
-    ramp = col.Ramp(ramp_green2, 'const')
+    ramp = col.RampData(ramp_green2, 'const')
     
-    ramp.print()
+    print(ramp)
     composition.bi.rampToImage(tx1, ramp)
 
-    remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp.eval)
+    remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
 #    remap = col.mul(remap, col.basis.radiance)
 #    remap = col.mix(remap, col.basis.radiance, 0.8)
 
@@ -126,8 +126,8 @@ def target1():
 
 def target2():
 
-    ramp = col.Ramp(ramp_red0, 'const')
-    ramp.print()
+    ramp = col.RampData(ramp_red0, 'const')
+    print(ramp)
     composition.bi.rampToImage(tx2, ramp)
  
     def u(hit):
@@ -138,11 +138,12 @@ def target2():
     remap = col.mul(remap, col.basis.radiance)
     remap = col.mul(remap, col.basis.const(6, 6, 6))
     
-    # remap = col.basis.image(composition.bi.sliceImage('e.png', 0.5))
-    # remap = col.pow(remap, col.basis.const(2,2,2))
-
+    arr = composition.bi.sliceImage('a.png', 0.5)
+    remap = col.basis.ramp(u, arr)
+    
+    tPrev = time.time()
     cmp.hitsToImage(hits2, t2, remap)
-
+    print(time.time() - tPrev)
 
 def main():
 
@@ -151,13 +152,8 @@ def main():
     hits1.load(path + "hits1_bump_flat_16")
     hits2.load(path + "hits2_bump_flat_16")
 
-
-    time0 = time.time()
-
     target1()
-    target2()
-
-    print("time:", time.time()-time0)
+    target2()    
 
     terminate()
     return

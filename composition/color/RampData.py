@@ -1,7 +1,7 @@
 import numpy as np
 from ..core import vec3
 
-class Ramp():
+class RampData():
 
 	def __init__(self, pairs, mode='linear'):
 		
@@ -69,8 +69,9 @@ class Ramp():
 
 		return vec3(0, 0, 0)
 
-	def print(self):
-		print("ramp:", "mode =", self._mode)
+	def __str__(self):
+		s = "ramp <" + str(self._mode) + ">\n"
 		for e in self._data:
-			print("--", e)
-		print()
+			s = s + "  " + str(e) + "\n"
+		
+		return s
