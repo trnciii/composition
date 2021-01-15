@@ -155,7 +155,7 @@ def target2():
 #    remap = col.mix(remap, col.basis.radiance, 0.25)
 #    remap = col.mul(remap, col.basis.radiance)
    
-    remap = col.basis.image(composition.bi.sliceImage('b', 0.5))
+    remap = col.basis.image(composition.bi.sliceImage('e.png', 0.5))
 #    remap = col.pow(remap, col.basis.const(2,2,2))
 
     cmp.hitsToImage(hits2, t2, remap)
