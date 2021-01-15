@@ -108,7 +108,10 @@ def main():
 
     #print('pt'); #cmp.pt_ref(rf, 500)
     
-    print('pt_nt'); cmp.pt_nt(nt, 500)
+    print('pt_nt');
+    cmp.pt_nt(nt, 500)
+    cmp.save(nt, path+"nontarget_")
+    
 
     # print('ppm ref'); cmp.ppm_ref(rf, param)
 

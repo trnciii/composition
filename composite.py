@@ -146,6 +146,8 @@ def target2():
 
 def main():
 
+    cmp.load(nt, path+"nontarget_")
+
     hits1.load(path + "hits1_bump_flat_16")
     hits2.load(path + "hits2_bump_flat_16")
 
