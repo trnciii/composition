@@ -15,9 +15,7 @@ def terminate():
         if not name.startswith('_'):
             print(name)
             del globals()[name]
-    
-    print("---- end ----")
-    
+
 
 def purity(rad, ch):
     a = (rad[0] + rad[1] + rad[2])/3
@@ -101,15 +99,6 @@ ramp_red0 = [
     (1.5, [1, 1, 0.95])
 ]
 
-def masks():
-    print("mask")
-    cmp.mask(hits1, m1, 64)
-    cmp.mask(hits2, m2, 64)
-
-    print("depth")
-    cmp.depth(hits1, d1, 64)
-    cmp.depth(hits2, d2, 64)
-
 
 def target1():
     ramp = col.RampData(ramp_green2, 'const')
@@ -150,7 +139,7 @@ def target2():
     cmp.hitsToImage(hits2, t2, remap)
     print(time.time() - tPrev)
 
-def main():
+def main_cmp():
 
     cmp.load(nt, path+"nontarget_")
 
@@ -158,9 +147,24 @@ def main():
     hits2.load(path + "hits2_bump_flat_16")
 
     target1()
-    target2()    
+    target2()
 
     terminate()
     return
 
-main()
+def main_im():
+
+    hits1.load(path + "hits1_bump_flat_16a")
+    hits2.load(path + "hits2_bump_flat_16a")
+
+    cmp.mask(hits1, m1, 16)
+    cmp.mask(hits2, m2, 16)
+
+    cmp.depth(hits1, d1, 16)
+    cmp.depth(hits2, d2, 16)
+
+    terminate()
+    return
+
+
+main_cmp()
