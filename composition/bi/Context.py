@@ -29,15 +29,13 @@ class Context:
 
 	def save(self, key, path):
 		if(core.writeLayer(self.renderpass, self.bind[key], path)):
-			print("Save layer", key)
-			print(">>", path)
+			print("Save layer <", key, ">:", path)
 		else:
 			print("failed to save a layer")
 
 	def load(self, key, path):
 		if core.loadLayer(self.renderpass, self.bind[key], path):
-			print("Read a layer as image")
-			print(">>", path)
+			print("Read a layer as image:", path)
 			self.copyImage(key)
 		else:
 			print("failed to read a layer")
