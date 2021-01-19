@@ -101,39 +101,33 @@ ramp_red0 = [
 
 
 def target1():
-    ramp = col.RampData(ramp_green2, 'const')
-    
-    print(ramp)
+    # ramp = col.RampData(ramp_green2, 'const')    
+    # print(ramp)
+    # remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
+    ramp = 'ColorRamp'
+
     composition.bi.rampToImage(tx1, ramp)
 
-    remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
-#    remap = col.mul(remap, col.basis.radiance)
-#    remap = col.mix(remap, col.basis.radiance, 0.8)
+    remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
 
     tPrev = time.time()
     cmp.hitsToImage(hits1, t1, remap)
     print(time.time() - tPrev)
 
+
 def target2():
-    
-    ramp = col.RampData(ramp_red0, 'const')
-    print(ramp)
- 
-    def u(hit):
-        return col.basis.sumRadianceRGB(hit)**0.4
-
-    remap = col.basis.ramp(u, ramp)
-    # remap = col.mix(remap, col.basis.radiance, 0.25)
-    remap = col.mul(remap, col.basis.radiance)
-    remap = col.mul(remap, col.basis.const(6, 6, 6))
-
-
-    ## image
-#    ramp = composition.bi.sliceImage('a.png', 0.5)
-#    remap = col.basis.ramp(u, ramp)
-
+    # ramp = col.RampData(ramp_red0, 'const')
+    # print(ramp)
+    # ramp = composition.bi.sliceImage('a.png', 0.5)
+    ramp = 'ColorRamp.001'
 
     composition.bi.rampToImage(tx2, ramp)
+
+
+    remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
+    # remap = col.mix(remap, col.basis.radiance, 0.25)
+    # remap = col.mul(remap, col.basis.radiance)
+    # remap = col.mul(remap, col.basis.const(6, 6, 6))
     
     tPrev = time.time()
     cmp.hitsToImage(hits2, t2, remap)
@@ -168,3 +162,4 @@ def main_im():
 
 
 main_cmp()
+main_im()

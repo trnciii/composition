@@ -1,7 +1,7 @@
 import bpy
 import math
 from ..core import composition
-from ..color.RampData import RampData
+from .. import color
 
 def rampToImage(key, ramp):
     
@@ -13,17 +13,20 @@ def rampToImage(key, ramp):
     def case_image():
         d = len(ramp)
         return ramp[max(0, min(w-1, int(d*i/w)))] + [1]
-    
+
     img = bpy.data.images[key]
     w, h = img.size
     px = [[0.0]*4 for i in range(w*h)]
+    nodes = bpy.context.scene.node_tree.nodes
     
     for i in range(w):
         c = [1., 0., 1.]
-        if isinstance(ramp, RampData):
+        if isinstance(ramp, color.RampData):
             c = case_RampData()
         if isinstance(ramp, list):
             c = case_image()
+        if ramp in nodes.keys():
+            c = list(nodes[ramp].color_ramp.evaluate(i/w))
 
         for j in range(h):
             idx = j*w + i
@@ -44,3 +47,18 @@ def sliceImage(key, y):
         p[x][1] = im.pixels[4*i+1]
         p[x][2] = im.pixels[4*i+2]
     return p
+
+def ramp(coord, name):
+    nodes = bpy.context.scene.node_tree.nodes
+
+    if name in nodes.keys():
+        ev = nodes[name].color_ramp.evaluate
+    
+        def f(hit):
+            rs = ev(coord(hit))
+            return composition.vec3(rs[0], rs[1], rs[2])
+
+        return f
+
+    else:
+        return color.basis.ramp(coord, name)

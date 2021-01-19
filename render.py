@@ -18,7 +18,6 @@ def terminate():
             print(name)
             del globals()[name]
     
-    print("---- end ----")
 
 path = bpy.path.abspath('//result') + '/'
 t0 = 'target1'
@@ -109,15 +108,15 @@ def main():
     #print('pt'); #cmp.pt_ref(rf, 500)
     
     print('pt_nt');
-    cmp.pt_nt(nt, 500)
+    cmp.pt_nt(nt, 2000)
     cmp.save(nt, path+"nontarget_")
     
 
     # print('ppm ref'); cmp.ppm_ref(rf, param)
 
     print('collect target hitpoints')
-    hits0 = cmp.genHits_ex(0, param.nRay)
-    hits1 = cmp.genHits_ex(1, param.nRay)
+    hits0 = cmp.genHits(0, param.nRay)
+    hits1 = cmp.genHits(1, param.nRay)
 
     print('radiance estimate')
     cmp.ppm_radiance(hits0, 0, param)
@@ -126,8 +125,8 @@ def main():
     cmp.ppm_radiance(hits1, 1, param)
     hits1.save(path + "hits2_bump_flat_" + str(param.nRay))
 
-    ramp0 = col.Ramp(ramp_red, 'const')
-    ramp1 = col.Ramp(ramp_green, 'linear')
+    ramp0 = col.RampData(ramp_red, 'const')
+    ramp1 = col.RampData(ramp_green, 'linear')
 
     remap0 = col.basis.ramp(col.basis.sumRadianceRGB, ramp0.eval)
     remap1 = col.basis.ramp(col.basis.sumRadianceRGB, ramp1.eval)
