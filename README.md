@@ -13,8 +13,7 @@ Then, the radiance on the collected hitpoints are estimated with photon mapping.
 Now that we have both surface radiance and its bleeding into other surface.
 We can edit the material with any info on the surface including its radiance, and can deliver it along its suffix path.
 
-## dependency
-This uses
+## dependencies
 
 * [bledner](https://www.blender.org/) (bpy)
 * [Boost.Python](https://www.boost.org/doc/libs/1_75_0/libs/python/doc/html/index.html)
