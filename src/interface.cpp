@@ -229,10 +229,6 @@ void addSphere(Scene& scene, float x, float y, float z, float r, uint32_t m){
 	scene.add(Sphere(glm::vec3(x, y, z), r, m));
 }
 
-void addTarget(Scene& scene, uint32_t i){
-	scene.cmpTargets.push_back(i);
-}
-
 void setEnvironment(Scene& scene, Material m){
 	scene.materials[0] = m;
 }
@@ -267,6 +263,9 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("y", &glm::vec3::y)
 		.def_readwrite("z", &glm::vec3::z);
 
+	class_<std::vector<uint32_t>>("vec_uint32t")
+		.def(vector_indexing_suite<std::vector<uint32_t>>());
+
 	class_<std::vector<float>>("vec_float")
 		.def(vector_indexing_suite<std::vector<float>>());
 
@@ -297,12 +296,12 @@ BOOST_PYTHON_MODULE(composition){
 	class_<Scene>("Scene")
 		.def_readwrite("camera", &Scene::camera)
 		.def_readwrite("materials", &Scene::materials)
+		.def_readwrite("targets", &Scene::cmpTargets)
 		.def("addMaterial", &Scene::addMaterial);
 
 	def("createScene", createScene);
 	def("addMesh", addMesh);
 	def("addSphere", addSphere);
-	def("addTarget", addTarget);
 	def("setEnvironment", setEnvironment);
 	def("setCamera", setCamera);
 	def("print_scene", print_scene);

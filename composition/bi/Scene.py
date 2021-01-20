@@ -68,7 +68,7 @@ class Scene:
 		composition.setEnvironment(self.data, m)
 
 	def addTarget(self, key):
-		composition.addTarget(self.data, self.mtlBinding[key])
+		self.data.targets.append(self.mtlBinding[key])
 
 	def addMesh(self, key):
 		o = bpy.data.objects[key]
