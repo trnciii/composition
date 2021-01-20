@@ -63,6 +63,8 @@ def context():
     env.color = composition.core.vec3(0, 0, 0)
     cmp.scene.setEnvironment(env)
 
+
+    # add objects
     # light
     cmp.scene.addSphere('Sphere.001')
 
@@ -78,11 +80,49 @@ def context():
     cmp.scene.addMesh('right')
     #cmp.scene.addMesh('Suzanne')
 
+
+    # assign materials
     cmp.scene.addTarget('target1')
     cmp.scene.addTarget('target2')
 
     cmp.scene.print()
     return cmp
+
+def background(cmp):
+    #print('pt'); #cmp.pt_ref(rf, 500)
+    #print('ppm ref'); cmp.ppm_ref(rf, param)
+
+    print('pt_nt');
+    cmp.pt_nt(nt, 200)
+    cmp.save(nt, path+"nontarget_")
+
+def ppm_ex(cmp, param):
+    print('collect target hitpoints')
+    hits0 = cmp.genHits_ex(0, param.nRay)
+    hits1 = cmp.genHits_ex(1, param.nRay)
+
+    print('radiance estimate')
+    cmp.ppm_radiance(hits0, 0, param)
+    hits0.save(path + "hits1_bump_flat_" + str(param.nRay))
+
+    cmp.ppm_radiance(hits1, 1, param)
+    hits1.save(path + "hits2_bump_flat_" + str(param.nRay))
+
+    return hits0, hits1
+
+def ppm(cmp, param):
+    print('collect target hitpoints')
+    hits0 = cmp.genHits(0, param.nRay)
+    hits1 = cmp.genHits(1, param.nRay)
+
+    print('radiance estimate')
+    cmp.ppm_radiance(hits0, 0, param)
+    hits0.save(path + "hits1_bump_flat_" + str(param.nRay) + "_a")
+
+    cmp.ppm_radiance(hits1, 1, param)
+    hits1.save(path + "hits2_bump_flat_" + str(param.nRay) + "_a")
+
+    return hits0, hits1
 
 def main():
 
@@ -101,29 +141,18 @@ def main():
     param = param_preview
 
 
-
     time.sleep(0.2)
     time0 = time.time()
 
-    #print('pt'); #cmp.pt_ref(rf, 500)
     
-    print('pt_nt');
-    cmp.pt_nt(nt, 2000)
-    cmp.save(nt, path+"nontarget_")
+    background(cmp)
+
+    hits0 = composition.core.Hits()
+    hits1 = composition.core.Hits()
     
+    hits0, hits1 = ppm(cmp, param)
+    hits0, hits1 = ppm_ex(cmp, param)
 
-    # print('ppm ref'); cmp.ppm_ref(rf, param)
-
-    print('collect target hitpoints')
-    hits0 = cmp.genHits(0, param.nRay)
-    hits1 = cmp.genHits(1, param.nRay)
-
-    print('radiance estimate')
-    cmp.ppm_radiance(hits0, 0, param)
-    hits0.save(path + "hits1_bump_flat_" + str(param.nRay))
-
-    cmp.ppm_radiance(hits1, 1, param)
-    hits1.save(path + "hits2_bump_flat_" + str(param.nRay))
 
     ramp0 = col.RampData(ramp_red, 'const')
     ramp1 = col.RampData(ramp_green, 'linear')

@@ -148,8 +148,8 @@ def main_cmp():
 
 def main_im():
 
-    hits1.load(path + "hits1_bump_flat_16a")
-    hits2.load(path + "hits2_bump_flat_16a")
+    hits1.load(path + "hits1_bump_flat_16_a")
+    hits2.load(path + "hits2_bump_flat_16_a")
 
     cmp.mask(hits1, m1, 16)
     cmp.mask(hits2, m2, 16)
