@@ -50,7 +50,7 @@ int createScene(Scene* s){
 	uint32_t green = s->addMaterial(mGreen);
 
 	Material mTarget1;
-		mTarget1.type = Material::Type::GGX_REFLECTION;
+		mTarget1.type = Material::Type::LAMBERT;
 		mTarget1.color = glm::vec3(1);
 		mTarget1.a = 0.1;
 
@@ -78,8 +78,8 @@ int createScene(Scene* s){
 	s->add(Sphere(glm::vec3(0, 0, -1e4), 1e4, white)); // bottom
 	s->add(Sphere(glm::vec3(0, 0,  1e4), 1e4-8, white)); // top
 	s->add(Sphere(glm::vec3(0,  1e4, 0), 1e4-4, white)); // back
-	s->add(Sphere(glm::vec3( 1.5, 0.0, 1.2), 1.2, target1));
-	s->add(Sphere(glm::vec3(-1.5, 1.5, 1.5), 1.5, target2));
+	s->add(Sphere(glm::vec3( 1.5, 0.0, 1.2), 1.2, target1)); // right
+	s->add(Sphere(glm::vec3(-1.5, 1.5, 1.5), 1.5, target2)); // left
 	s->add(Sphere(glm::vec3(0,0,6), 0.5, light)); // light
 
 	Mesh m;
@@ -106,7 +106,7 @@ int createScene(Scene* s){
 	std::copy(i.begin(), i.end(), m.indices.begin());
 
 	m.update();
-	s->meshes.push_back(m);
+	// s->meshes.push_back(m);
 	return 0;
 }
 
@@ -227,7 +227,7 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 		glm::vec3 throuput(1);
 		
 		float pTerminate = 1;
-		int d_all = 0;
+		int depth_all = 0;
 		int countTargetDepth = 0;
 		int countTargetDepth_others = 0;
 
@@ -238,7 +238,7 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 
 		while(rng.uniform()<pTerminate){
 		// for(int depth=0; depth<5; depth++){
-			d_all++;
+			depth_all++;
 			const Intersection is = intersect(ray, scene);
 			const Material& mtl = scene.materials[is.mtlID];
 
@@ -249,7 +249,7 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 
 				if( countTargetDepth == targetDepth ){
 					hasHitMe = true;
-					firstMe = hitpoint(is, throuput/(float)nRay, p, ray, d_all);
+					firstMe = hitpoint(is, throuput/(float)nRay, p, ray, depth_all);
 					// break;
 				}
 			}
@@ -257,7 +257,7 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 				countTargetDepth_others++;
 				if(countTargetDepth_others == targetDepth_others){
 					hasHitOthers = true;
-					firstOthers = hitpoint(is, throuput/(float)nRay, p, ray, d_all);
+					firstOthers = hitpoint(is, throuput/(float)nRay, p, ray, depth_all);
 				}
 			}
 
@@ -266,12 +266,13 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 			sampleBSDF(ray, throuput, is, mtl, scene, rng);
 			throuput /= pTerminate;
 			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-			if(10<d_all) pTerminate *= 0.5;
+			if(10<depth_all) pTerminate *= 0.5;
 		}
 
 		if(hasHitMe && !hasHitOthers) hits.push_back(firstMe);
 		else if(hasHitMe && hasHitOthers){
-			if(firstMe.depth>1)hits.push_back(firstMe);
+			if(firstMe.depth<firstOthers.depth && scene.materials[firstMe.mtlID].type == Material::Type::LAMBERT)hits.push_back(firstMe);
+			else if(firstMe.depth>1)hits.push_back(firstMe);
 			else if(firstOthers.depth == 1 && firstMe.depth == 2)hits.push_back(firstMe);
 		}
 
