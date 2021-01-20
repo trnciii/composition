@@ -96,32 +96,34 @@ def background(cmp):
     cmp.save(nt, cmp.path+"/im_nontarget")
 
 def ppm_ex(cmp, param):
-    print('collect target hitpoints')
-    hits0 = cmp.genHits_ex(0, param.nRay)
-    hits1 = cmp.genHits_ex(1, param.nRay)
+    res = []
+    for i in range(len(cmp.scene.data.targets)):
 
-    print('radiance estimate')
-    cmp.ppm_radiance(hits0, 0, param)
-    hits0.save(cmp.path + "/hit_1_" + str(param.nRay) + "_ex")
+        print('collect target hitpoints')
+        hits = cmp.genHits_ex(i, param.nRay)
 
-    cmp.ppm_radiance(hits1, 1, param)
-    hits1.save(cmp.path + "/hit_2_" + str(param.nRay) + "_ex")
+        print('radiance estimate')
+        cmp.ppm_radiance(hits, i, param)
+        hits.save(cmp.path + "/hit_" + str(i) + "_" + str(param.nRay) + "_ex")
 
-    return hits0, hits1
+        res.append(hits)
+
+    return res
 
 def ppm(cmp, param):
-    print('collect target hitpoints')
-    hits0 = cmp.genHits(0, param.nRay)
-    hits1 = cmp.genHits(1, param.nRay)
+    res = []
+    for i in range(len(cmp.scene.data.targets)):
+        print('collect target hitpoints')
+        hits = cmp.genHits(i, param.nRay)
 
-    print('radiance estimate')
-    cmp.ppm_radiance(hits0, 0, param)
-    hits0.save(cmp.path + "/hit_1_" + str(param.nRay) + "_all")
+        print('radiance estimate')
+        cmp.ppm_radiance(hits, i, param)
+        hits.save(cmp.path + "/hit_" + str(i) +"_" + str(param.nRay) + "_all")
 
-    cmp.ppm_radiance(hits1, 1, param)
-    hits1.save(cmp.path + "/hit_2_" + str(param.nRay) + "_all")
+        res.append(hits)
 
-    return hits0, hits1
+    return res
+
 
 def main():
 
@@ -146,11 +148,9 @@ def main():
     
     background(cmp)
 
-    hits0 = composition.core.Hits()
-    hits1 = composition.core.Hits()
-    
-    hits0, hits1 = ppm(cmp, param)
-    hits0, hits1 = ppm_ex(cmp, param)
+  
+    hits_all = ppm(cmp, param)
+    hits_ex = ppm_ex(cmp, param)
 
 
     ramp0 = col.RampData(ramp_red, 'const')
@@ -160,12 +160,13 @@ def main():
     remap1 = col.basis.ramp(col.basis.sumRadianceRGB, ramp1.eval)
 
     print('conversion')
-    cmp.hitsToImage(hits0, t0, col.basis.radiance)
-    cmp.hitsToImage(hits1, t1, col.basis.radiance)
+    cmp.hitsToImage(hits_ex[0], t0, col.basis.radiance)
+    cmp.hitsToImage(hits_ex[1], t1, col.basis.radiance)
 
     print(time.time() - time0)
 
-    terminate()
     return
 
+
 main()
+terminate()

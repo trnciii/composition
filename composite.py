@@ -59,10 +59,6 @@ cmp.bindImage(rf)
 cmp.bindImage(t1s)
 cmp.bindImage(t2s)
 
-
-hits1 = composition.core.Hits()
-hits2 = composition.core.Hits()
-
 # define consts
 const_orange = col.basis.const(0.8, 0.3, 0.1)
 const_green = col.basis.const(0.2, 0.9, 0.4)
@@ -99,7 +95,7 @@ ramp_red0 = [
 ]
 
 
-def target1():
+def target1(hits, t):
     # ramp = col.RampData(ramp_green2, 'const')    
     # print(ramp)
     # remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
@@ -110,11 +106,11 @@ def target1():
     remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
 
     tPrev = time.time()
-    cmp.hitsToImage(hits1, t1, remap)
+    cmp.hitsToImage(hits, t, remap)
     print(time.time() - tPrev)
 
 
-def target2():
+def target2(hits, t):
     # ramp = col.RampData(ramp_red0, 'const')
     # print(ramp)
     # ramp = composition.bi.sliceImage('a.png', 0.5)
@@ -129,36 +125,57 @@ def target2():
     # remap = col.mul(remap, col.basis.const(6, 6, 6))
     
     tPrev = time.time()
-    cmp.hitsToImage(hits2, t2, remap)
+    cmp.hitsToImage(hits, t, remap)
     print(time.time() - tPrev)
 
-def main_cmp():
+def match(words, query):
+    res = True
+    for i in range(len(query)):
+        if len(query[i])>0:
+            res = res and words[i] == query[i]
+    return res
 
+def main_cmp():
     cmp.load(nt, cmp.path+"/im_nontarget")
 
-    hits1.load(cmp.path + "/hit_1_16_ex")
-    hits2.load(cmp.path + "/hit_2_16_ex")
+    hits = {}
+    files = os.listdir(cmp.path)
+    for file in files:
+        words = file.split('_')
+        query = ['hit', '', '16', 'ex']
+        if match(words, query):
+            h = composition.core.Hits()
+            h.load(cmp.path+'/'+file)
+            hits[words[1]] = h
 
-    target1()
-    target2()
+    remap = [target1, target2]
+    t = [t1, t2]
+    for i in range(len(hits)):
+        remap[i](hits[str(i)], t[i])
 
-    terminate()
     return
 
 def main_im():
 
-    hits1.load(cmp.path + "/hit_1_16_all")
-    hits2.load(cmp.path + "/hit_2_16_all")
+    hits = {}
+    files = os.listdir(cmp.path)
+    for file in files:
+        words = file.split('_')
+        query = ['hit', '', '16', 'all']
+        if match(words, query):
+            h = composition.core.Hits()
+            h.load(cmp.path+'/'+file)
+            hits[words[1]] = h
 
-    cmp.mask(hits1, m1, 16)
-    cmp.mask(hits2, m2, 16)
+    m = [m1, m2]
+    d = [d1, d2]
+    for i in range(len(hits)):
+        cmp.mask(hits[str(i)], m[i], 16)
+        cmp.depth(hits[str(i)], d[i], 16)
 
-    cmp.depth(hits1, d1, 16)
-    cmp.depth(hits2, d2, 16)
-
-    terminate()
     return
 
 
 main_cmp()
 main_im()
+terminate()
