@@ -1,5 +1,5 @@
 *__pycache__
-result/
+*result/
 build/
 text/
 
@@ -9,6 +9,5 @@ text/
 *.blend1
 *.blend2
 
-todo.txt
 main
 main.exe

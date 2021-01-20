@@ -19,7 +19,6 @@ def terminate():
             del globals()[name]
     
 
-path = bpy.path.abspath('//result') + '/'
 t0 = 'target1'
 t1 = 'target2'
 t0s = 'target1s'
@@ -94,7 +93,7 @@ def background(cmp):
 
     print('pt_nt');
     cmp.pt_nt(nt, 200)
-    cmp.save(nt, path+"nontarget_")
+    cmp.save(nt, cmp.path+"/im_nontarget")
 
 def ppm_ex(cmp, param):
     print('collect target hitpoints')
@@ -103,10 +102,10 @@ def ppm_ex(cmp, param):
 
     print('radiance estimate')
     cmp.ppm_radiance(hits0, 0, param)
-    hits0.save(path + "hits1_bump_flat_" + str(param.nRay))
+    hits0.save(cmp.path + "/hit_1_" + str(param.nRay) + "_ex")
 
     cmp.ppm_radiance(hits1, 1, param)
-    hits1.save(path + "hits2_bump_flat_" + str(param.nRay))
+    hits1.save(cmp.path + "/hit_2_" + str(param.nRay) + "_ex")
 
     return hits0, hits1
 
@@ -117,10 +116,10 @@ def ppm(cmp, param):
 
     print('radiance estimate')
     cmp.ppm_radiance(hits0, 0, param)
-    hits0.save(path + "hits1_bump_flat_" + str(param.nRay) + "_a")
+    hits0.save(cmp.path + "/hit_1_" + str(param.nRay) + "_all")
 
     cmp.ppm_radiance(hits1, 1, param)
-    hits1.save(path + "hits2_bump_flat_" + str(param.nRay) + "_a")
+    hits1.save(cmp.path + "/hit_2_" + str(param.nRay) + "_all")
 
     return hits0, hits1
 

@@ -34,7 +34,6 @@ def setAlpha(cmp, key_color, key_alpha, key_out):
     bpy.data.images[key_out].pixels = im
 
 
-path = bpy.path.abspath('//result') + '/'
 t1 = 'target1'
 t2 = 'target2'
 t1s = 'target1s'
@@ -135,10 +134,10 @@ def target2():
 
 def main_cmp():
 
-    cmp.load(nt, path+"nontarget_")
+    cmp.load(nt, cmp.path+"/im_nontarget")
 
-    hits1.load(path + "hits1_bump_flat_16")
-    hits2.load(path + "hits2_bump_flat_16")
+    hits1.load(cmp.path + "/hit_1_16_ex")
+    hits2.load(cmp.path + "/hit_2_16_ex")
 
     target1()
     target2()
@@ -148,8 +147,8 @@ def main_cmp():
 
 def main_im():
 
-    hits1.load(path + "hits1_bump_flat_16_a")
-    hits2.load(path + "hits2_bump_flat_16_a")
+    hits1.load(cmp.path + "/hit_1_16_all")
+    hits2.load(cmp.path + "/hit_2_16_all")
 
     cmp.mask(hits1, m1, 16)
     cmp.mask(hits2, m2, 16)

@@ -1,4 +1,5 @@
 import bpy
+import os
 
 from .. import core
 from . import Scene
@@ -6,6 +7,10 @@ from . import Scene
 class Context:
 
 	def __init__(self):
+		self.projectName = bpy.path.display_name(bpy.data.filepath).lower()
+		self.path = bpy.path.abspath('//') + self.projectName + "_result"
+		os.makedirs(self.path, exist_ok=True)
+
 		self.w = 512
 		self.h = 512
 
@@ -35,7 +40,7 @@ class Context:
 
 	def load(self, key, path):
 		if core.loadLayer(self.renderpass, self.bind[key], path):
-			print("Read a layer as image:", path)
+			print("Read a layer:", path)
 			self.copyImage(key)
 		else:
 			print("failed to read a layer")
