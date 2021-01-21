@@ -95,22 +95,21 @@ ramp_red0 = [
 ]
 
 
-def target1(hits, t):
-    # ramp = col.RampData(ramp_green2, 'const')    
+def target1():
+    ramp = col.RampData(ramp_green2, 'const')    
     # print(ramp)
     # remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
-    ramp = 'ColorRamp'
+    # ramp = 'ColorRamp'
+    l =  bpy.data.objects['Sphere.001'].location
 
     composition.bi.rampToImage(tx1, ramp)
 
-    remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
+    remap = composition.bi.ramp(col.basis.sumRadianceRGB, 'ColorRamp')
+    # remap = col.basis.cel_diffuse(ramp, list(l))
 
-    tPrev = time.time()
-    cmp.hitsToImage(hits, t, remap)
-    print(time.time() - tPrev)
+    return remap
 
-
-def target2(hits, t):
+def target2():
     # ramp = col.RampData(ramp_red0, 'const')
     # print(ramp)
     # ramp = composition.bi.sliceImage('a.png', 0.5)
@@ -124,9 +123,8 @@ def target2(hits, t):
     # remap = col.mul(remap, col.basis.radiance)
     # remap = col.mul(remap, col.basis.const(6, 6, 6))
     
-    tPrev = time.time()
-    cmp.hitsToImage(hits, t, remap)
-    print(time.time() - tPrev)
+    return remap
+
 
 def match(words, query):
     res = True
@@ -142,16 +140,19 @@ def main_cmp():
     files = os.listdir(cmp.path)
     for file in files:
         words = file.split('_')
-        query = ['hit', '', '16', 'ex']
+        query = ['hit', '', '256', 'ex']
         if match(words, query):
             h = composition.core.Hits()
             h.load(cmp.path+'/'+file)
             hits[words[1]] = h
 
-    remap = [target1, target2]
+    # remap = [target1(), target2()]
+    remap = [col.basis.radiance]*2
     t = [t1, t2]
     for i in range(len(hits)):
-        remap[i](hits[str(i)], t[i])
+        tPrev = time.time()
+        cmp.hitsToImage(hits[str(i)], t[i], remap[i])
+        print(time.time() - tPrev)
 
     return
 
@@ -177,5 +178,5 @@ def main_im():
 
 
 main_cmp()
-main_im()
+# main_im()
 terminate()
