@@ -28,18 +28,17 @@ def const(x, y, z):
 
 def cel_diffuse(ramp, p):
 	def f(hit):
-		l = normalize([p[0]-hit.p.x, p[1]-hit.p.y, p[2]-hit.p.z])
-		d = dot(l, [hit.n.x, hit.n.y, hit.n.z])
-		return ramp(0.5*d + 0.5)
+		l = normalize(vec3(p[0]-hit.p.x, p[1]-hit.p.y, p[2]-hit.p.z))
+		d = dot(l, hit.n)
+		return ramp.eval(0.5*d + 0.5)
 	return f
 
 def cel_specular(ramp, p):
 	def f(hit):
-		l = normalize([p[0]-hit.p.x, p[1]-hit.p.y, p[2]-hit.p.z])
-		v = [hit.wo.x, hit.wo.y, hit.wo.z]
-		m = normalize([l[0]+v[0], l[1]+v[1], l[2]+v[2]])
-		d = dot(m, [hit.n.x, hit.n.y, hit.n.z])
-		return ramp(0.5*d + 0.5)
+		l = normalize(vec3(p[0]-hit.p.x, p[1]-hit.p.y, p[2]-hit.p.z))
+		m = normalize(vec3(l.x+hit.wo.x, l.y+hit.wo.y, l.z+hit.wo.z))
+		d = dot(m, hit.n)
+		return ramp.eval(0.5*d + 0.5)
 	return f
 
 def sumRadianceRGB(hit):
