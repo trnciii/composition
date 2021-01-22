@@ -69,6 +69,7 @@ class Context:
 
 # convert
 	def hitsToImage(self, hits, key, color):
+		print('(running cpp)')
 		core.hitsToImage_cpp(hits, self.renderpass, self.bind[key], color)
 		self.copyImage(key)
 

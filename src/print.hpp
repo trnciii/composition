@@ -101,7 +101,7 @@ void print(const Mesh& m, const char* str="\n"){
 }
 
 void print(const Scene& s){
-	puts("[ scene ]");
+	puts("scene");
 	printRule();
 
 	puts("camera");

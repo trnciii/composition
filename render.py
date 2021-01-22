@@ -8,16 +8,7 @@ def ls(a):
     for i in a:
         print(i)
     print()
-    
-def terminate():
-    bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
-    bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
 
-    for name in dir():
-        if not name.startswith('_'):
-            print(name)
-            del globals()[name]
-    
 
 t0 = 'target1'
 t1 = 'target2'
@@ -94,39 +85,40 @@ def background(cmp):
     print('pt_nt');
     cmp.pt_nt(nt, 200)
     cmp.save(nt, cmp.path+"/im_nontarget")
+    print('')
 
-def ppm_ex(cmp, param):
+def ppm_targets_ex(cmp, param):
     res = []
     for i in range(len(cmp.scene.data.targets)):
-
-        print('collect target hitpoints')
+        print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m target', i, '\033[0m')
         hits = cmp.genHits_ex(i, param.nRay)
 
-        print('radiance estimate')
+        print('radiance estimation')
         cmp.ppm_radiance(hits, i, param)
         hits.save(cmp.path + "/hit_" + str(i) + "_" + str(param.nRay) + "_ex")
 
         res.append(hits)
+        print()
 
     return res
 
-def ppm(cmp, param):
+def ppm_targets(cmp, param):
     res = []
     for i in range(len(cmp.scene.data.targets)):
-        print('collect target hitpoints')
+        print('collecting\033[32m all\033[0m hitpoints on\033[33m target', i, '\033[0m')
         hits = cmp.genHits(i, param.nRay)
 
-        print('radiance estimate')
+        print('radiance estimation')
         cmp.ppm_radiance(hits, i, param)
         hits.save(cmp.path + "/hit_" + str(i) +"_" + str(param.nRay) + "_all")
 
         res.append(hits)
+        print()
 
     return res
 
 
 def main():
-
     cmp = context()
 
     param_preview = composition.core.PPMParam()
@@ -143,30 +135,32 @@ def main():
 
 
     time.sleep(0.2)
-    time0 = time.time()
 
     
     background(cmp)
 
   
-    hits_all = ppm(cmp, param)
-    hits_ex = ppm_ex(cmp, param)
+    hits_all = ppm_targets(cmp, param)
+    hits_ex = ppm_targets_ex(cmp, param)
 
-
-    ramp0 = col.RampData(ramp_red, 'const')
-    ramp1 = col.RampData(ramp_green, 'linear')
-
-    remap0 = col.basis.ramp(col.basis.sumRadianceRGB, ramp0.eval)
-    remap1 = col.basis.ramp(col.basis.sumRadianceRGB, ramp1.eval)
-
-    print('conversion')
-    cmp.hitsToImage(hits_ex[0], t0, col.basis.radiance)
-    cmp.hitsToImage(hits_ex[1], t1, col.basis.radiance)
-
-    print(time.time() - time0)
+    t = [t0, t1]
+    for i in range(2):
+        print('converting\033[33m target', i, '\033[0m', end='')
+        cmp.hitsToImage(hits_ex[i], t[i], col.basis.radiance)
+        print()
 
     return
 
 
+print('\033[36mrender.py\033[0m')
 main()
-terminate()
+
+# update compositor
+bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
+bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
+
+# delete variables
+for name in dir():
+    if not name.startswith('_'):
+        # print(name)
+        del globals()[name]

@@ -127,4 +127,5 @@ class Scene:
 		print('material binding')
 		for k in self.mtlBinding.keys():
 			print('[{:2}]'.format(self.mtlBinding[k]), k)
+		print()
 		composition.print_scene(self.data)

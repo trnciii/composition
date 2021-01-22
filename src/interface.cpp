@@ -77,7 +77,7 @@ void ppm(RenderPass& pass, const int layer,
 		accumulateRadiance(hits, photonmap, scene, alpha);
 	}
 
-	std::cout <<"|\n" <<std::endl;
+	std::cout <<"|" <<std::endl;
 
 	glm::vec3* image = pass.data(layer);
 	for(hitpoint& hit : hits)
@@ -173,7 +173,7 @@ void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rngs.data(), nThreads);
 		accumulateRadiance(hits.data, photonmap, scene, alpha);
 	}
-	std::cout <<"|\n" <<std::endl;
+	std::cout <<"|" <<std::endl;
 }
 
 void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
@@ -181,18 +181,17 @@ void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
 {
 	std::vector<glm::vec3> image(pass.length);
 
-	std::cout <<"using cpp for replacement" <<std::endl;
 	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
 
 	for(int i=0; i<hits.data.size(); i++){
 		const hitpoint& hit = hits.data[i];
-		if((i*40)%hits.data.size() < 39) std::cout <<"+" <<std::flush;
+		if(i%(hits.data.size()/39) == 0) std::cout <<"+" <<std::flush;
 
 		const glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
 		image[hit.pixel] += hit.weight * t;
 	}
 
-	std::cout <<"|\n" <<std::endl;
+	std::cout <<"|" <<std::endl;
 
 	pass.setLayer(layer, image.data());
 }

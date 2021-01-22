@@ -7,15 +7,6 @@ import numpy as np
 import composition
 col = composition.color
 
-def terminate():
-    bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
-    bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
-
-    for name in dir():
-        if not name.startswith('_'):
-            print(name)
-            del globals()[name]
-
 
 def purity(rad, ch):
     a = (rad[0] + rad[1] + rad[2])/3
@@ -134,29 +125,35 @@ def match(words, query):
     return res
 
 def main_cmp():
+    print('\033[1mconversion\033[0m')
+    
     cmp.load(nt, cmp.path+"/im_nontarget")
+    print()
 
     hits = {}
     files = os.listdir(cmp.path)
     for file in files:
         words = file.split('_')
-        query = ['hit', '', '256', 'ex']
+        query = ['hit', '', '16', 'ex']
         if match(words, query):
             h = composition.core.Hits()
             h.load(cmp.path+'/'+file)
             hits[words[1]] = h
+    print()
 
-    # remap = [target1(), target2()]
-    remap = [col.basis.radiance]*2
+    remap = [target1(), target2()]
+#    remap = [col.basis.radiance]*2
     t = [t1, t2]
     for i in range(len(hits)):
+        print('converting\033[33m target', i, '\033[0m')
         tPrev = time.time()
         cmp.hitsToImage(hits[str(i)], t[i], remap[i])
-        print(time.time() - tPrev)
+        print(time.time() - tPrev, '\n')
 
     return
 
 def main_im():
+    print('\033[1mmasking\033[0m')
 
     hits = {}
     files = os.listdir(cmp.path)
@@ -174,9 +171,19 @@ def main_im():
         cmp.mask(hits[str(i)], m[i], 16)
         cmp.depth(hits[str(i)], d[i], 16)
 
+    print()
     return
 
-
+print('\033[36mcomposite.py\033[0m')
 main_cmp()
-# main_im()
-terminate()
+main_im()
+
+# update compositor
+bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
+bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
+
+# delete variables
+for name in dir():
+    if not name.startswith('_'):
+        # print(name)
+        del globals()[name]
