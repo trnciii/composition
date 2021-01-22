@@ -32,6 +32,7 @@ We can edit the material with any info on the surface including its radiance, an
 ### later
 * use matrix for spaces
 * switch to range based raycasting
+* switch output method from printing to to_string
 
 ### pending
 * parallelize hit to radiance conversion
