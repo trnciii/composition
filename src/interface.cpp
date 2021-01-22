@@ -3,7 +3,6 @@
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
-// #include <execution>
 #include <algorithm>
 #include <string>
 #include <omp.h>
@@ -180,21 +179,20 @@ void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
 	const boost::python::object& remap)
 {
-	std::cout <<"using cpp for replacement" <<std::endl;
-
 	std::vector<glm::vec3> image(pass.length);
-	std::vector<glm::vec3> replacement(hits.data.size());
 
-	std::transform(/*std::execution::par_unseq,*/
-		hits.data.begin(), hits.data.end(),
-		replacement.begin(),
-		[&remap](const hitpoint& hit){
-			glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
-			return hit.weight*t;
-		});
+	std::cout <<"using cpp for replacement" <<std::endl;
+	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
 
-	for(int i=0; i<hits.data.size(); i++)
-		image[hits.data[i].pixel] += replacement[i];
+	for(int i=0; i<hits.data.size(); i++){
+		const hitpoint& hit = hits.data[i];
+		if((i*40)%hits.data.size() < 39) std::cout <<"+" <<std::flush;
+
+		const glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
+		image[hit.pixel] += hit.weight * t;
+	}
+
+	std::cout <<"|\n" <<std::endl;
 
 	pass.setLayer(layer, image.data());
 }
