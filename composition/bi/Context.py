@@ -48,6 +48,16 @@ class Context:
 		else:
 			print("failed to read a layer")
 
+	def addImages(self, list, w=None, h=None):
+		if w is None: w = self.w
+		if h is None: h = self.h
+
+		for t in list:
+			if t not in bpy.data.images.keys():
+				print('add image <'+t+'>')
+				bpy.data.images.new(t, w, h)
+			self.bindImage(t)
+
 # rendering
 	def pt_ref(self, key, spp):
 		core.pt(self.renderpass, self.bind[key], spp, self.scene.data)

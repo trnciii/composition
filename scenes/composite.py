@@ -8,49 +8,9 @@ import composition
 col = composition.color
 
 
-def purity(rad, ch):
-    a = (rad[0] + rad[1] + rad[2])/3
-    p = rad[ch]-a
-    if 0<p:
-        return p*10
-    else:
-        return 0
-    
-def setAlpha(cmp, key_color, key_alpha, key_out):
-    ps = cmp.renderpass
-    im = composition.core.getImage(ps, cmp.bind[key_color])
-    a = composition.core.getImage(ps, cmp.bind[key_alpha])
-    for i in range(ps.length):
-        im[4*i+3] = a[4*i]
-    bpy.data.images[key_out].pixels = im
-
-
-t1 = 'target1'
-t2 = 'target2'
-t1s = 'target1s'
-t2s = 'target2s'
-m1 = 'mask1'
-m2 = 'mask2'
-d1 = 'depth1'
-d2 = 'depth2'
+targetMaterials = ['target1', 'target2']
 nt = 'nt'
-rf = 'reference'
-tx1 = 'texture1'
-tx2 = 'texture2'
 
-def context():
-    cmp = composition.bi.Context()
-    cmp.bindImage(t1)
-    cmp.bindImage(t2)
-    cmp.bindImage(m1)
-    cmp.bindImage(m2)
-    cmp.bindImage(d1)
-    cmp.bindImage(d2)
-    cmp.bindImage(nt)
-    cmp.bindImage(rf)
-    cmp.bindImage(t1s)
-    cmp.bindImage(t2s)
-    return cmp
 
 # define consts
 const_orange = col.basis.const(0.8, 0.3, 0.1)
@@ -88,28 +48,26 @@ ramp_red0 = [
 ]
 
 
-def target1():
+def target0():
     ramp = col.RampData(ramp_green2, 'const')    
     # print(ramp)
     # remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
     # ramp = 'ColorRamp'
-    l =  bpy.data.objects['Sphere.001'].location
+    # l =  bpy.data.objects['Sphere.001'].location
 
-    composition.bi.rampToImage(tx1, ramp)
+    composition.bi.rampToImage(targetMaterials[0]+'_texture', ramp)
 
-    remap = composition.bi.ramp(col.basis.sumRadianceRGB, 'ColorRamp')
+    remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
     # remap = col.basis.cel_diffuse(ramp, list(l))
 
     return remap
 
-def target2():
+def target1():
     # ramp = col.RampData(ramp_red0, 'const')
     # print(ramp)
     # ramp = composition.bi.sliceImage('a.png', 0.5)
     ramp = 'ColorRamp.001'
-
-    composition.bi.rampToImage(tx2, ramp)
-
+    composition.bi.rampToImage(targetMaterials[1]+'_texture', ramp)
 
     remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
     # remap = col.mix(remap, col.basis.radiance, 0.25)
@@ -119,47 +77,55 @@ def target2():
     return remap
 
 
-def main_cmp():
+def main_cmp(cmp):
     print('\033[1mconversion\033[0m')
     
     cmp.load(nt, cmp.path+"/im_nontarget")
     print()
 
     hits = cmp.readHits(['hit', '', '16', 'ex'])
-    remap = [target1(), target2()]
-#    remap = [col.basis.radiance]*2
-    t = [t1, t2]
+    remap = [target0(), target1()]
+#    remap = [col.basis.radiance]*len(hits)
+    
     for i in range(len(hits)):
-        print('converting\033[33m target', i, '\033[0m', end='')
+        print('converting\033[33m', targetMaterials[i], '\033[0m', end='')
         tPrev = time.time()
-        cmp.hitsToImage(hits[str(i)], t[i], remap[i])
+        cmp.hitsToImage(hits[targetMaterials[i]], targetMaterials[i], remap[i])
         print(time.time() - tPrev, '\n')
 
     return
 
-def main_im():
+def main_im(cmp):
     print('\033[1mmasking\033[0m')
 
     hits = cmp.readHits(['hit', '', '16', 'all'])
-    m = [m1, m2]
-    d = [d1, d2]
+    m = [t+'_mask' for t in targetMaterials]
+    d = [t+'_depth' for t in targetMaterials]
     
     for i in range(len(hits)):
-        cmp.mask(hits[str(i)], m[i], 16)
-        cmp.depth(hits[str(i)], d[i], 16)
+        cmp.mask(hits[targetMaterials[i]], m[i], 16)
+        cmp.depth(hits[targetMaterials[i]], d[i], 16)
 
     print()
     return
 
-print('\033[36mcomposite.py\033[0m')
-cmp = context()
-cmp.listFiles()
-main_cmp()
-main_im()
+def main():
+    cmp = composition.bi.Context()
 
-# update compositor
-bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 0
-bpy.data.scenes["Scene"].node_tree.nodes["Alpha Over"].inputs[0].default_value = 1
+    cmp.bindImage(nt)
+    cmp.addImages(targetMaterials)
+    cmp.addImages([t+'_mask' for t in targetMaterials])
+    cmp.addImages([t+'_depth' for t in targetMaterials])
+    cmp.addImages([t+'_texture' for t in targetMaterials], 256, 16)
+
+    cmp.listFiles()
+
+    main_cmp(cmp)
+    main_im(cmp)
+    return
+
+print('\033[36mcomposite.py\033[0m')
+main()
 
 # delete variables
 for name in dir():
