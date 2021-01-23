@@ -25,6 +25,8 @@ We can edit the material with any info on the surface including its radiance, an
 ### soon
 * embed necessary info in hitpoints
 * manage rng seed
+* use images
+* manage render results
 
 ### future
 * represent suffix path distribution with gaussian parameters or something
