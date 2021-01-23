@@ -10,6 +10,9 @@ class Context:
 		self.projectName = bpy.path.display_name(bpy.data.filepath).lower()
 		self.path = bpy.path.abspath('//') + self.projectName + "_result"
 		os.makedirs(self.path, exist_ok=True)
+		
+		self.files = self.getFiles()
+
 
 		self.w = 512
 		self.h = 512
@@ -82,3 +85,34 @@ class Context:
 		self.copyImage(key)
 		print("max depth of", hits , "is", max)
 		return max
+
+# file
+	def getFiles(self):
+		files = os.listdir(self.path)
+		files.sort()
+		return files
+
+	def listFiles(self):
+		print('files in', self.path)
+		for f in self.files:
+			print('\t',f)
+		print()
+
+	def readHits(self, query):
+		hits = {}
+		for file in self.files:
+			words = file.split('_')
+			if self.match(words, query):
+				h = core.Hits()
+				h.load(self.path+'/'+file)
+				hits[words[1]] = h
+
+		print()
+		return hits
+
+	def match(self, words, query):
+		res = True
+		for i in range(len(query)):
+			if len(query[i])>0:
+				res = res and words[i] == query[i]
+		return res
