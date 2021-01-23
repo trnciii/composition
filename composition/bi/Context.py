@@ -2,7 +2,8 @@ import bpy
 import os
 
 from .. import core
-from . import Scene
+from .Scene import Scene
+from .helper import addImage
 
 class Context:
 
@@ -20,7 +21,7 @@ class Context:
 		self.renderpass = core.RenderPass(self.w, self.h)
 		self.bind = {}
 
-		self.scene = Scene.Scene()
+		self.scene = Scene()
 
 # image
 	def bindImage(self, key):
@@ -48,14 +49,9 @@ class Context:
 		else:
 			print("failed to read a layer")
 
-	def addImages(self, list, w=None, h=None):
-		if w is None: w = self.w
-		if h is None: h = self.h
-
+	def addImages(self, list):
 		for t in list:
-			if t not in bpy.data.images.keys():
-				print('add image <'+t+'>')
-				bpy.data.images.new(t, w, h)
+			addImage(t, self.w, self.h)
 			self.bindImage(t)
 
 # rendering

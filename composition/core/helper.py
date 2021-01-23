@@ -14,7 +14,7 @@ class PPMParam:
 			"nPhoton " + str(self.nPhoton) + "\n"\
 			"itr     " + str(self.itr) + "\n"\
 			"alpha   " + str(self.alpha) + "\n"\
-			"R0      " + str(self.R0)
+			"R0      " + str(self.R0) + "\n"
 
 def ppm(renderpass, id, param, scene):
 	composition.ppm(renderpass, id, param.nRay, param.nPhoton, param.itr, param.alpha, param.R0, scene)
