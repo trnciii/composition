@@ -23,7 +23,7 @@ def background(cmp):
 
 	print('pt_nt');
 	cmp.pt_nt(nt, 200)
-	cmp.save(nt, cmp.path+"/im_nontarget")
+	cmp.save(nt, cmp.path+"im_nontarget")
 	print('')
 
 def ppm_targets_ex(cmp, param):
@@ -34,7 +34,7 @@ def ppm_targets_ex(cmp, param):
 
 		print('estimating radiance')
 		cmp.ppm_radiance(hits, i, param)
-		hits.save(cmp.path + "/hit_" + targetMaterials[i] + "_" + str(param.nRay) + "_ex")
+		hits.save(cmp.path + "hit_" + targetMaterials[i] + "_" + str(param.nRay) + "_ex")
 
 		res.append(hits)
 		print()
@@ -49,7 +49,7 @@ def ppm_targets(cmp, param):
 
 		print('estimating radiance')
 		cmp.ppm_radiance(hits, i, param)
-		hits.save(cmp.path + "/hit_" + targetMaterials[i] +"_" + str(param.nRay) + "_all")
+		hits.save(cmp.path + "hit_" + targetMaterials[i] +"_" + str(param.nRay) + "_all")
 
 		res.append(hits)
 		print()

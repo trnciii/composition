@@ -25,7 +25,7 @@ def validatgeGlobals():
 def main_cmp(cmp):
     print('\033[1mconversion\033[0m')
     
-    cmp.load(nt, cmp.path+"/im_nontarget")
+    cmp.load(nt, cmp.path+"im_nontarget")
     print()
 
     hits = cmp.readHits(['hit', '', '16', 'ex'])

@@ -9,7 +9,7 @@ class Context:
 
 	def __init__(self):
 		self.projectName = bpy.path.display_name(bpy.data.filepath).lower()
-		self.path = bpy.path.abspath('//') + self.projectName + "_result"
+		self.path = bpy.path.abspath('//') + "result/"
 		os.makedirs(self.path, exist_ok=True)
 		
 		self.files = self.getFiles()
@@ -110,7 +110,7 @@ class Context:
 			words = file.split('_')
 			if self.match(words, query):
 				h = core.Hits()
-				h.load(self.path+'/'+file)
+				h.load(self.path+file)
 				hits[words[1]] = h
 
 		print()
