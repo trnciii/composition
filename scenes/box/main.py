@@ -52,9 +52,7 @@ def target0():
     # ramp = 'ColorRamp'
     # l =  bpy.data.objects['Sphere.001'].location
 
-    im = targetMaterials[0]+'_texture'
-    composition.bi.helper.addImage(im, 256, 16)    
-    composition.bi.rampToImage(im, ramp)
+    composition.bi.rampToImage(targetMaterials[0]+'_texture', ramp, 256, 16)
 
     remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
     # remap = col.basis.cel_diffuse(ramp, list(l))
@@ -66,10 +64,7 @@ def target1():
     # print(ramp)
     # ramp = composition.bi.sliceImage('a.png', 0.5)
     ramp = 'ColorRamp.001'
-    
-    im = targetMaterials[1]+'_texture'
-    composition.bi.helper.addImage(im, 256, 16)    
-    composition.bi.rampToImage(im, ramp)
+    composition.bi.rampToImage(targetMaterials[1]+'_texture', ramp, 256, 16)
 
     remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
     # remap = col.mix(remap, col.basis.radiance, 0.25)

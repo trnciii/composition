@@ -3,8 +3,7 @@ import math
 from ..core import composition
 from .. import color
 
-def rampToImage(key, ramp):
-	
+def rampToImage(name, ramp, w, h):	
 	def case_RampData():
 		d = 2**(math.ceil(math.log(ramp.data[-1][0], 2)))
 		c = ramp.eval(d*i/w)
@@ -14,8 +13,7 @@ def rampToImage(key, ramp):
 		d = len(ramp)
 		return ramp[max(0, min(w-1, int(d*i/w)))] + [1]
 
-	img = bpy.data.images[key]
-	w, h = img.size
+	img = addImage(name, w, h)
 	px = [[0.0]*4 for i in range(w*h)]
 	nodes = bpy.context.scene.node_tree.nodes
 	
@@ -67,3 +65,5 @@ def addImage(name, w, h):
 	if name not in bpy.data.images.keys():
 		print('add image <'+name+'>')
 		bpy.data.images.new(name, w, h)
+
+	return bpy.data.images[name]

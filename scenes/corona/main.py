@@ -29,23 +29,15 @@ def scene(scene):
 
 def target0():
     ramp = 'ColorRamp'
-    remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
+    composition.bi.rampToImage(targetMaterials[0]+'_texture', ramp, 256, 16)
     
-    im = targetMaterials[0]+'_texture'
-    composition.bi.helper.addImage(im, 256, 16)    
-    composition.bi.rampToImage(im, ramp)
-    
-    return remap
+    return composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
 
 def target1():
     ramp = 'ColorRamp.001'
-    remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
-        
-    im = targetMaterials[1]+'_texture'
-    composition.bi.helper.addImage(im, 256, 16)    
-    composition.bi.rampToImage(im, ramp)
-        
-    return remap
+    composition.bi.rampToImage(targetMaterials[1]+'_texture', ramp, 256, 16)
+
+    return composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
 
 targetMaterials = ['Material.002', 'Material.003']
 nt = 'nt'

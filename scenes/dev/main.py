@@ -3,29 +3,14 @@ import composition
 col = composition.color
 
 # define ramps
-ramp_green0 = [
-    (0.07, [0.03, 0.1, 0.03]),
-    (0.3, [0.1, 0.5, 0.1 ]),
-    (0.5, [0.6, 0.8, 0.2]),
-    (0.8, [0.6, 0.8, 0.2]),
-    (1, [0.9, 1, 0.9])
-]
-
-ramp_green1 = [
-    (0.07, [0.03, 0.1, 0.03]),
-    (0.5, [0.1, 0.5, 0.1 ]),
-    (0.8, [0.6, 0.8, 0.2]),
-    (1, [0.9, 1, 0.9])
-]
-
-ramp_green2 = [
+ramp_green = [
     (0, [0.03, 0.1, 0.03]),
     (0.07, [0.1, 0.5, 0.1 ]),
     (0.3 , [0.6, 0.8, 0.2]),
     (0.8 , [0.9, 1, 0.9]),
 ]
 
-ramp_red0 = [
+ramp_red = [
     (0, [0.1, 0.02, 0.02]),
     (0.25, [0.5, 0.4, 0.8]),
     (0.3, [0.5, 0.1, 0.1]),
@@ -62,15 +47,13 @@ def scene(scene):
     scene.addMesh('right')
 
 def target0():
-    ramp = col.RampData(ramp_green2, 'const')    
+    ramp = col.RampData(ramp_green, 'const')    
     # print(ramp)
     # remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
     # ramp = 'ColorRamp'
     # l =  bpy.data.objects['Sphere.001'].location
 
-    im = targetMaterials[0]+'_texture'
-    composition.bi.helper.addImage(im, 256, 16)    
-    composition.bi.rampToImage(im, ramp)
+    composition.bi.rampToImage(targetMaterials[0]+'_texture', ramp, 256, 16)
 
     remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
     # remap = col.basis.cel_diffuse(ramp, list(l))
@@ -78,14 +61,12 @@ def target0():
     return remap
 
 def target1():
-    # ramp = col.RampData(ramp_red0, 'const')
+    # ramp = col.RampData(ramp_red, 'const')
     # print(ramp)
     # ramp = composition.bi.sliceImage('a.png', 0.5)
     ramp = 'ColorRamp.001'
     
-    im = targetMaterials[1]+'_texture'
-    composition.bi.helper.addImage(im, 256, 16)    
-    composition.bi.rampToImage(im, ramp)
+    composition.bi.rampToImage(targetMaterials[1]+'_texture', ramp, 256, 16)
 
     remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
     # remap = col.mix(remap, col.basis.radiance, 0.25)
@@ -101,7 +82,7 @@ targetRemap = [target0, target1]
 
 path = bpy.path.abspath('//../')
 
-exec(open(path+'render.py').read())
+#exec(open(path+'render.py').read())
 exec(open(path+'composite.py').read())
 
 # delete variables
