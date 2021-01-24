@@ -35,7 +35,7 @@ def main_cmp(cmp):
     for i in range(len(hits)):
         print('converting\033[33m', targetMaterials[i], '\033[0m', end='')
         tPrev = time.time()
-        cmp.hitsToImage(hits[targetMaterials[i]], targetMaterials[i], targetRemap[i]())
+        cmp.hitsToImage(hits[targetMaterials[i]], targetMaterials[i], targetRemap[i])
         print(time.time() - tPrev, '\n')
 
     return

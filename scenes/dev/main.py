@@ -3,14 +3,29 @@ import composition
 col = composition.color
 
 # define ramps
-ramp_green = [
+ramp_green0 = [
+    (0.07, [0.03, 0.1, 0.03]),
+    (0.3, [0.1, 0.5, 0.1 ]),
+    (0.5, [0.6, 0.8, 0.2]),
+    (0.8, [0.6, 0.8, 0.2]),
+    (1, [0.9, 1, 0.9])
+]
+
+ramp_green1 = [
+    (0.07, [0.03, 0.1, 0.03]),
+    (0.5, [0.1, 0.5, 0.1 ]),
+    (0.8, [0.6, 0.8, 0.2]),
+    (1, [0.9, 1, 0.9])
+]
+
+ramp_green2 = [
     (0, [0.03, 0.1, 0.03]),
     (0.07, [0.1, 0.5, 0.1 ]),
     (0.3 , [0.6, 0.8, 0.2]),
     (0.8 , [0.9, 1, 0.9]),
 ]
 
-ramp_red = [
+ramp_red0 = [
     (0, [0.1, 0.02, 0.02]),
     (0.25, [0.5, 0.4, 0.8]),
     (0.3, [0.5, 0.1, 0.1]),
@@ -47,7 +62,7 @@ def scene(scene):
     scene.addMesh('right')
 
 def target0():
-    ramp = col.RampData(ramp_green, 'const')    
+    ramp = col.RampData(ramp_green2, 'const')    
     # print(ramp)
     # remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
     # ramp = 'ColorRamp'
@@ -61,7 +76,7 @@ def target0():
     return remap
 
 def target1():
-    # ramp = col.RampData(ramp_red, 'const')
+    # ramp = col.RampData(ramp_red0, 'const')
     # print(ramp)
     # ramp = composition.bi.sliceImage('a.png', 0.5)
     ramp = 'ColorRamp.001'
@@ -78,7 +93,7 @@ def target1():
 targetMaterials = ['target1', 'target2']
 nt = 'nt'
 
-targetRemap = [target0, target1]
+targetRemap = [target0(), target1()]
 
 path = bpy.path.abspath('//../')
 

@@ -22,7 +22,7 @@ def background(cmp):
 	#print('ppm ref'); cmp.ppm_ref(rf, param)
 
 	print('pt_nt');
-	cmp.pt_nt(nt, 200)
+	cmp.pt_nt(nt, 1000)
 	cmp.save(nt, cmp.path+"im_nontarget")
 	print('')
 

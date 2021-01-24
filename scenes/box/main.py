@@ -76,7 +76,7 @@ def target1():
 targetMaterials = ['target1', 'target2']
 nt = 'nt'
 
-targetRemap = [target0, target1]
+targetRemap = [target0(), target1()]
 
 path = bpy.path.abspath('//../')
 
