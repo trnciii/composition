@@ -8,16 +8,15 @@ import composition
 col = composition.color
 
 def validatgeGlobals():
-    if not 'targetMaterials' in globals():
-        return False
+    req = ['targetMaterials', 'targetRemap', 'nt']
 
-    if not 'targetRemap' in globals():
-        return False
+    for r in req:
+        if not r in globals():
+            print('Could not find', r)
+            return False
 
     if not len(targetMaterials) is len(targetRemap):
-        return False
-
-    if not 'nt' in globals():
+        print('number of target material and remap does not agree')
         return False
 
     return True
@@ -28,10 +27,7 @@ def main_cmp(cmp):
     cmp.load(nt, cmp.path+"im_nontarget")
     print()
 
-    hits = cmp.readHits(['hit', '', '16', 'ex'])
-    
-#    remap = [col.basis.radiance]*len(hits)
-    
+    hits = cmp.readHits(['hit', '', '16', 'ex'])    
     for i in range(len(hits)):
         print('converting\033[33m', targetMaterials[i], '\033[0m', end='')
         tPrev = time.time()

@@ -5,14 +5,12 @@ import composition
 col = composition.color    
 
 def validateGlobals():
-	if not 'scene' in globals():
-		return False
+	req = ['scene', 'targetMaterials', 'nt']
 
-	if not 'targetMaterials' in globals():
-		return False
-
-	if not 'nt' in globals():
-		return False
+	for r in req:
+		if not r in globals():
+			print('Could not find', r)
+			return False
 
 	return True
 
