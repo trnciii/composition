@@ -5,7 +5,7 @@ import composition
 col = composition.color    
 
 def validateGlobals():
-	req = ['scene', 'targetMaterials', 'nt']
+	req = ['scene', 'targetMaterials', 'param']
 
 	for r in req:
 		if not r in globals():
@@ -16,12 +16,15 @@ def validateGlobals():
 
 
 def background(cmp):
-	#print('pt'); #cmp.pt_ref(rf, 500)
+	print('pt')
+	cmp.pt_ref('pt', 1000)
+	cmp.save('pt', cmp.path+'im_pt')
+	
 	#print('ppm ref'); cmp.ppm_ref(rf, param)
 
 	print('pt_nt');
-	cmp.pt_nt(nt, 1000)
-	cmp.save(nt, cmp.path+"im_nontarget")
+	cmp.pt_nt('nt', 1000)
+	cmp.save('nt', cmp.path+"im_nontarget")
 	print('')
 
 def ppm_targets_ex(cmp, param):
@@ -57,7 +60,7 @@ def ppm_targets(cmp, param):
 def render():
 	cmp = composition.bi.Context()
 
-	cmp.bindImage(nt)
+	cmp.addImages(['nt', 'pt'])
 	cmp.addImages(targetMaterials)
 	
 	scene(cmp.scene)
