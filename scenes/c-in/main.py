@@ -34,13 +34,13 @@ ramp_red0 = [
 ]
 
 param_preview = composition.core.PPMParam()
-param_preview.nRay = 16
-param_preview.nPhoton = 1000
-param_preview.itr = 200
+param_preview.nRay = 64
+param_preview.nPhoton = 20000
+param_preview.itr = 1000
 
 param_final = composition.core.PPMParam()
-param_final.nRay = 256
-param_final.nPhoton = 100000
+param_final.nRay = 32
+param_final.nPhoton = 200000
 param_final.itr = 10000
 
 param = param_preview
@@ -48,14 +48,18 @@ param = param_preview
 def target0():
     ramp = 'ColorRamp'
 
+    def u(hit):
+        return col.basis.sumRadianceRGB(hit)**0.5
+
     composition.bi.rampToImage(targetMaterials[0]+'_texture', ramp, 256, 16)
-    remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
+    remap = composition.bi.ramp(u, ramp)
     return remap
 
 targetMaterials = ['target1']
 nt = 'nt'
 
 targetRemap = [target0()]
+targetRemap = [col.basis.const(0.8, 0.7, 0.2)]
 
 def scene(scene):
     scene.setCamera('Camera')
@@ -67,12 +71,13 @@ def scene(scene):
 
     scene.addSphere('Sphere.001') # light
     scene.addSphere('Sphere')
+    scene.addMesh('Sphere.002')
     scene.addMesh('right.001')
 
 path = bpy.path.abspath('//../')
 
-#exec(open(path+'render.py').read())
-exec(open(path+'composite.py').read())
+exec(open(path+'render.py').read())
+#exec(open(path+'composite.py').read())
 
 # delete variables
 for name in dir():
