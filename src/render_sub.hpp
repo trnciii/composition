@@ -146,7 +146,7 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		throuput *= mtl.color;
 	}
 
-	if(mtl.type == Material::Type::GGX_REFLECTION){
+	else if(mtl.type == Material::Type::GGX_REFLECTION){
 		const glm::vec3 wi = -ray.d;
 		glm::vec3 tan[2];
 		tangentspace(is.n, tan);
@@ -168,7 +168,7 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		throuput *= w*mtl.color;
 	}
 
-	if(mtl.type == Material::Type::GLASS){
+	else if(mtl.type == Material::Type::GLASS){
 		const glm::vec3 wi = -ray.d;
 		glm::vec3 tan[2];
 		tangentspace(is.n, tan);
@@ -199,7 +199,7 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 			const glm::vec3 wo = -(wi - (m_w*cos))/nr - (float)sqrt(nwo2)*m_w;
 
 			float gi = smith_mask(wi, is.n, a2);
-			float go = smith_mask(wo, is.n, a2);
+			float go = smith_mask(wo,-is.n, a2);
 			float w = fabs( gi*go * glm::dot(wi, m_w)/(glm::dot(wi, is.n)*m_tan.z + 1e-4) );
 
 			ray.o = offset(is.p, -is.n);
