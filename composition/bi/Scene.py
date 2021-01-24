@@ -1,5 +1,6 @@
 import bpy
 import numpy as np
+from math import pi
 from ..core import composition
 
 def findShaders(key):
@@ -20,24 +21,26 @@ def findShaders(key):
 
 def interpretShader(shader):
     
-    if(shader.type == 'EMISSION'):
+    if shader.type == 'EMISSION':
         c = shader.inputs[0].default_value
         s = shader.inputs[1].default_value
         
         m = composition.Material()
         m.type = composition.MtlType.emit
         m.color = composition.vec3(c[0]*s, c[1]*s, c[2]*s)
+        
         return m
         
-    if(shader.type == 'BSDF_DIFFUSE'):
+    elif shader.type == 'BSDF_DIFFUSE':
         c = shader.inputs['Color'].default_value
         
         m = composition.Material()
         m.type = composition.MtlType.lambert
         m.color = composition.vec3(c[0], c[1], c[2])
+        
         return m
     
-    if(shader.type == 'BSDF_GLOSSY'):
+    elif shader.type == 'BSDF_GLOSSY':
         c = shader.inputs['Color'].default_value
         a = shader.inputs['Roughness'].default_value
         
@@ -45,13 +48,28 @@ def interpretShader(shader):
         m.type = composition.MtlType.glossy
         m.color = composition.vec3(c[0], c[1], c[2])
         m.a = a*a
+        
         return m
+
+    elif shader.type == 'BSDF_GLASS':
+    	c = shader.inputs['Color'].default_value
+    	a = shader.inputs['Roughness'].default_value
+    	ior = shader.inputs['IOR'].default_value
+
+    	m = composition.Material()
+    	m.type = composition.MtlType.glass
+    	m.color = composition.vec3(c[0], c[1], c[2])
+    	m.a = a*a
+    	m.ior = ior
+
+    	return m
 
 def createMaterial(key):
     shaders = findShaders(key)
 
     if len(shaders)>0:
-        return interpretShader(shaders[0])
+        res = interpretShader(shaders[0])
+        if res: return res
     
     print('could not convert material')
 
