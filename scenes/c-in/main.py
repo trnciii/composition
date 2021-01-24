@@ -49,7 +49,10 @@ def target0():
     ramp = 'ColorRamp'
 
     def u(hit):
-        return col.basis.sumRadianceRGB(hit)**0.5
+        r = col.basis.sumRadianceRGB(hit)
+        r = r*0.5
+        r = r**0.35
+        return r
 
     composition.bi.rampToImage(targetMaterials[0]+'_texture', ramp, 256, 16)
     remap = composition.bi.ramp(u, ramp)
@@ -59,7 +62,8 @@ targetMaterials = ['target1']
 nt = 'nt'
 
 targetRemap = [target0()]
-targetRemap = [col.basis.const(0.8, 0.7, 0.2)]
+#targetRemap = [col.basis.const(0.8, 0.7, 0.2)]
+#targetRemap = [col.basis.radiance]
 
 def scene(scene):
     scene.setCamera('Camera')
@@ -76,8 +80,8 @@ def scene(scene):
 
 path = bpy.path.abspath('//../')
 
-exec(open(path+'render.py').read())
-#exec(open(path+'composite.py').read())
+#exec(open(path+'render.py').read())
+exec(open(path+'composite.py').read())
 
 # delete variables
 for name in dir():
