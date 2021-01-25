@@ -222,7 +222,8 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
 
 		sampleBSDF(ray, throuput, is, mtl, scene, rand);
 		throuput /= pTerminate;
-		pTerminate *= 0.99*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		if(pTerminate > 0.99)pTerminate = 0.99;
 	}
 	return glm::vec3(0);
 }
@@ -244,7 +245,8 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
 
 		sampleBSDF(ray, throuput, is, mtl, scene, rand);
 		throuput /= pTerminate;
-		pTerminate *= 0.9*std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		if(pTerminate > 0.99) pTerminate = 0.99;
 	}
 	return glm::vec3(0);
 }
