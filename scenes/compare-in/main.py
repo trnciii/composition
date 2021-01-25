@@ -78,10 +78,7 @@ targetRemap = [target0()]
 #targetRemap = [col.basis.radiance]
 
 spheres = ['Sphere', 'Sphere.001', 'Sphere.002']
-meshes = []
-
-spheres = [s for s in spheres if not bpy.data.objects[s].hide_get()]
-meshes = [s for s in meshes if not bpy.data.objects[s].hide_get()]
+meshes = ['Plane']
 
 def render():
     print('\033[36mrendering\033[0m')
@@ -131,8 +128,7 @@ def remap():
     print('-- end reamapping --')
     return
 
-
-render()
+#render()
 remap()
 
 #saveImages(bpy.path.abspath('//result/intermidiate/'), targetMaterials)
