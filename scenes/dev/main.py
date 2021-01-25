@@ -1,4 +1,5 @@
 import bpy
+import time
 import composition
 col = composition.color
 
@@ -45,22 +46,6 @@ param_final.itr = 10000
 
 param = param_preview
 
-def scene(scene):
-    scene.setCamera('Camera')
-
-    env = composition.core.Material()
-    env.type = composition.core.MtlType.emit
-    env.color = composition.core.vec3(0, 0, 0) # for photon mapping this has to be zero
-    scene.setEnvironment(env)
-
-    scene.addSphere('Sphere.001') # light
-    scene.addMesh('Sphere.002')
-    scene.addSphere('Sphere')
-    scene.addMesh('floor')
-    scene.addMesh('left')
-    scene.addMesh('back')
-    scene.addMesh('right')
-
 def target0():
     ramp = col.RampData(ramp_green2, 'const')    
     # print(ramp)
@@ -91,16 +76,38 @@ def target1():
     return remap
 
 targetMaterials = ['target1', 'target2']
-nt = 'nt'
-
 targetRemap = [target0(), target1()]
 
+spheres = ['Sphere.001', 'Sphere']
+meshes = ['Sphere.002', 'floor', 'left', 'back', 'right']
+
+def render():
+    cmp = composition.bi.Context()
+
+    cmp.addImages(['nt', 'pt'])
+
+    cmp.scene.addSpheres(spheres)
+    cmp.scene.addMeshes(meshes)
+    cmp.scene.setCamera()
+    cmp.setTargets(targetMaterials)
+
+    cmp.scene.print()
+    time.sleep(0.1)
+
+    cmp.pt_ref('pt', 1000)
+    cmp.save('pt', cmp.path+'im_pt')
+
+    print('pt_nt');
+    cmp.pt_nt('nt', 1000)
+    cmp.save('nt', cmp.path+"im_nontarget")
+    print('')
+
+    cmp.ppm_targets(param)
+    cmp.ppm_targets_ex(param)
+
+    cmp.remapAll([col.basis.radiance]*len(cmp.targets))
+
+render()
+
 path = bpy.path.abspath('//../')
-
-#exec(open(path+'render.py').read())
 exec(open(path+'composite.py').read())
-
-# delete variables
-for name in dir():
-    if not name.startswith('_'):
-        del globals()[name]

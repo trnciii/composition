@@ -79,6 +79,12 @@ class Scene:
 		self.data = composition.Scene()
 		self.mtlBinding = {}
 
+		env = composition.Material()
+		env.type = composition.MtlType.emit
+		env.color = composition.vec3(0, 0, 0)
+		self.setEnvironment(env)
+
+
 	def addMaterial(self, m):
 		return self.data.addMaterial(m)
 
@@ -88,51 +94,55 @@ class Scene:
 	def addTarget(self, key):
 		self.data.targets.append(self.mtlBinding[key])
 
-	def addMesh(self, key):
-		o = bpy.data.objects[key]
-		if o.type != 'MESH':
-			print('not a mesh')
-			return
+	def addMeshes(self, keys):
+		keys = list(keys)
+		for key in keys:
+			o = bpy.data.objects[key]
+			if o.type != 'MESH':
+				print('not a mesh')
+				return
 
-		if not len(o.material_slots)>0:
-			print('no materials')
-			return
-		
-		###
-		mesh = bpy.data.objects[key].data
-		names = [m.name for m in mesh.materials]
+			if not len(o.material_slots)>0:
+				print('no materials')
+				return
+			
+			###
+			mesh = bpy.data.objects[key].data
+			names = [m.name for m in mesh.materials]
 
-		for name in names:
+			for name in names:
+				if name not in self.mtlBinding.keys():
+					self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
+			  
+			OW = bpy.data.objects[key].matrix_world
+
+			coes = np.array([[OW @ v.co] for v in mesh.vertices])
+			normals = np.array([[ (OW @ v.normal - OW.to_translation()).normalized() ] for v in mesh.vertices])
+
+			vertices = np.array([ [coes[i], normals[i]] for i in range(len(mesh.vertices)) ]).reshape(-1, 6)
+			indices = [[ p.vertices[0], p.vertices[1], p.vertices[2],\
+				self.mtlBinding[names[p.material_index]] ] for p in mesh.polygons]
+			
+			composition.addMesh(self.data, list(vertices), list(indices))
+
+	def addSpheres(self, keys):
+		keys = list(keys)
+		for key in keys:
+			o = bpy.data.objects[key]
+			if not len(o.material_slots) > 0:
+				print('no materials')
+				return
+			
+			###
+			name = o.material_slots[0].name
 			if name not in self.mtlBinding.keys():
 				self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
-		  
-		OW = bpy.data.objects[key].matrix_world
 
-		coes = np.array([[OW @ v.co] for v in mesh.vertices])
-		normals = np.array([[ (OW @ v.normal - OW.to_translation()).normalized() ] for v in mesh.vertices])
+			l = o.location
+			composition.addSphere(self.data, l.x, l.y, l.z, sum(o.dimensions)/6, self.mtlBinding[name])
 
-		vertices = np.array([ [coes[i], normals[i]] for i in range(len(mesh.vertices)) ]).reshape(-1, 6)
-		indices = [[ p.vertices[0], p.vertices[1], p.vertices[2],\
-			self.mtlBinding[names[p.material_index]] ] for p in mesh.polygons]
-		
-		composition.addMesh(self.data, list(vertices), list(indices))
-
-	def addSphere(self, key):
-		o = bpy.data.objects[key]
-		if not len(o.material_slots) > 0:
-			print('no materials')
-			return
-		
-		###
-		name = o.material_slots[0].name
-		if name not in self.mtlBinding.keys():
-			self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
-
-		l = o.location
-		composition.addSphere(self.data, l.x, l.y, l.z, sum(o.dimensions)/6, self.mtlBinding[name])
-
-	def setCamera(self, key):
-		cam = bpy.data.objects[key]
+	def setCamera(self):
+		cam = bpy.context.scene.camera
 		cam.data.sensor_fit = 'VERTICAL'
 		f = 2*cam.data.lens/cam.data.sensor_height
 		mat = sum([list(r) for r in cam.matrix_world], [])

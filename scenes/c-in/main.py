@@ -1,6 +1,20 @@
 import bpy
+import time
 import composition
 col = composition.color
+
+def saveImages(path, layers):
+    names = ['nt', 'pt']
+    names = names+[layers]
+    names = names+[l+'_mask' for l in layers]
+    names = names+[l+'_depth' for l in layers]
+    names = names+[l+'_texture' for l in layers]
+    
+    for n in names:
+        if n in bpy.data.images.keys():
+            file = path+'png_'+n+'.png'
+            print('save', file)
+            bpy.data.images[n].save_render(file)
 
 # define ramps
 ramp_green0 = [
@@ -36,7 +50,7 @@ ramp_red0 = [
 param_preview = composition.core.PPMParam()
 param_preview.nRay = 64
 param_preview.nPhoton = 20000
-param_preview.itr = 1000
+param_preview.itr = 100
 
 param_final = composition.core.PPMParam()
 param_final.nRay = 32
@@ -59,31 +73,43 @@ def target0():
     return remap
 
 targetMaterials = ['target1']
-nt = 'nt'
-
 targetRemap = [target0()]
 #targetRemap = [col.basis.const(0.8, 0.7, 0.2)]
 #targetRemap = [col.basis.radiance]
 
-def scene(scene):
-    scene.setCamera('Camera')
+spheres = ['Sphere', 'Sphere.001']
+meshes = ['Sphere.002', 'right.001']
 
-    env = composition.core.Material()
-    env.type = composition.core.MtlType.emit
-    env.color = composition.core.vec3(0, 0, 0) # for photon mapping this has to be zero
-    scene.setEnvironment(env)
+def render():
+    print('\033[36mrendering\033[0m')
+    cmp = composition.bi.Context()
 
-    scene.addSphere('Sphere.001') # light
-    scene.addSphere('Sphere')
-    scene.addMesh('Sphere.002')
-    scene.addMesh('right.001')
+    cmp.addImages(['nt', 'pt'])
 
-path = bpy.path.abspath('//../')
+    cmp.scene.addSpheres(spheres)
+    cmp.scene.addMeshes(meshes)
+    cmp.scene.setCamera()
+    cmp.setTargets(targetMaterials)
 
-#exec(open(path+'render.py').read())
-exec(open(path+'composite.py').read())
+    cmp.scene.print()
+    time.sleep(0.1)
 
-# delete variables
-for name in dir():
-    if not name.startswith('_'):
-        del globals()[name]
+    # cmp.pt_ref('pt', 1000)
+    # cmp.save('pt', cmp.path+'im_pt')
+
+    # print('pt_nt');
+    # cmp.pt_nt('nt', 1000)
+    # cmp.save('nt', cmp.path+"im_nontarget")
+    # print('')
+
+    cmp.ppm_targets(param)
+    cmp.ppm_targets_ex(param)
+
+    cmp.remapAll([col.basis.radiance]*len(cmp.targets))
+
+    return
+
+render()
+exec(open( bpy.path.abspath('//../composite.py') ).read())
+
+#saveImages(bpy.path.abspath('//result/'), targetMaterials)
