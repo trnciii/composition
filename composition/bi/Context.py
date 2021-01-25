@@ -24,8 +24,10 @@ class Context:
 		self.scene = Scene()
 
 		self.targets = []
-		self.hits_all = []
-		self.hits_ex = []
+		self.hits_all = {}
+		self.hits_ex = {}
+		self.nRay_all = 0
+		self.nRay_ex = 0
 
 # image
 	def bindImage(self, key):
@@ -64,10 +66,6 @@ class Context:
 		self.addImages(targetMaterials)
 		self.addImages([t+'_mask' for t in targetMaterials])
 		self.addImages([t+'_depth' for t in targetMaterials])
-
-		for t in targetMaterials:
-			self.scene.addTarget(t)
-
 		print()
 
 
@@ -95,7 +93,7 @@ class Context:
 
 # more large rendering processes
 	def ppm_targets(self, param):
-		res = []
+		res = {}
 		for i in range(len(self.scene.data.targets)):
 			print('collecting\033[32m all\033[0m hitpoints on\033[33m', self.targets[i], '\033[0m')
 			hits = self.genHits(i, param.nRay)
@@ -104,13 +102,13 @@ class Context:
 			self.ppm_radiance(hits, i, param)
 			hits.save(self.path + "hit_" + self.targets[i] +"_" + str(param.nRay) + "_all")
 
-			res.append(hits)
+			res[self.targets[i]] = hits
 			print()
 
 		self.hits_all = res
 
 	def ppm_targets_ex(self, param):
-		res = []
+		res = {}
 		for i in range(len(self.scene.data.targets)):
 			print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', self.targets[i], '\033[0m')
 			hits = self.genHits_ex(i, param.nRay)
@@ -119,7 +117,7 @@ class Context:
 			self.ppm_radiance(hits, i, param)
 			hits.save(self.path + "hit_" + self.targets[i] + "_" + str(param.nRay) + "_ex")
 
-			res.append(hits)
+			res[self.targets[i]] = hits
 			print()
 
 		self.hits_ex = res
@@ -142,12 +140,24 @@ class Context:
 
 # more large converter
 	def remapAll(self, remaps):
-		if not len(remaps) is len(self.targets): return
+		if not len(remaps) is len(self.targets):
+			print('failed remapping')
+			return
 
 		for i in range(len(self.hits_ex)):
 			print('converting\033[33m', self.targets[i], '\033[0m', end='')
-			self.hitsToImage(self.hits_ex[i], self.targets[i], remaps[i])
+			self.hitsToImage(self.hits_ex[self.targets[i]], self.targets[i], remaps[i])
 			print()
+
+	def maskAll(self):
+		m = [t+'_mask' for t in self.targets]
+		d = [t+'_depth' for t in self.targets]
+		
+		for i in range(len(self.hits_all)):
+			self.mask(self.hits_all[self.targets[i]], m[i], self.nRay_all)
+			self.depth(self.hits_all[self.targets[i]], d[i], self.nRay_all)
+
+		print()
 
 # file
 	def getFiles(self):
@@ -161,17 +171,30 @@ class Context:
 			print('\t',f)
 		print()
 
-	def readHits(self, query):
-		hits = {}
+	def readFiles(self, nRay):
+		self.listFiles()
 		for file in self.files:
 			words = file.split('_')
-			if self.match(words, query):
+			if words[0] == 'hit' and words[2] == str(nRay):
 				h = core.Hits()
 				h.load(self.path+file)
-				hits[words[1]] = h
 
+				if words[3] == 'ex':
+					self.nRay_ex = nRay
+					self.hits_ex[words[1]] = h
+
+				if words[3] == 'all':
+					self.nRay_all = nRay
+					self.hits_all[words[1]] = h
+
+			if words[0] == 'im' and words[1] == 'nontarget':
+				self.load('nt', self.path+file)
+
+			if words[0] == 'im' and words[1] == 'pt':
+				self.load('pt', self.path+file)
+				
 		print()
-		return hits
+
 
 	def match(self, words, query):
 		res = True

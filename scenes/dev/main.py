@@ -107,7 +107,21 @@ def render():
 
     cmp.remapAll([col.basis.radiance]*len(cmp.targets))
 
-render()
+def remap():
+    print('\033[36mremapping\033[0m')
 
-path = bpy.path.abspath('//../')
-exec(open(path+'composite.py').read())
+    cmp = composition.bi.Context()
+
+    cmp.addImages(['nt', 'pt'])
+    cmp.setTargets(targetMaterials)
+
+    cmp.readFiles(param.nRay)
+
+    cmp.remapAll(targetRemap)
+    cmp.maskAll()
+
+    print('-- end reamapping --')
+    return
+
+render()
+remap()

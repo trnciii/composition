@@ -89,7 +89,10 @@ def render():
     cmp.scene.addSpheres(spheres)
     cmp.scene.addMeshes(meshes)
     cmp.scene.setCamera()
+
     cmp.setTargets(targetMaterials)
+    for t in cmp.targets:
+        cmp.scene.addTarget(t)
 
     cmp.scene.print()
     time.sleep(0.1)
@@ -106,10 +109,28 @@ def render():
     cmp.ppm_targets_ex(param)
 
     cmp.remapAll([col.basis.radiance]*len(cmp.targets))
-
+    
+    print('-- end rendering --')
     return
 
-render()
-exec(open( bpy.path.abspath('//../composite.py') ).read())
+def remap():
+    print('\033[36mremapping\033[0m')
+
+    cmp = composition.bi.Context()
+
+    cmp.addImages(['nt', 'pt'])
+    cmp.setTargets(targetMaterials)
+
+    cmp.readFiles(param.nRay)
+
+    cmp.remapAll(targetRemap)
+    cmp.maskAll()
+
+    print('-- end reamapping --')
+    return
+
+
+# render()
+remap()
 
 #saveImages(bpy.path.abspath('//result/'), targetMaterials)
