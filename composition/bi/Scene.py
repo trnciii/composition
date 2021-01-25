@@ -98,13 +98,16 @@ class Scene:
 		keys = list(keys)
 		for key in keys:
 			o = bpy.data.objects[key]
+			
+			if o.hide_get():continue
+
 			if o.type != 'MESH':
 				print('not a mesh')
 				return
 
 			if not len(o.material_slots)>0:
 				print('no materials')
-				return
+				continue
 			
 			###
 			mesh = bpy.data.objects[key].data
@@ -129,9 +132,12 @@ class Scene:
 		keys = list(keys)
 		for key in keys:
 			o = bpy.data.objects[key]
+
+			if o.hide_get(): continue
+
 			if not len(o.material_slots) > 0:
 				print('no materials')
-				return
+				continue
 			
 			###
 			name = o.material_slots[0].name
