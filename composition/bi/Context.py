@@ -71,6 +71,7 @@ class Context:
 
 # rendering
 	def pt_ref(self, key, spp):
+		print('path tracing with sample size', spp)
 		core.pt(self.renderpass, self.bind[key], spp, self.scene.data)
 		self.copyImage(key)
 
@@ -79,6 +80,7 @@ class Context:
 		self.copyImage(key)
 		
 	def pt_nt(self, key, spp):
+		print('path tracing except for targets with sample size', spp)
 		core.pt_notTarget(self.renderpass, self.bind[key], spp, self.scene.data)
 		self.copyImage(key)
 

@@ -97,13 +97,12 @@ def render():
     cmp.scene.print()
     time.sleep(0.1)
 
-    # cmp.pt_ref('pt', 1000)
-    # cmp.save('pt', cmp.path+'im_pt')
+    cmp.pt_ref('pt', 1000)
+    cmp.save('pt', cmp.path+'im_pt')
 
-    # print('pt_nt');
-    # cmp.pt_nt('nt', 1000)
-    # cmp.save('nt', cmp.path+"im_nontarget")
-    # print('')
+    cmp.pt_nt('nt', 1000)
+    cmp.save('nt', cmp.path+"im_nontarget")
+    print('')
 
     cmp.ppm_targets(param)
     cmp.ppm_targets_ex(param)
@@ -130,7 +129,7 @@ def remap():
     return
 
 
-# render()
+render()
 remap()
 
 #saveImages(bpy.path.abspath('//result/'), targetMaterials)
