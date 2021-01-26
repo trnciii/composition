@@ -14,9 +14,10 @@ class Context:
 		
 		self.files = self.getFiles()
 
-
-		self.w = 512
-		self.h = 512
+		r_scale = bpy.context.scene.render.resolution_percentage/100
+		self.w = int(bpy.context.scene.render.resolution_x * r_scale)
+		self.h = int(bpy.context.scene.render.resolution_y * r_scale)
+		print('image size', self.w, self.h)
 
 		self.renderpass = core.RenderPass(self.w, self.h)
 		self.bind = {}

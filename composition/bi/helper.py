@@ -65,5 +65,7 @@ def addImage(name, w, h):
 	if name not in bpy.data.images.keys():
 		print('add image <'+name+'>')
 		bpy.data.images.new(name, w, h)
+	else:
+		bpy.data.images[name].scale(w,h)
 
 	return bpy.data.images[name]
