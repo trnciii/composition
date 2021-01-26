@@ -95,15 +95,13 @@ class Scene:
 		self.data.targets.append(self.mtlBinding[key])
 
 	def addMeshes(self, keys):
-		keys = list(keys)
+		keys = [k for k in keys if k in bpy.data.objects.keys() and not bpy.data.objects[k].hide_get()]
 		for key in keys:
 			o = bpy.data.objects[key]
 			
-			if o.hide_get():continue
-
 			if o.type != 'MESH':
 				print('not a mesh')
-				return
+				continue
 
 			if not len(o.material_slots)>0:
 				print('no materials')
@@ -129,11 +127,9 @@ class Scene:
 			composition.addMesh(self.data, list(vertices), list(indices))
 
 	def addSpheres(self, keys):
-		keys = list(keys)
+		keys = [k for k in keys if k in bpy.data.objects.keys() and not bpy.data.objects[k].hide_get()]
 		for key in keys:
 			o = bpy.data.objects[key]
-
-			if o.hide_get(): continue
 
 			if not len(o.material_slots) > 0:
 				print('no materials')
