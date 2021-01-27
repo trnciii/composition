@@ -89,7 +89,10 @@ def render():
     cmp.scene.addSpheres(spheres)
     cmp.scene.addMeshes(meshes)
     cmp.scene.setCamera()
+
     cmp.setTargets(targetMaterials)
+    for t in cmp.targets:
+        cmp.scene.addTarget(t)
 
     cmp.scene.print()
     time.sleep(0.1)
