@@ -39,10 +39,6 @@ class Context:
 	def copyImage(self, key):
 		bpy.data.images[key].pixels = core.getImage(self.renderpass, self.bind[key])
 
-	def copyAll(self):
-		for key in self.bind.keys():
-			self.copyImage(key)
-
 	def save(self, key, path):
 		if(core.writeLayer(self.renderpass, self.bind[key], path)):
 			print("Save layer <", key, ">:", path)
@@ -166,16 +162,15 @@ class Context:
 	def getFiles(self):
 		files = os.listdir(self.path)
 		files.sort()
-		return files
 
-	def listFiles(self):
 		print('files in', self.path)
-		for f in self.files:
-			print('\t',f)
+		for f in files:
+			print('--',f)
 		print()
 
-	def readFiles(self, nRay):
-		self.listFiles()
+		return files
+
+	def loadFiles(self, nRay):
 		for file in self.files:
 			words = file.split('_')
 			if words[0] == 'hit' and words[2] == str(nRay):

@@ -21,8 +21,8 @@ ramp_red = [
 
 param_preview = composition.core.PPMParam()
 param_preview.nRay = 16
-param_preview.nPhoton = 50000
-param_preview.itr = 2000
+param_preview.nPhoton = 5000
+param_preview.itr = 20
 
 param_final = composition.core.PPMParam()
 param_final.nRay = 256
@@ -78,22 +78,17 @@ def render():
 
     cmp.addImages(['nt', 'pt'])
 
-    cmp.scene.addSpheres(spheres)
-    cmp.scene.addMeshes(meshes)
-    cmp.scene.setCamera()
-
+    cmp.scene.create(spheres,meshes,targetMaterials)
     cmp.setTargets(targetMaterials)
-    for t in cmp.targets:
-        cmp.scene.addTarget(t)
 
     cmp.scene.print()
     time.sleep(0.1)
 
-    cmp.pt_ref('pt', 1000)
+    cmp.pt_ref('pt', 100)
     cmp.save('pt', cmp.path+'im_pt')
 
     print('pt_nt');
-    cmp.pt_nt('nt', 1000)
+    cmp.pt_nt('nt', 100)
     cmp.save('nt', cmp.path+"im_nontarget")
     print('')
 
@@ -111,7 +106,7 @@ def remap():
     cmp.addImages(['nt', 'pt'])
     cmp.setTargets(targetMaterials)
 
-    cmp.readFiles(param.nRay)
+    cmp.loadFiles(param.nRay)
 
     cmp.remapAll(targetRemap)
     cmp.maskAll()
@@ -119,5 +114,5 @@ def remap():
     print('-- end reamapping --')
     return
 
-#render()
+render()
 remap()

@@ -66,13 +66,8 @@ def render():
 
     cmp.addImages(['nt', 'pt'])
 
-    cmp.scene.addSpheres(spheres)
-    cmp.scene.addMeshes(meshes)
-    cmp.scene.setCamera()
-
+    cmp.scene.create(spheres, meshes, targetMaterials)
     cmp.setTargets(targetMaterials)
-    for t in cmp.targets:
-        cmp.scene.addTarget(t)
 
     cmp.scene.print()
     time.sleep(0.1)
@@ -100,7 +95,7 @@ def remap():
     cmp.addImages(['nt', 'pt'])
     cmp.setTargets(targetMaterials)
 
-    cmp.readFiles(param.nRay)
+    cmp.loadFiles(param.nRay)
 
     cmp.remapAll(targetRemap)
     cmp.maskAll()
@@ -108,5 +103,5 @@ def remap():
     print('-- end reamapping --')
     return
 
-#render()
+render()
 remap()

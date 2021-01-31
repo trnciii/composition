@@ -3,41 +3,11 @@ import time
 import composition
 col = composition.color
 
-# define ramps
-ramp_green0 = [
-    (0.07, [0.03, 0.1, 0.03]),
-    (0.3, [0.1, 0.5, 0.1 ]),
-    (0.5, [0.6, 0.8, 0.2]),
-    (0.8, [0.6, 0.8, 0.2]),
-    (1, [0.9, 1, 0.9])
-]
-
-ramp_green1 = [
-    (0.07, [0.03, 0.1, 0.03]),
-    (0.5, [0.1, 0.5, 0.1 ]),
-    (0.8, [0.6, 0.8, 0.2]),
-    (1, [0.9, 1, 0.9])
-]
-
-ramp_green2 = [
-    (0, [0.03, 0.1, 0.03]),
-    (0.07, [0.1, 0.5, 0.1 ]),
-    (0.3 , [0.6, 0.8, 0.2]),
-    (0.8 , [0.9, 1, 0.9]),
-]
-
-ramp_red0 = [
-    (0, [0.1, 0.02, 0.02]),
-    (0.25, [0.5, 0.4, 0.8]),
-    (0.3, [0.5, 0.1, 0.1]),
-    (0.65, [0.8, 0.7, 0.2]),
-    (1.5, [1, 1, 0.95])
-]
 
 param_preview = composition.core.PPMParam()
 param_preview.nRay = 16
-param_preview.nPhoton = 100000
-param_preview.itr = 10000
+param_preview.nPhoton = 1000
+param_preview.itr = 10
 
 param_final = composition.core.PPMParam()
 param_final.nRay = 256
@@ -96,13 +66,8 @@ def render():
     cmp = composition.bi.Context()
 
     cmp.addImages(['nt', 'pt'])
-    cmp.scene.addSpheres(spheres)
-    cmp.scene.addMeshes(meshes)
-    cmp.scene.setCamera()
-    
+    cmp.scene.create(spheres, meshes, targetMaterials)
     cmp.setTargets(targetMaterials)
-    for t in cmp.targets:
-        cmp.scene.addTarget(t)
 
     cmp.scene.print()
     time.sleep(0.1)
@@ -130,10 +95,10 @@ def remap():
     cmp.addImages(['nt', 'pt'])
     cmp.setTargets(targetMaterials)
 
-    cmp.readFiles(param.nRay)
+    cmp.loadFiles(param.nRay)
 
     cmp.remapAll(targetRemap)
-#    cmp.maskAll()
+    cmp.maskAll()
 
     print('-- end reamapping --')
     return
