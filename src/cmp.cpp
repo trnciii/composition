@@ -50,7 +50,7 @@ int createScene(Scene* s){
 	uint32_t green = s->addMaterial(mGreen);
 
 	Material mTarget1;
-		mTarget1.type = Material::Type::LAMBERT;
+		mTarget1.type = Material::Type::GLASS;
 		mTarget1.color = glm::vec3(1);
 		mTarget1.a = 0.1;
 

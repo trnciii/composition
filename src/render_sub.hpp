@@ -67,9 +67,9 @@ float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3& n, con
 		return 1/kPI;
 	}
 
-	if(mtl.type == Material::Type::GGX_REFLECTION){
+	else if(mtl.type == Material::Type::GGX_REFLECTION){
 		const glm::vec3 m = glm::normalize(wi+wo);
-		float a2 = mtl.a*mtl.a;
+		const float a2 = mtl.a*mtl.a;
 
 		float D = GGX_D(glm::dot(n, m), a2);
 		float gi = smith_mask(wi, n, a2);
@@ -78,27 +78,28 @@ float evalBSDF(const glm::vec3& wi, const glm::vec3& wo, const glm::vec3& n, con
 		return F * gi*go * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
 	}
 
-	if(mtl.type == Material::Type::GLASS){
-		// currently assuming the normal always direct outside
+	else if(mtl.type == Material::Type::GLASS){
+		// currently we assume the normal directing out of the shape
+		const float a2 = mtl.a*mtl.a;
+		const float nr = mtl.ior;
 
-		float a2 = mtl.a*mtl.a;
-		float gi = smith_mask(wi, n, a2);
-		float go = smith_mask(wo, n, a2);
-		
-		if(glm::dot(wi,n)>0){
+		if(glm::dot(n, wi)>0 && glm::dot(wi, wo)>0){
+			// reflection
 			const glm::vec3 m = glm::normalize(wi+wo);
-			float D = GGX_D(glm::dot(n, m), a2);
-			float F = Fresnel_Schlick(glm::dot(m, wi), mtl.ior);	
-			return F * gi*go * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
+			const float D = GGX_D(glm::dot(n, m), a2);
+			const float F = Fresnel_Schlick(glm::dot(m, wi), nr);
+			const float G = smith_mask(wi, n, a2) * smith_mask(wo, n, a2);
+			return F * G * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
 		}
-		else{
-
-		// if(glm::dot(wi,n)<0){
-			const glm::vec3 m = glm::normalize(wo + mtl.ior*wi);
-			float D = GGX_D(glm::dot(n, -m), a2);
-			float F = Fresnel_Schlick(glm::dot(m, wi), mtl.ior);
-			return /*(1-F) **/ gi*go * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
+		else if(glm::dot(n, wi)<0){
+			// refraction
+			const glm::vec3 m = glm::normalize(wo - wi*nr);
+			const float D = GGX_D(glm::dot(n, m), a2);
+			const float F = Fresnel_Schlick(glm::dot(-m, wi), nr);
+			const float G = smith_mask(wi,-n, a2) * smith_mask(wo, n, a2);
+			return (1-F) * G * D * 0.25/(fabs(glm::dot(wi,n)*glm::dot(wo,n))+0.001);
 		}
+		else return 0;
 	}
 
 	return 0;

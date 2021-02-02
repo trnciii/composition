@@ -43,7 +43,6 @@ int main(void){
 		return 0;
 	}
 
-	// render path traced reference
 	uint32_t pt = pass.addLayer();
 	{
 		std::cout <<"reference path tracing [" <<pt <<"]" <<std::endl;
@@ -63,7 +62,7 @@ int main(void){
 		std::cout <<"reference photon mapping [" <<ppm <<"]" <<std::endl;
 		int nRay = 4;
 		int nPhoton = 10000;
-		int iteration = 10;
+		int iteration = 100;
 		float alpha = 0.6;
 		float R0 = 1;
 
@@ -107,7 +106,7 @@ int main(void){
 	// collect hitpoints
 	std::vector<std::vector<hitpoint>> hits(scene.cmpTargets.size());
 	for(uint32_t targetID=0; targetID<scene.cmpTargets.size(); targetID++){
-		int nRay = 16;
+		int nRay = 512;
 		int nDepth = 1;
 		RNG rng(0);
 
@@ -172,7 +171,7 @@ int main(void){
 
 			double u = std::max(tau.x, std::max(tau.y, tau.z));
 			u = pow(8*u, 1);
-			pass.data(target_txr)[hit.pixel] += 0.4f*colormap_4(u) * hit.weight;
+			pass.data(target_txr)[hit.pixel] += tau*colormap_4(u) * hit.weight;
 			pass.data(target_raw)[hit.pixel] += tau*hit.weight;
 		}
 
