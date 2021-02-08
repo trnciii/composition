@@ -111,7 +111,7 @@ void print(const Scene& s){
 	puts("materials");
 	for(int i=0; i<s.materials.size(); i++){
 		printf("[%2d] ", i);
-		if(std::find(s.cmpTargets.begin(), s.cmpTargets.end(), i) != s.cmpTargets.end())
+		if(std::find(s.targetMaterials.begin(), s.targetMaterials.end(), i) != s.targetMaterials.end())
 			print(s.materials[i], "composite\n");
 		else
 			print(s.materials[i]);

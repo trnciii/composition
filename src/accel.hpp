@@ -24,7 +24,7 @@ struct Box{
 		return (dim.y<dim.x && dim.z<dim.x)? 0 : ((dim.z<dim.y)? 1 : 2);
 	}
 
-	inline bool intersect(const glm::vec3& p, float r){
+	inline bool intersect(const glm::vec3& p, float r) const{
 		return (min.x - r < p.x && p.x < max.x + r
 			&& min.y - r < p.y && p.y < max.y + r
 			&& min.z - r < p.z && p.z < max.z + r);
@@ -73,11 +73,11 @@ private:
 public:
 
 	bool build();
-	std::vector<Result> searchNN(const hitpoint& hit);
-	std::vector<Result> searchNN_checkAll(const hitpoint& hit);
+	std::vector<Result> searchNN(const hitpoint& hit)const;
+	std::vector<Result> searchNN_checkAll(const hitpoint& hit)const;
 	void copyElements(Photon* const elements, uint32_t size);
 	void addElements(Photon* const elements, uint32_t size);
-	inline bool hasTree(){return 0 < nodes.size();}
+	inline bool hasTree()const{return 0 < nodes.size();}
 	inline std::vector<Node> getNodes(){return nodes;}
 	inline std::vector<Photon> getElements(){return verts;}
 
@@ -163,7 +163,7 @@ bool Tree::build(){
 	return true;
 }
 
-std::vector<Tree::Result> Tree::searchNN(const hitpoint& hit){
+std::vector<Tree::Result> Tree::searchNN(const hitpoint& hit) const{
 	if(!hasTree()) return searchNN_checkAll(hit);
 
 	std::vector<Tree::Result> result;
@@ -173,7 +173,7 @@ std::vector<Tree::Result> Tree::searchNN(const hitpoint& hit){
 		if(nodes[i].box.intersect(hit.p, hit.R)){
 			if(nodes[i].size <= nElements)
 				for(int j=nodes[i].begin; j<nodes[i].begin + nodes[i].size; j++){
-					Photon& photon = verts[j];
+					const Photon& photon = verts[j];
 					glm::vec3 d = photon.p - hit.p;
 					float l = length(d);
 					d /= l;
@@ -189,7 +189,7 @@ std::vector<Tree::Result> Tree::searchNN(const hitpoint& hit){
 	return result;
 }
 
-std::vector<Tree::Result> Tree::searchNN_checkAll(const hitpoint& hit){
+std::vector<Tree::Result> Tree::searchNN_checkAll(const hitpoint& hit) const{
 	std::vector<Tree::Result> result;
 	
 	for(auto v : verts){

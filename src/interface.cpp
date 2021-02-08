@@ -293,7 +293,7 @@ BOOST_PYTHON_MODULE(composition){
 	class_<Scene>("Scene")
 		.def_readwrite("camera", &Scene::camera)
 		.def_readwrite("materials", &Scene::materials)
-		.def_readwrite("targetIDs", &Scene::cmpTargets)
+		.def_readwrite("targetIDs", &Scene::targetMaterials)
 		.def("addMaterial", &Scene::addMaterial);
 
 	def("createScene", createScene);

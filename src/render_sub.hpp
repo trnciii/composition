@@ -230,7 +230,7 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
 }
 
 glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
-	const std::vector<uint32_t>& targets = scene.cmpTargets;
+	const std::vector<uint32_t>& targets = scene.targetMaterials;
 	glm::vec3 throuput(1);
 	float pTerminate = 1;
 

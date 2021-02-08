@@ -13,7 +13,7 @@ struct Scene{
 	
 	const uint32_t environment = 0;
 	std::vector<Material> materials;
-	std::vector<uint32_t> cmpTargets;
+	std::vector<uint32_t> targetMaterials;
 	
 	std::vector<Sphere> spheres;
 	std::vector<uint32_t> lights;

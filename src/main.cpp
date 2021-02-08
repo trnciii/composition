@@ -38,7 +38,7 @@ int main(void){
 	int height = 512;
 	RenderPass pass(width, height);
 
-	if(scene.cmpTargets.size()==0){
+	if(scene.targetMaterials.size()==0){
 		puts("no target");
 		return 0;
 	}
@@ -104,18 +104,18 @@ int main(void){
 	
 
 	// collect hitpoints
-	std::vector<std::vector<hitpoint>> hits(scene.cmpTargets.size());
-	for(uint32_t targetID=0; targetID<scene.cmpTargets.size(); targetID++){
+	std::vector<std::vector<hitpoint>> hits(scene.targetMaterials.size());
+	for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
 		int nRay = 512;
 		int nDepth = 1;
 		RNG rng(0);
 
-		std::cout <<"collecting hitpoints for target component..." <<std::endl;
+		std::cout <<"collecting hitpoints on material " <<scene.targetMaterials[i] <<std::endl;
 	
-		hits[targetID].reserve(width*height*nRay);
+		hits[i].reserve(width*height*nRay);
 
 		// uint32_t targetID = 0;
-		collectHitpoints_target_exclusive(hits[targetID], targetID, nDepth,
+		collectHitpoints_target_exclusive(hits[i], scene.targetMaterials[i], nDepth,
 			pass.width, pass.height, nRay, scene, rng);
 
 		// save hitpoints
@@ -125,33 +125,29 @@ int main(void){
 
 	// ppm
 	// todo: takeover RNG state. currently hits are cleared before this iterations.
-	for(uint32_t targetID=0; targetID<scene.cmpTargets.size(); targetID++){
-		int nPhoton = 100000;
-		int iteration = 10;
-		float alpha = 0.6;
-		float R0 = 0.5;
+	{
+		const int nPhoton = 100000;
+		const int iteration = 10;
+		const float alpha = 0.6;
+		const float R0 = 0.5;
 
-		int nThreads = omp_get_max_threads();
+		for(std::vector<hitpoint>& vhit : hits) for(hitpoint& hit : vhit) hit.clear(R0);
+
+		const int nThreads = omp_get_max_threads();
 		std::vector<RNG> rngs(0);
 		for(int i=0; i<nThreads; i++)
 			rngs.push_back(RNG(i));
 
-		std::cout <<"progressive photon mapping with " <<iteration <<" iterations..." <<std::endl;
-
-		// uint32_t targetID = 0;
-
-		for(hitpoint& hit : hits[targetID])hit.clear(R0);
-		for(int i=0; i<iteration; i++){
-			Tree photonmap = createPhotonmap_target(scene, nPhoton, targetID, rngs.data(), nThreads);
-			accumulateRadiance(hits[targetID], photonmap, scene, alpha);
+		for(uint32_t n=0; n<iteration; n++){
+			const Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
+			for(std::vector<hitpoint>& h : hits) accumulateRadiance(h, photonmap, scene, alpha);
 		}
 
-		// progressivePhotonMapping_target(hits, R0, iteration, nPhoton, alpha, scene, scene.cmpTargets[0], rand);
-		std::string name = "hits" + std::to_string(targetID) + "_glass_64";
-		writeVector(hits, outDir + "/" + name);
+		for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
+			std::string name = "hits" + std::to_string(scene.targetMaterials[i]) + "_glass_64";
+			writeVector(hits[i], outDir + "/" + name);
+		}
 	}
-	// readVector(hits, outDir + "/hit_1_100itr");
-
 
 	// composition
 	uint32_t composed = pass.addLayer();
@@ -159,14 +155,14 @@ int main(void){
 	for(int i=0; i<pass.length; i++)
 		pass.data(composed)[i] = pass.data(nontarget)[i];
 
-	for(uint32_t targetID=0; targetID<scene.cmpTargets.size(); targetID++){
+	for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
 		uint32_t target_raw = pass.addLayer();
 		uint32_t target_txr = pass.addLayer();
 		std::cout <<"raw target component [" <<target_raw <<"], ";
 		std::cout <<"textured target component [" <<target_txr <<"], ";
 		
 
-		for(hitpoint hit : hits[targetID]){
+		for(hitpoint hit : hits[i]){
 			glm::vec3 tau = hit.tau/(float)(hit.iteration);
 
 			double u = std::max(tau.x, std::max(tau.y, tau.z));

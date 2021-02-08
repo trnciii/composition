@@ -17,7 +17,7 @@
 std::vector<Photon>, std::vector<hitpoint>:\
 omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()) )
 
-int createScene(Scene* s){
+int createScene(Scene*const s){
 	s->camera.position = glm::vec3(0, -10, 4);
 	s->camera.setDir(glm::vec3(0,1,0), glm::vec3(0,0,1));
 	s->camera.flen = 2;
@@ -55,7 +55,7 @@ int createScene(Scene* s){
 		mTarget1.a = 0.1;
 
 	uint32_t target1 = s->addMaterial(mTarget1);
-	s->cmpTargets.push_back(target1);
+	s->targetMaterials.push_back(target1);
 
 	Material mTarget2;
 		mTarget2.type = Material::Type::GGX_REFLECTION;
@@ -63,7 +63,7 @@ int createScene(Scene* s){
 		mTarget2.a = 0.04;
 
 	uint32_t target2 = s->addMaterial(mTarget2);
-	s->cmpTargets.push_back(target2);
+	s->targetMaterials.push_back(target2);
 
 	Material mFloor;
 		mFloor.type = Material::Type::GGX_REFLECTION;
@@ -110,7 +110,9 @@ int createScene(Scene* s){
 	return 0;
 }
 
-void pathTracing(glm::vec3* const result, const int w, const int h, const int spp, const Scene& scene, RNG* const rngs){
+void pathTracing(glm::vec3*const result, const int w, const int h, const int spp,
+	const Scene& scene, RNG*const rngs)
+{
 	#pragma omp parallel for schedule(dynamic)
 	for(int i=0; i<w*h; i++){
 		int xi = i%w;
@@ -128,7 +130,9 @@ void pathTracing(glm::vec3* const result, const int w, const int h, const int sp
 	}
 }
 
-void pathTracing_notTarget(glm::vec3* const result, const int w, const int h, const int spp, const Scene& scene, RNG* const rngs){
+void pathTracing_notTarget(glm::vec3*const result, const int w, const int h, const int spp,
+	const Scene& scene, RNG*const rngs)
+{
 	#pragma omp parallel for schedule(dynamic)
 	for(int i=0; i<w*h; i++){
 		int xi = i%w;
@@ -165,12 +169,12 @@ void collectHitpoints(std::vector<hitpoint>& hits,
 }
 
 void collectHitpoints_target(std::vector<hitpoint>& hits, 
-	const uint32_t targetID, const int targetDepth,
+	const uint32_t tMtl, const int targetDepth,
 	const int w, const int h, const int nRay,
 	const Scene& scene, RNG& rng)
 {
-	std::vector<uint32_t> others = scene.cmpTargets;
-	others.erase(others.begin()+targetID);
+	std::vector<uint32_t> others;
+	for(uint32_t i : scene.targetMaterials)if(i!=tMtl)others.push_back(i);
 
 	// #pragma omp parallel for reduction(merge: hits) schedule(dynamic)
 	for(int i=0; i<w*h*nRay; i++){
@@ -192,7 +196,7 @@ void collectHitpoints_target(std::vector<hitpoint>& hits,
 
 			if( mtl.type == Material::Type::EMIT ) break;
 
-			if( is.mtlID == scene.cmpTargets[targetID] ){
+			if( is.mtlID == tMtl ){
 				countTargetDepth++;
 
 				if( countTargetDepth == targetDepth ){
@@ -210,12 +214,12 @@ void collectHitpoints_target(std::vector<hitpoint>& hits,
 }
 
 void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
-	const uint32_t targetID, const int targetDepth,
+	const uint32_t tMtl, const int targetDepth,
 	const int w, const int h, const int nRay,
 	const Scene& scene, RNG& rng)
 {
-	std::vector<uint32_t> others = scene.cmpTargets;
-	others.erase(others.begin()+targetID);
+	std::vector<uint32_t> others;
+	for(uint32_t i : scene.targetMaterials)if(i != tMtl)others.push_back(i);
 
 	// #pragma omp parallel for reduction(merge: hits) schedule(dynamic)
 	for(int i=0; i<w*h*nRay; i++){
@@ -244,7 +248,7 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 
 			if( mtl.type == Material::Type::EMIT ) break;
 
-			if( is.mtlID == scene.cmpTargets[targetID] ){
+			if( is.mtlID == tMtl ){
 				countTargetDepth++;
 
 				if( countTargetDepth == targetDepth ){
@@ -279,7 +283,7 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 	}
 }
 
-Tree createPhotonmap(const Scene& scene, int nPhoton, RNG* rngs, int nThreads){
+Tree createPhotonmap(const Scene& scene, const int nPhoton, RNG*const rngs, const int nThreads){
 	if(scene.lights.size()==0) return Tree();
 
 	std::vector<Photon> photons;
@@ -333,7 +337,7 @@ Tree createPhotonmap(const Scene& scene, int nPhoton, RNG* rngs, int nThreads){
 	return tree;
 }
 
-Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targetID, RNG* rngs, int nThreads){
+Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t tMtl, RNG* rngs, int nThreads){
 	if(scene.lights.size()==0) return Tree();
 
 	std::vector<Photon> photons;
@@ -371,7 +375,7 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 
 			if(mtl.type == Material::Type::EMIT) break;
 
-			if(scene.cmpTargets[targetID] == is.mtlID) photons.push_back(Photon(is.p, ph, -ray.d));
+			if(tMtl == is.mtlID) photons.push_back(Photon(is.p, ph, -ray.d));
 
 			sampleBSDF(ray, ph, is, mtl, scene, rand);
 			ph /= pTerminate;
@@ -387,7 +391,7 @@ Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t targ
 	return tree;
 }
 
-void accumulateRadiance(std::vector<hitpoint>& hitpoints, Tree& photonmap, const Scene& scene, const double alpha){
+void accumulateRadiance(std::vector<hitpoint>& hitpoints, const Tree& photonmap, const Scene& scene, const double alpha){
 	#pragma omp parallel for schedule(dynamic)
 	for(hitpoint& hit : hitpoints){
 		const Material& mtl = scene.materials[hit.mtlID];
