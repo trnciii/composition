@@ -6,13 +6,13 @@ col = composition.color
 
 param_preview = composition.core.PPMParam()
 param_preview.nRay = 16
-param_preview.nPhoton = 1000000
-param_preview.itr = 100000
+param_preview.nPhoton = 1000
+param_preview.itr = 10
 
 param_final = composition.core.PPMParam()
-param_final.nRay = 256
-param_final.nPhoton = 100000
-param_final.itr = 10000
+param_final.nRay = 16
+param_final.nPhoton = 1000000
+param_final.itr = 100000
 
 param = param_preview
 
@@ -84,8 +84,9 @@ def render():
 #    cmp.save('nt', cmp.path+"im_nontarget")
 #    print()    
 
-    cmp.ppm_targets(param)
-    cmp.ppm_targets_ex(param)
+    for t in cmp.targetNames:
+        cmp.ppm_target(t, param)
+        cmp.ppm_target_ex(t, param)
 
     cmp.remapAll([col.basis.radiance]*len(cmp.targetNames))
     print('-- end rendering --')
@@ -102,10 +103,10 @@ def remap():
     cmp.loadFiles(param.nRay)
 
     cmp.remapAll(targetRemap)
-#    cmp.maskAll()
+    cmp.maskAll()
 
     print('-- end reamapping --')
     return
 
-#render()
+render()
 remap()
