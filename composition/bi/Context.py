@@ -82,59 +82,65 @@ class Context:
 		self.copyImage(key)
 
 	def genHits_ex(self, target, nRay):
-		return core.collectHits_target_exclusive(1, self.w, self.h, nRay, self.scene.data, target)
+		return core.collectHits_target_exclusive(1, self.w, self.h, nRay, self.scene.data, self.scene.mtlBinding[target])
 
 	def genHits(self, target, nRay):
-		return core.collectHits_target(1, self.w, self.h, nRay, self.scene.data, target)
+		return core.collectHits_target(1, self.w, self.h, nRay, self.scene.data, self.scene.mtlBinding[target])
 
 	def ppm_radiance(self, hits, target, param):
-		core.radiance_target(hits, target, param, self.scene.data)
+		core.radiance_target(hits, self.scene.mtlBinding[target], param, self.scene.data)
 
 # more large rendering processes
+	def ppm_target(self, target, param):
+		print('collecting\033[32m all\033[0m hitpoints on\033[33m', target, '\033[0m')
+		hits = self.genHits(target, param.nRay)
+
+		print('estimating radiance')
+		self.ppm_radiance(hits, target, param)
+
+		hits.save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
+		self.hits_all[target] = hits
+		print()
+
+
+	def ppm_target_ex(self, target, param):
+		print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', target, '\033[0m')
+		hits = self.genHits_ex(target, param.nRay)
+
+		print('estimating radiance')
+		self.ppm_radiance(hits, target, param)
+
+		hits.save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
+		self.hits_ex[target] = hits
+		print()
+
 	def ppm_targets(self, param):
 		res = {}
-		for i in range(len(self.scene.data.targetIDs)):
-			print('collecting\033[32m all\033[0m hitpoints on\033[33m', self.targetNames[i], '\033[0m')
-			hits = self.genHits(i, param.nRay)
+		for target in self.targetNames:
+			print('collecting\033[32m all\033[0m hitpoints on\033[33m', target, '\033[0m')
+			hits = self.genHits(target, param.nRay)
 
 			print('estimating radiance')
-			self.ppm_radiance(hits, i, param)
-			hits.save(self.path + "hit_" + self.targetNames[i] +"_" + str(param.nRay) + "_all")
+			self.ppm_radiance(hits, target, param)
+			hits.save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
 
-			res[self.targetNames[i]] = hits
+			res[target] = hits
 			print()
 
 		self.hits_all = res
 
 	def ppm_targets_ex(self, param):
 		res = {}
-		for i in range(len(self.scene.data.targetIDs)):
-			print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', self.targetNames[i], '\033[0m')
-			hits = self.genHits_ex(i, param.nRay)
+		for target in self.targetNames:
+			print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', target, '\033[0m')
+			hits = self.genHits_ex(target, param.nRay)
 
 			print('estimating radiance')
-			self.ppm_radiance(hits, i, param)
-			hits.save(self.path + "hit_" + self.targetNames[i] + "_" + str(param.nRay) + "_ex")
+			self.ppm_radiance(hits, target, param)
+			hits.save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
 
-			res[self.targetNames[i]] = hits
+			res[target] = hits
 			print()
-
-		self.hits_ex = res
-
-	def ppm_target_ex(self, name, param):
-		if not name in self.targetNames: return
-
-		i = self.targetNames.index(name)
-
-		print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', name, '\033[0m')
-		hits = self.genHits_ex(i, param.nRay)
-
-		print('estimating radiance')
-		self.ppm_radiance(hits, i, param)
-		hits.save(self.path + "hit_" + name + "_" + str(param.nRay) + "_ex")
-
-		res[name] = hits
-		print()
 
 		self.hits_ex = res
 
