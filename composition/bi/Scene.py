@@ -72,6 +72,9 @@ def createMaterial(key):
 
 		return m
 
+	else:
+		print('failed to create a material')
+
 def getTriangles(obj):
 	depsgraph = bpy.context.evaluated_depsgraph_get()
 	object_eval = obj.evaluated_get(depsgraph)
@@ -157,7 +160,7 @@ class Scene:
 				self.addSphere(s)
 
 		for t in targets:
-			self.data.targets.append(self.mtlBinding[t])
+			self.data.targetIDs.append(self.mtlBinding[t])
 			
 
 	def setCamera(self):

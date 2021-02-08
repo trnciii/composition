@@ -20,9 +20,9 @@ ramp_red = [
 ]
 
 param_preview = composition.core.PPMParam()
-param_preview.nRay = 16
-param_preview.nPhoton = 5000
-param_preview.itr = 20
+param_preview.nRay = 64
+param_preview.nPhoton = 100000
+param_preview.itr = 10
 
 param_final = composition.core.PPMParam()
 param_final.nRay = 256
@@ -54,7 +54,7 @@ def target1():
     def u(hit):
         r = col.basis.sumRadianceRGB(hit)
         r = r**0.5
-        r = r*1.4
+        r = r*0.7
         return r
     
     composition.bi.rampToImage(targetMaterials[1]+'_texture', ramp, 256, 16)
@@ -66,12 +66,17 @@ def target1():
     
     return remap
 
-targetMaterials = ['target1', 'target2']
-targetRemap = [target0(), target1()]
+def rmFloor():
+    ramp = 'ColorRamp.002'
+    remap = composition.bi.ramp(col.basis.sumRadianceRGB, ramp)
+    return remap
+
+targetMaterials = ['target1', 'target2', 'glossy']
+targetRemap = [target0(), target1(), rmFloor()]
 #targetRemap[1] = col.basis.radiance
 
-spheres = ['Sphere.001', 'Sphere']
-meshes = ['Sphere.002', 'floor', 'left', 'back', 'right']
+spheres = ['Sphere.001', 'Icosphere', 'Sphere']
+meshes = ['Sphere.002', 'floor']
 
 def render():
     cmp = composition.bi.Context()
@@ -92,10 +97,10 @@ def render():
     cmp.save('nt', cmp.path+"im_nontarget")
     print('')
 
-    cmp.ppm_targets(param)
+#    cmp.ppm_targets(param)
     cmp.ppm_targets_ex(param)
 
-    cmp.remapAll([col.basis.radiance]*len(cmp.targets))
+    cmp.remapAll([col.basis.radiance]*len(cmp.targetNames))
     print('-- end renderingz --')
 
 def remap():
@@ -109,7 +114,7 @@ def remap():
     cmp.loadFiles(param.nRay)
 
     cmp.remapAll(targetRemap)
-    cmp.maskAll()
+#    cmp.maskAll()
 
     print('-- end reamapping --')
     return

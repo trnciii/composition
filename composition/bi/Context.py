@@ -24,7 +24,7 @@ class Context:
 
 		self.scene = Scene()
 
-		self.targets = []
+		self.targetNames = []
 		self.hits_all = {}
 		self.hits_ex = {}
 		self.nRay_all = 0
@@ -59,7 +59,7 @@ class Context:
 
 # target
 	def setTargets(self, targetMaterials):
-		self.targets = targetMaterials
+		self.targetNames = targetMaterials
 		self.addImages(targetMaterials)
 		self.addImages([t+'_mask' for t in targetMaterials])
 		self.addImages([t+'_depth' for t in targetMaterials])
@@ -93,31 +93,48 @@ class Context:
 # more large rendering processes
 	def ppm_targets(self, param):
 		res = {}
-		for i in range(len(self.scene.data.targets)):
-			print('collecting\033[32m all\033[0m hitpoints on\033[33m', self.targets[i], '\033[0m')
+		for i in range(len(self.scene.data.targetIDs)):
+			print('collecting\033[32m all\033[0m hitpoints on\033[33m', self.targetNames[i], '\033[0m')
 			hits = self.genHits(i, param.nRay)
 
 			print('estimating radiance')
 			self.ppm_radiance(hits, i, param)
-			hits.save(self.path + "hit_" + self.targets[i] +"_" + str(param.nRay) + "_all")
+			hits.save(self.path + "hit_" + self.targetNames[i] +"_" + str(param.nRay) + "_all")
 
-			res[self.targets[i]] = hits
+			res[self.targetNames[i]] = hits
 			print()
 
 		self.hits_all = res
 
 	def ppm_targets_ex(self, param):
 		res = {}
-		for i in range(len(self.scene.data.targets)):
-			print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', self.targets[i], '\033[0m')
+		for i in range(len(self.scene.data.targetIDs)):
+			print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', self.targetNames[i], '\033[0m')
 			hits = self.genHits_ex(i, param.nRay)
 
 			print('estimating radiance')
 			self.ppm_radiance(hits, i, param)
-			hits.save(self.path + "hit_" + self.targets[i] + "_" + str(param.nRay) + "_ex")
+			hits.save(self.path + "hit_" + self.targetNames[i] + "_" + str(param.nRay) + "_ex")
 
-			res[self.targets[i]] = hits
+			res[self.targetNames[i]] = hits
 			print()
+
+		self.hits_ex = res
+
+	def ppm_target_ex(self, name, param):
+		if not name in self.targetNames: return
+
+		i = self.targetNames.index(name)
+
+		print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', name, '\033[0m')
+		hits = self.genHits_ex(i, param.nRay)
+
+		print('estimating radiance')
+		self.ppm_radiance(hits, i, param)
+		hits.save(self.path + "hit_" + name + "_" + str(param.nRay) + "_ex")
+
+		res[name] = hits
+		print()
 
 		self.hits_ex = res
 
@@ -139,22 +156,22 @@ class Context:
 
 # more large converter
 	def remapAll(self, remaps):
-		if not len(remaps) is len(self.targets):
+		if not len(remaps) is len(self.targetNames):
 			print('failed remapping')
 			return
 
 		for i in range(len(self.hits_ex)):
-			print('converting\033[33m', self.targets[i], '\033[0m', end='')
-			self.hitsToImage(self.hits_ex[self.targets[i]], self.targets[i], remaps[i])
+			print('converting\033[33m', self.targetNames[i], '\033[0m', end='')
+			self.hitsToImage(self.hits_ex[self.targetNames[i]], self.targetNames[i], remaps[i])
 			print()
 
 	def maskAll(self):
-		m = [t+'_mask' for t in self.targets]
-		d = [t+'_depth' for t in self.targets]
+		m = [t+'_mask' for t in self.targetNames]
+		d = [t+'_depth' for t in self.targetNames]
 		
 		for i in range(len(self.hits_all)):
-			self.mask(self.hits_all[self.targets[i]], m[i], self.nRay_all)
-			self.depth(self.hits_all[self.targets[i]], d[i], self.nRay_all)
+			self.mask(self.hits_all[self.targetNames[i]], m[i], self.nRay_all)
+			self.depth(self.hits_all[self.targetNames[i]], d[i], self.nRay_all)
 
 		print()
 

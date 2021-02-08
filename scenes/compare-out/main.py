@@ -73,7 +73,7 @@ def render():
     cmp.ppm_targets(param)
     cmp.ppm_targets_ex(param)
 
-    cmp.remapAll([col.basis.radiance]*len(cmp.targets))
+    cmp.remapAll([col.basis.radiance]*len(cmp.targetNames))
     
     print('-- end rendering --')
     return
