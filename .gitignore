@@ -8,6 +8,7 @@ text/
 *.pyd
 *.blend1
 *.blend2
+*.DS_Store
 
 main
 main.exe
