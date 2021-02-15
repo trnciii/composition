@@ -44,7 +44,7 @@ unsigned char tonemap(double c){
 	return c_out&0xff;
 }
 
-int writeImage(glm::vec3* color, int w, int h, const char* name){
+int writeImage(glm::vec3* color, int w, int h, const std::string& name){
 	unsigned char *tone = new unsigned char[3*w*h];
 	for(int i=0; i<w*h; i++){
 		tone[3*i  ] = tonemap(color[i].x);
@@ -52,7 +52,7 @@ int writeImage(glm::vec3* color, int w, int h, const char* name){
 		tone[3*i+2] = tonemap(color[i].z);
 	}
 
-	int result = stbi_write_png(name, w, h, 3, tone, 3*w);
+	int result = stbi_write_png(name.c_str(), w, h, 3, tone, 3*w);
 
 	delete[] tone;
 	return result;
@@ -78,7 +78,7 @@ int writeAllPass(RenderPass& pass, const std::string& dir){
 	int success = 0;
 	for(int n=0; n<pass.nLayer; n++){
 		std::string name = std::to_string(n) + ".png";
-		if(writeImage(pass.data(n), pass.width, pass.height, (dir + "/" + name).data()) == 1)
+		if(writeImage(pass.data(n), pass.width, pass.height, dir+"/"+name) == 1)
 			success |= 1<<n;
 	}
 	return success;

@@ -5,8 +5,9 @@
 #include <iostream>
 #include <bitset>
 #include <omp.h>
+#include <unordered_map>
 
-#include "RenderPass.hpp"
+#include "Image.hpp"
 #include "Random.hpp"
 #include "print.hpp"
 #include "file.hpp"
@@ -34,32 +35,33 @@ int main(void){
 	print(scene);
 
 	RNG rand;
-	int width = 512;
-	int height = 512;
-	RenderPass pass(width, height);
+	glm::dvec2 dim(512, 512);
+	std::unordered_map<std::string, Image> pass;
 
 	if(scene.targetMaterials.size()==0){
 		puts("no target");
 		return 0;
 	}
 
-	uint32_t pt = pass.addLayer();
 	{
-		std::cout <<"reference path tracing [" <<pt <<"]" <<std::endl;
+		Image im(dim.x, dim.y);
+		std::cout <<"reference path tracing" <<std::endl;
 
-		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++)
+		RNG* rngForEveryPixel = new RNG[im.len()];
+		for(int i=0; i<im.len(); i++)
 			rngForEveryPixel[i] = RNG(i);
 
-		pathTracing(pass.data(pt), width, height, 200, scene, rngForEveryPixel);
+		pathTracing(im.data(),im.w, im.h, 200, scene, rngForEveryPixel);
 		// writeLayer(pass, reference, outDir + "/reference");
 		delete[] rngForEveryPixel;
+
+		pass["pt"] = im;
 	}
 
-
-	uint32_t ppm = pass.addLayer();
 	{
-		std::cout <<"reference photon mapping [" <<ppm <<"]" <<std::endl;
+		Image im(dim.x, dim.y);
+		std::cout <<"reference photon mapping" <<std::endl;
+
 		int nRay = 4;
 		int nPhoton = 10000;
 		int iteration = 100;
@@ -72,8 +74,8 @@ int main(void){
 			rngs.push_back(RNG(i));
 
 		std::vector<hitpoint> hits;
-		hits.reserve(width*height*nRay);
-		collectHitpoints(hits, pass.width, pass.height, nRay, scene, rngs[nThreads]);
+		hits.reserve(im.len()*nRay);
+		collectHitpoints(hits, im.w, im.h, nRay, scene, rngs[nThreads]);
 		for(hitpoint& hit : hits)hit.clear(R0);
 
 		for(int i=0; i<iteration; i++){
@@ -81,29 +83,32 @@ int main(void){
 			accumulateRadiance(hits, photonmap, scene, alpha);
 		}
 
-		glm::vec3* image = pass.data(ppm);
-		for(hitpoint& hit : hits){
-			image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
-		}
+		for(hitpoint& hit : hits)
+			im.pixels[hit.pixel] += hit.tau * hit.weight / (float)iteration;
+		
+		pass["ppm"] = im;
 	}
 
-	// render non target component with pt
-	const uint32_t nontarget = pass.addLayer();
 	{
-		std::cout <<"path tracing for non-target component [" <<nontarget <<"]" <<std::endl;
+		Image im(dim.x, dim.y);
+		std::cout <<"path tracing for non-target component" <<std::endl;
 
-		RNG* rngForEveryPixel = new RNG[width*height];
-		for(int i=0; i<width*height; i++)
+		RNG* rngForEveryPixel = new RNG[im.len()];
+		for(int i=0; i<im.len(); i++)
 			rngForEveryPixel[i] = RNG(i);
 
-		pathTracing_notTarget(pass.data(nontarget), width, height, 1000, scene, rngForEveryPixel);
+		pathTracing_notTarget(im.data(), im.w, im.h, 1000, scene, rngForEveryPixel);
 
 		delete[] rngForEveryPixel;
-		writeLayer(pass, nontarget, outDir + "/nontarget");
+		// writeLayer(pass["nt"], nontarget, outDir + "/nontarget");
+		writeVector(im.pixels, outDir + "/" + "nt");
 	}
-	
 
-	// collect hitpoints
+	pass["nt"] = Image(dim.x, dim.y);
+	readVector(pass["nt"].pixels, outDir+"/nt");
+
+
+	// // collect hitpoints
 	std::vector<std::vector<hitpoint>> hits(scene.targetMaterials.size());
 	for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
 		int nRay = 512;
@@ -112,21 +117,21 @@ int main(void){
 
 		std::cout <<"collecting hitpoints on material " <<scene.targetMaterials[i] <<std::endl;
 	
-		hits[i].reserve(width*height*nRay);
+		hits[i].reserve(dim.x*dim.y*nRay);
 
 		// uint32_t targetID = 0;
 		collectHitpoints_target_exclusive(hits[i], scene.targetMaterials[i], nDepth,
-			pass.width, pass.height, nRay, scene, rng);
+			dim.x, dim.y, nRay, scene, rng);
 
 		// save hitpoints
 		// if(writeVector(hits, outDir + "/hit_2")) std::cout <<"hitpoints saved" <<std::endl;
 	}
 
 
-	// ppm
-	// todo: takeover RNG state. currently hits are cleared before this iterations.
+	// // ppm
+	// // todo: takeover RNG state. currently hits are cleared before this iterations.
 	{
-		const int nPhoton = 100000;
+		const int nPhoton = 1000;
 		const int iteration = 10;
 		const float alpha = 0.6;
 		const float R0 = 0.5;
@@ -149,39 +154,33 @@ int main(void){
 		}
 	}
 
-	// composition
-	uint32_t composed = pass.addLayer();
-	std::cout <<"composed [" <<composed <<"]" <<std::endl;
-	for(int i=0; i<pass.length; i++)
-		pass.data(composed)[i] = pass.data(nontarget)[i];
-
+	// // composition
+	pass["composed"] = pass["nt"];
 	for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
-		uint32_t target_raw = pass.addLayer();
-		uint32_t target_txr = pass.addLayer();
-		std::cout <<"raw target component [" <<target_raw <<"], ";
-		std::cout <<"textured target component [" <<target_txr <<"], ";
-		
+		std::string raw = "mtl_" + std::to_string(scene.targetMaterials[i]) + "_raw";
+		std::string remap = "mtl_" + std::to_string(scene.targetMaterials[i]) + "_remap";
+		pass[raw] = Image(dim.x, dim.y);
+		pass[remap] = Image(dim.x, dim.y);
 
 		for(hitpoint hit : hits[i]){
 			glm::vec3 tau = hit.tau/(float)(hit.iteration);
 
 			double u = std::max(tau.x, std::max(tau.y, tau.z));
 			u = pow(8*u, 1);
-			pass.data(target_txr)[hit.pixel] += tau*colormap_4(u) * hit.weight;
-			pass.data(target_raw)[hit.pixel] += tau*hit.weight;
+
+			pass[remap].pixels[hit.pixel] += tau*colormap_4(u) * hit.weight;
+			pass[raw].pixels[hit.pixel] += tau*hit.weight;
 		}
 
-		for(int i=0; i<pass.length; i++)
-			pass.data(composed)[i] += pass.data(target_txr)[i];
+		for(int i=0; i<dim.x*dim.y; i++)
+			pass["composed"].pixels[i] += pass[remap].pixels[i];
 	}
 
-
 	// save all image
-	{
-		const int digit = 8;
-		std::cout <<"pass output: " <<std::bitset<digit>(writeAllPass(pass, outDir)) <<" / ";
-		for(int i=digit; 0<i; --i) std::cout <<(i<=pass.nLayer)? "1" : "0";
-		std::cout <<std::endl;
+	for(auto& [key, image] : pass){
+		std::string name = outDir+"/"+key+".png";
+		if(writeImage(image.data(), image.w, image.h, name))
+			std::cout <<"saved " <<name <<std::endl;
 	}
 
 	return 0;
