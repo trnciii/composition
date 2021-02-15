@@ -57,3 +57,12 @@ int writeImage(glm::vec3* color, int w, int h, const std::string& name){
 	delete[] tone;
 	return result;
 }
+
+// todo: size check
+bool readPixels(Image& im, const std::string& path){
+	return readVector(im.pixels, path);
+}
+
+bool writePixels(Image& im, const std::string& path){
+	return writeVector(im.pixels, path);
+}

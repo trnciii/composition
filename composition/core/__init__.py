@@ -12,6 +12,8 @@ from .composition import MtlType
 # images
 from .composition import Image
 from .composition import getImage
+from .composition import readPixels
+from .composition import writePixels
 
 # renderers
 from .composition import pt

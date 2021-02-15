@@ -311,10 +311,10 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("pixels", &Image::pixels);
 
 	def("getImage", getBlenderImage);
-	
-	def("writeAllPass", writeAllPass);
-	def("writeLayer", writeLayer);
-	def("loadLayer", loadLayer);
+
+	// files
+	def("readPixels", readPixels);
+	def("writePixels", writePixels);
 
 	// renderers
 	def("pt", pt);
