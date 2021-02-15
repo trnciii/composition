@@ -8,10 +8,10 @@ def replace(res, i, hits, color):
     c = color(hit)
     res[i] = [hit.weight.x*c.x, hit.weight.y*c.y, hit.weight.z*c.z]
 
-def hitsToImage(hits, renderpass, id, color):
+def hitsToImage(hits, image, color):
     print("using python for replacement")
 
-    im  = [[0.]*3 for i in range(renderpass.length)]
+    im  = [[0.]*3 for i in range(len(image.pixels))]
     res = [[0.]*3 for i in range(len(hits.data))]
 
     for hit in hits.data:
@@ -27,21 +27,21 @@ def hitsToImage(hits, renderpass, id, color):
     #     im[hits.data[i].pixel][1] += res[i][1]
     #     im[hits.data[i].pixel][2] += res[i][2]
 
-    for i in range(renderpass.length):
-        renderpass.set(id, i, im[i][0], im[i][1], im[i][2])
+    for i in range(len(image.pixels)):
+        image.pixels[i] = cmp.vec3(im[i][0], im[i][1], im[i][2])
 
-def mask(hits, renderpass, id, nRay):
-    count = [0]*renderpass.length
+def mask(hits, image, nRay):
+    count = [0]*len(image.pixels)
 
     for hit in hits.data:
         count[hit.pixel] += 1
 
-    for i in range(renderpass.length):
-        renderpass.set(id, i, count[i]/nRay, 0, 0)
+    for i in range(len(image.pixels)):
+        image.pixels[i] = cmp.vec3(count[i]/nRay, 0, 0)
 
-def depth(hits, renderpass, id, nRay):
-    d = [0]*renderpass.length
-    count = [0]*renderpass.length
+def depth(hits, image, nRay):
+    d = [0]*len(image.pixels)
+    count = [0]*len(image.pixels)
     max = 0
 
     for hit in hits.data:
@@ -50,9 +50,9 @@ def depth(hits, renderpass, id, nRay):
         max = hit.depth if hit.depth > max else max
     
     if max>0:
-        for i in range(renderpass.length):
+        for i in range(len(image.pixels)):
             if count[i] > 0:
-                renderpass.set(id, i, d[i]/nRay/max, 0, 0)
+                image.pixels[i] = cmp.vec3(d[i]/nRay/max, 0, 0)
 
     return max
     
