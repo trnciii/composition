@@ -57,29 +57,3 @@ int writeImage(glm::vec3* color, int w, int h, const std::string& name){
 	delete[] tone;
 	return result;
 }
-
-bool writeLayer(RenderPass& pass, const uint32_t layer, const std::string& name){
-	std::vector<glm::vec3> image(pass.length);
-	std::vector<glm::vec3>::iterator it(pass.data(layer));
-	std::copy(it, it+pass.length, image.begin());	
-	return writeVector(image, name);
-}
-
-bool loadLayer(RenderPass& pass, const uint32_t layer, const std::string& name){
-	if(pass.nLayer <= layer) return false;
-	std::vector<glm::vec3> image;
-	if( !readVector(image, name) )return false;
-	if( image.size() != pass.length )return false;
-	pass.setLayer(layer, image.begin());
-	return true;
-}
-
-int writeAllPass(RenderPass& pass, const std::string& dir){
-	int success = 0;
-	for(int n=0; n<pass.nLayer; n++){
-		std::string name = std::to_string(n) + ".png";
-		if(writeImage(pass.data(n), pass.width, pass.height, dir+"/"+name) == 1)
-			success |= 1<<n;
-	}
-	return success;
-}

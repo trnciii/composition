@@ -8,47 +8,40 @@
 #include <omp.h>
 
 #include "cmp.hpp"
-#include "RenderPass.hpp"
+#include "Image.hpp"
 #include "file.hpp"
 #include "data.hpp"
 #include "print.hpp"
 
-inline std::vector<float> getBlenderImage(RenderPass pass, const uint32_t layer){
-	// pass image in linear? space
-	const glm::vec3* const v = pass.data(layer);
-
-	std::vector<float> f(pass.length*4);
-	for(int y=0; y<pass.height; y++){
-		for(int x=0; x<pass.width; x++){
-			int i_s = y*pass.width + x;
-			int i_d = (pass.height -y-1)*pass.width + x;
-
-			f[4*i_d  ] = v[i_s].x;
-			f[4*i_d+1] = v[i_s].y;
-			f[4*i_d+2] = v[i_s].z;
-			f[4*i_d+3] = 1.0f;
+inline std::vector<float> getBlenderImage(const Image& im){
+	std::vector<float> f(im.len()*4);
+	for(int y=0; y<im.h; y++){
+		for(int x=0; x<im.w; x++){
+			int i_src = y*im.w + x;
+			int i_dst = (im.h -y-1)*im.w + x;
+			
+			f[4*i_dst  ] = im.pixels[i_src].x;
+			f[4*i_dst+1] = im.pixels[i_src].y;
+			f[4*i_dst+2] = im.pixels[i_src].z;
+			f[4*i_dst+3] = 1.0f;
 		}
 	}
 	return f;
 }
 
 void pt(
-	RenderPass& pass, const int layer, const int spp, const Scene& scene)
+	Image& result, const int spp, const Scene& scene)
 {
-	glm::vec3* const result = pass.data(layer);
-	const int w = pass.width;
-	const int h = pass.height;
-
-	RNG* rngForEveryPixel = new RNG[w*h];
-	for(int i=0; i<w*h; i++)
+	RNG* rngForEveryPixel = new RNG[result.len()];
+	for(int i=0; i<result.len(); i++)
 		rngForEveryPixel[i] = RNG(i);
 
-	pathTracing(result, w, h, spp, scene, rngForEveryPixel);
+	pathTracing(result.data(), result.w, result.h, spp, scene, rngForEveryPixel);
 
 	delete[] rngForEveryPixel;
 }
 
-void ppm(RenderPass& pass, const int layer,
+void ppm(Image& result,
 	int nRay, int nPhoton, int iteration, float alpha, float R0,
 	const Scene& scene)
 {
@@ -59,11 +52,11 @@ void ppm(RenderPass& pass, const int layer,
 		rngs.push_back(RNG(i));
 
 	std::vector<hitpoint> hits;
-	hits.reserve(pass.length*nRay);
+	hits.reserve(result.len()*nRay);
 
 	std::cout <<"collecting hitpoints" <<std::endl;
 
-	collectHitpoints(hits, pass.width, pass.height, nRay, scene, rngs[nThreads]);
+	collectHitpoints(hits, result.w, result.h, nRay, scene, rngs[nThreads]);
 	for(hitpoint& hit : hits)hit.clear(R0);
 	
 	std::cout <<"radiance estimation\n"
@@ -79,23 +72,17 @@ void ppm(RenderPass& pass, const int layer,
 
 	std::cout <<"|" <<std::endl;
 
-	glm::vec3* image = pass.data(layer);
 	for(hitpoint& hit : hits)
-		image[hit.pixel] += hit.tau * hit.weight / (float)iteration;
+		result.pixels[hit.pixel] += hit.tau * hit.weight / (float)iteration;
 }
 
-void pt_notTarget(
-	RenderPass& pass, const int layer, const int spp, const Scene& scene)
+void pt_notTarget(Image& result, const int spp, const Scene& scene)
 {
-	glm::vec3* const result = pass.data(layer);
-	const int w = pass.width;
-	const int h = pass.height;
-
-	RNG* rngForEveryPixel = new RNG[w*h];
-	for(int i=0; i<w*h; i++)
+	RNG* rngForEveryPixel = new RNG[result.len()];
+	for(int i=0; i<result.len(); i++)
 		rngForEveryPixel[i] = RNG(i);
 
-	pathTracing_notTarget(result, w, h, spp, scene, rngForEveryPixel);
+	pathTracing_notTarget(result.data(), result.w, result.h, spp, scene, rngForEveryPixel);
 
 	delete[] rngForEveryPixel;
 }
@@ -176,11 +163,7 @@ void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 	std::cout <<"|" <<std::endl;
 }
 
-void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
-	const boost::python::object& remap)
-{
-	std::vector<glm::vec3> image(pass.length);
-
+void hitsToImage(const hitpoints_wrap& hits, Image& result, const boost::python::object& remap){
 	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
 
 	for(int i=0; i<hits.data.size(); i++){
@@ -188,12 +171,10 @@ void hitsToImage(const hitpoints_wrap& hits, RenderPass& pass, const int layer,
 		if(i%(hits.data.size()/39) == 0) std::cout <<"+" <<std::flush;
 
 		const glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
-		image[hit.pixel] += hit.weight * t;
+		result.pixels[hit.pixel] += hit.weight * t;
 	}
 
 	std::cout <<"|" <<std::endl;
-
-	pass.setLayer(layer, image.data());
 }
 
 
@@ -323,15 +304,11 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("ior", &Material::ior);
 
 
-	// render pass
-	class_<RenderPass>("RenderPass", init<int, int>())
-		.def_readonly("width", &RenderPass::width)
-		.def_readonly("height", &RenderPass::height)
-		.def_readonly("length", &RenderPass::length)
-		.def_readonly("nLayers", &RenderPass::nLayer)
-		.def("addLayer", &RenderPass::addLayer)
-		.def("clear", &RenderPass::clear)
-		.def("set", &RenderPass::setPixel);
+	// images
+	class_<Image>("Image")
+		.def_readwrite("w", &Image::w)
+		.def_readwrite("h", &Image::h)
+		.def_readwrite("pixels", &Image::pixels);
 
 	def("getImage", getBlenderImage);
 	

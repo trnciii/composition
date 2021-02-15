@@ -9,12 +9,9 @@ from .composition import hitpoints as Hits
 from .composition import Material
 from .composition import MtlType
 
-# render pass
-from .composition import RenderPass
+# images
+from .composition import Image
 from .composition import getImage
-from .composition import loadLayer
-from .composition import writeAllPass
-from .composition import writeLayer
 
 # renderers
 from .composition import pt
