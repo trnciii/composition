@@ -241,6 +241,9 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("y", &glm::vec3::y)
 		.def_readwrite("z", &glm::vec3::z);
 
+	class_<std::vector<glm::vec3>>("vec_vec3")
+		.def(vector_indexing_suite<std::vector<glm::vec3>>());
+
 	class_<std::vector<uint32_t>>("vec_uint32t")
 		.def(vector_indexing_suite<std::vector<uint32_t>>());
 
@@ -305,7 +308,7 @@ BOOST_PYTHON_MODULE(composition){
 
 
 	// images
-	class_<Image>("Image")
+	class_<Image>("Image", init<int, int>())
 		.def_readwrite("w", &Image::w)
 		.def_readwrite("h", &Image::h)
 		.def_readwrite("pixels", &Image::pixels);

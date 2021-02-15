@@ -6,8 +6,6 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb/stb_image_write.h>
 
-#include "RenderPass.hpp"
-
 template<typename T>
 bool writeVector(const std::vector<T>& v, const std::string& name) {
 	std::ofstream out(name, std::ios::out | std::ios::binary);

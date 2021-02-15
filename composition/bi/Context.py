@@ -12,17 +12,15 @@ class Context:
 		self.path = bpy.path.abspath('//') + "result/"
 		os.makedirs(self.path, exist_ok=True)
 		
-		self.files = self.getFiles()
-
 		r_scale = bpy.context.scene.render.resolution_percentage/100
 		self.w = int(bpy.context.scene.render.resolution_x * r_scale)
 		self.h = int(bpy.context.scene.render.resolution_y * r_scale)
+		self.images = {}
 		print('image size', self.w, self.h)
 
-		self.renderpass = core.RenderPass(self.w, self.h)
-		self.bind = {}
-
 		self.scene = Scene()
+
+		self.files = self.getFiles()
 
 		self.targetNames = []
 		self.hits_all = {}
@@ -32,25 +30,25 @@ class Context:
 
 # image
 	def bindImage(self, key):
-		id = self.renderpass.addLayer()
-		self.bind[key] = id
-		return id
+		self.images[key] = core.Image(self.w, self.h)
 
 	def copyImage(self, key):
-		bpy.data.images[key].pixels = core.getImage(self.renderpass, self.bind[key])
+		bpy.data.images[key].pixels = core.getImage(self.images[key])
 
 	def save(self, key, path):
-		if(core.writeLayer(self.renderpass, self.bind[key], path)):
-			print("Save layer <", key, ">:", path)
+		if core.writePixels(self.images[key], path):
+			print("Saved an image <", key, "> as <", path, ">")
 		else:
-			print("failed to save a layer")
+			print("failed to save an image <", key, "> as <", path, ">")
 
 	def load(self, key, path):
-		if core.loadLayer(self.renderpass, self.bind[key], path):
-			print("Read a layer:", path)
+		im = core.Image(self.w, self.h)
+		if core.readPixels(im, path):
+			print("Read an image:", path)
+			self.images[key] = im
 			self.copyImage(key)
 		else:
-			print("failed to read a layer")
+			print("failed to read an image", path)
 
 	def addImages(self, list):
 		for t in list:
@@ -69,16 +67,16 @@ class Context:
 # rendering
 	def pt_ref(self, key, spp):
 		print('path tracing with sample size', spp)
-		core.pt(self.renderpass, self.bind[key], spp, self.scene.data)
+		core.pt(self.images[key], spp, self.scene.data)
 		self.copyImage(key)
 
 	def ppm_ref(self, key, param):
-		core.ppm(self.renderpass, self.bind[key], param, self.scene.data)
+		core.ppm(self.images[key], param, self.scene.data)
 		self.copyImage(key)
 		
 	def pt_nt(self, key, spp):
 		print('path tracing except for targets with sample size', spp)
-		core.pt_notTarget(self.renderpass, self.bind[key], spp, self.scene.data)
+		core.pt_notTarget(self.images[key], spp, self.scene.data)
 		self.copyImage(key)
 
 	def genHits_ex(self, target, nRay):
@@ -147,15 +145,15 @@ class Context:
 # convert
 	def hitsToImage(self, hits, key, color):
 		print('(running cpp)')
-		core.hitsToImage_cpp(hits, self.renderpass, self.bind[key], color)
+		core.hitsToImage_cpp(hits, self.images[key], color)
 		self.copyImage(key)
 
 	def mask(self, hits, key, nRay):
-		core.mask(hits, self.renderpass, self.bind[key], nRay)
+		core.mask(hits, self.images[key], nRay)
 		self.copyImage(key)
 
 	def depth(self, hits, key, nRay):
-		max = core.depth(hits, self.renderpass, self.bind[key], nRay)
+		max = core.depth(hits, self.images[key], nRay)
 		self.copyImage(key)
 		print("max depth of", hits , "is", max)
 		return max
