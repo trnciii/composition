@@ -21,7 +21,7 @@ ramp_red = [
 
 param_preview = composition.core.PPMParam()
 param_preview.nRay = 16
-param_preview.nPhoton = 100000
+param_preview.nPhoton = 1000
 param_preview.itr = 10
 
 param_final = composition.core.PPMParam()
@@ -89,8 +89,9 @@ def render():
     cmp.scene.print()
     time.sleep(0.1)
 
-    cmp.pt_ref('pt', 100)
+    cmp.pt_ref('pt', 1000)
     cmp.save('pt', cmp.path+'im_pt')
+    return
 
     print('pt_nt');
     cmp.pt_nt('nt', 100)
@@ -120,4 +121,4 @@ def remap():
     return
 
 render()
-remap()
+#remap()

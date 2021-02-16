@@ -36,6 +36,7 @@ struct Intersection{
 	float dist;
 	glm::vec3 p;
 	glm::vec3 n;
+	glm::vec3 ng;
 	uint32_t mtlID;
 	bool backfacing = false;
 };
@@ -44,6 +45,7 @@ struct Intersection{
 struct hitpoint{
 	glm::vec3 p;
 	glm::vec3 n;
+	glm::vec3 ng;
 	glm::vec3 wo; // ray direction
 	uint32_t mtlID;
 	uint32_t pixel;
@@ -58,7 +60,7 @@ struct hitpoint{
 	
 	inline hitpoint(const Intersection& is,
 		glm::vec3 w, uint32_t px, Ray& ray, int d)
-	:p(is.p), n(is.n), wo(-ray.d), mtlID(is.mtlID), pixel(px),
+	:p(is.p), n(is.n), ng(is.ng), wo(-ray.d), mtlID(is.mtlID), pixel(px),
 	weight(w), depth(d){}
 
 	inline void clear(float R0){

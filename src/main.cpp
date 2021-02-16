@@ -117,7 +117,7 @@ int main(void){
 
 		std::cout <<"collecting hitpoints on material " <<scene.targetMaterials[i] <<std::endl;
 	
-		hits[i].reserve(dim.x*dim.y*nRay);
+		hits[i].reserve(dim.x*dim.y*nRay/2);
 
 		// uint32_t targetID = 0;
 		collectHitpoints_target_exclusive(hits[i], scene.targetMaterials[i], nDepth,

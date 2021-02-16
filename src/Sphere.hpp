@@ -40,7 +40,7 @@ void Sphere::intersect(Intersection* is, const Ray& ray)const {
 	if((0 <t) && (t< is->dist)){
 		is->p = ray.o + t*ray.d;
 		is->dist = t;
-		is->n = (is->p - p)/r;
+		is->n = is->ng = (is->p - p)/r;
 		is->mtlID = mtlID;
 	}
 }

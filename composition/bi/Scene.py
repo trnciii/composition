@@ -129,6 +129,7 @@ class Scene:
 			[toGLM(OW@v.co),toGLM((OW@v.normal - OW.to_translation()).normalized())]
 			for v in mesh.vertices]
 		indices = [[ p.vertices[0], p.vertices[1], p.vertices[2],
+			toGLM((OW@p.normal-OW.to_translation()).normalized()), p.use_smooth,
 			self.mtlBinding[names[p.material_index]] ] for p in mesh.polygons]
 		
 		core.addMesh(self.data, list(vertices), list(indices))

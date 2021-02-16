@@ -36,8 +36,9 @@ Intersection intersect(const Ray& ray, const Scene& scene){
 	for(const Mesh& m : scene.meshes)
 		m.intersect(&is, ray);
 
-	if(glm::dot(is.n, ray.d)>0){
+	if(glm::dot(is.ng, ray.d)>0){
 		is.n *= -1.0f;
+		is.ng *= -1.0f;	
 		is.backfacing = true;
 	}
 

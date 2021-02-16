@@ -93,10 +93,10 @@ int createScene(Scene*const s){
 	};
 
 	std::vector<Index> i = {
-		{0, 1, 2, green},
-		{2, 3, 0, red},
-		{3, 2, 5, green},
-		{5, 4, 3, red}
+		{0, 1, 2, glm::normalize(glm::cross(v[1].position-v[0].position, v[2].position-v[0].position)), false, green},
+		{2, 3, 0, glm::normalize(glm::cross(v[3].position-v[2].position, v[0].position-v[2].position)), false, red},
+		{3, 2, 5, glm::normalize(glm::cross(v[2].position-v[3].position, v[5].position-v[3].position)), false, green},
+		{5, 4, 3, glm::normalize(glm::cross(v[4].position-v[5].position, v[3].position-v[5].position)), false, red}
 	};
 	
 	m.vertices.resize(v.size());
@@ -106,7 +106,7 @@ int createScene(Scene*const s){
 	std::copy(i.begin(), i.end(), m.indices.begin());
 
 	m.update();
-	// s->meshes.push_back(m);
+	s->meshes.push_back(m);
 	return 0;
 }
 

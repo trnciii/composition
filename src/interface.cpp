@@ -193,10 +193,13 @@ void addMesh(Scene& scene, const boost::python::list& vertices, const boost::pyt
 	for(int i=0; i<len(indices); i++){
 		const object& index = indices[i];
 		m.indices.push_back({
-			(extract<uint32_t>(index[0])),
-			(extract<uint32_t>(index[1])),
-			(extract<uint32_t>(index[2])),
-			(extract<uint32_t>(index[3]))});
+			(extract<uint32_t>(index[0])),	// v0
+			(extract<uint32_t>(index[1])),	// v1
+			(extract<uint32_t>(index[2])),	// v2
+			(extract<glm::vec3>(index[3])),	// normal
+			(extract<bool>(index[4])),		// smooth	
+			(extract<uint32_t>(index[5]))	// matgrial
+		});
 	}
 
 	m.update();

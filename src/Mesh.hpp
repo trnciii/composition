@@ -17,6 +17,9 @@ struct Index{
 	uint32_t v1;
 	uint32_t v2;
 
+	glm::vec3 normal;
+	bool use_smooth;
+
 	uint32_t mtlID;
 };
 
@@ -107,7 +110,8 @@ void Mesh::intersect_triangle(Intersection* is, const Ray& ray, const Index& ind
 	if(0 < d && d < is->dist){
 		is->dist = d;
 		is->p = ray.o + d*ray.d;
-		is->n = glm::normalize((1-s-t)*v[0].normal + s*v[1].normal + t*v[2].normal);
+		is->ng = index.normal;
+		is->n = index.use_smooth? glm::normalize((1-s-t)*v[0].normal + s*v[1].normal + t*v[2].normal) : index.normal;
 		is->mtlID = index.mtlID;
 	}
 }
