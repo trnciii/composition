@@ -179,19 +179,19 @@ void hitsToImage(const hitpoints_wrap& hits, Image& result, const boost::python:
 
 
 void addMesh(Scene& scene, const boost::python::list& vertices, const boost::python::list& indices){
-	using namespace  boost::python;
+	using namespace boost::python;
 
 	Mesh m;
 
 	for(int i=0; i<len(vertices); i++){
-		const boost::python::object& v = vertices[i];
 		m.vertices.push_back({
-			{extract<float>(v[0]), extract<float>(v[1]), extract<float>(v[2])},
-			{extract<float>(v[3]), extract<float>(v[4]), extract<float>(v[5])} });
+			extract<glm::vec3>(vertices[i][0]),	// position
+			extract<glm::vec3>(vertices[i][1])	// normal
+		});
 	}
 
 	for(int i=0; i<len(indices); i++){
-		const boost::python::object& index = indices[i];
+		const object& index = indices[i];
 		m.indices.push_back({
 			(extract<uint32_t>(index[0])),
 			(extract<uint32_t>(index[1])),
@@ -203,8 +203,8 @@ void addMesh(Scene& scene, const boost::python::list& vertices, const boost::pyt
 	scene.meshes.push_back(m);
 }
 
-void addSphere(Scene& scene, float x, float y, float z, float r, uint32_t m){
-	scene.add(Sphere(glm::vec3(x, y, z), r, m));
+void addSphere(Scene& scene, glm::vec3 c, float r, uint32_t m){
+	scene.add(Sphere(c, r, m));
 }
 
 void setEnvironment(Scene& scene, Material m){
