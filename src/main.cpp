@@ -9,8 +9,8 @@
 
 #include "Image.hpp"
 #include "Random.hpp"
-#include "print.hpp"
 #include "file.hpp"
+#include "toString.hpp"
 
 glm::vec3 colormap_4(double u){
 	if(u<0.25) return glm::vec3(0.1 , 0.1 , 0.85);
@@ -26,13 +26,12 @@ int main(void){
 	std::string outDir("result");
 	if(!( std::filesystem::exists(outDir) && std::filesystem::is_directory(outDir) )){
 		std::cout <<"mkdir " <<outDir <<std::endl;
-		printBr();
 		assert(std::filesystem::create_directory(outDir));
 	}
 	
 	Scene scene;
 	createScene(&scene);
-	print(scene);
+	std::cout <<str(scene) <<std::endl;
 
 	RNG rand;
 	glm::dvec2 dim(512, 512);

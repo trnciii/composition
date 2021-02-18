@@ -30,8 +30,7 @@ def render():
     cmp.addImages(['nt', 'pt'])
     cmp.scene.create(spheres, meshes, targetMaterials)
     cmp.setTargets(targetMaterials)
-
-    cmp.scene.print()
+    print(cmp.scene.data)
     time.sleep(0.1)
 
     cmp.pt_ref('pt', 1000)

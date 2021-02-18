@@ -11,7 +11,7 @@
 #include "Image.hpp"
 #include "file.hpp"
 #include "data.hpp"
-#include "print.hpp"
+#include "toString.hpp"
 
 inline std::vector<float> getBlenderImage(const Image& im){
 	std::vector<float> f(im.len()*4);
@@ -227,9 +227,7 @@ void setCamera(Camera& camera, const boost::python::list& m, float focal){
 	camera.toWorld[2] = glm::vec3(extract<float>(m[ 2]), extract<float>(m[ 6]), extract<float>(m[10]));
 }
 
-void print_scene(const Scene& scene){
-	print(scene);
-}
+std::string Scene_str(const Scene& s){return str(s);}
 
 BOOST_PYTHON_MODULE(composition){
 	using namespace boost::python;
@@ -282,8 +280,8 @@ BOOST_PYTHON_MODULE(composition){
 		.def("addSphere", &Scene::addSphere)
 		.def("addMesh", addMesh)
 		.def("createBoxScene", createScene)
-		.def("print", print_scene);
-
+		.def("__str__", Scene_str);
+	
 	class_<Camera>("Camera")
 		.def_readwrite("toWorld", &Camera::toWorld)
 		.def_readwrite("position", &Camera::position)

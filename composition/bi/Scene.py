@@ -175,4 +175,4 @@ class Scene:
 		for k in self.mtlBinding.keys():
 			print('[{:2}]'.format(self.mtlBinding[k]), k)
 		print()
-		self.data.print()
+		print(self.data)
