@@ -104,10 +104,7 @@ class Scene:
 		env = core.Material()
 		env.type = core.MtlType.emit
 		env.color = core.vec3(0, 0, 0)
-		self.setEnvironment(env)
-
-	def setEnvironment(self, m):
-		core.setEnvironment(self.data, m)
+		self.data.setMaterial(0,env)
 
 	def addMesh(self, key):
 		obj = bpy.data.objects[key]
@@ -132,7 +129,7 @@ class Scene:
 			toGLM((OW@p.normal-OW.to_translation()).normalized()), p.use_smooth,
 			self.mtlBinding[names[p.material_index]] ] for p in mesh.polygons]
 		
-		core.addMesh(self.data, list(vertices), list(indices))
+		self.data.addMesh(list(vertices), list(indices))
 		bpy.data.meshes.remove(mesh)		
 
 	def addSphere(self, key):
@@ -146,7 +143,7 @@ class Scene:
 		if name not in self.mtlBinding.keys():
 			self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
 
-		core.addSphere(self.data, toGLM(o.location), sum(o.dimensions)/6, self.mtlBinding[name])
+		self.data.addSphere(toGLM(o.location), sum(o.dimensions)/6, self.mtlBinding[name])
 
 	def create(self, spheres, meshes, targets):
 
@@ -171,14 +168,11 @@ class Scene:
 		cam.data.sensor_fit = 'VERTICAL'
 		f = 2*cam.data.lens/cam.data.sensor_height
 		mat = sum([list(r) for r in cam.matrix_world], [])
-		core.setCamera(self.data.camera, mat, f)
-
-	def createBoxScene(self):
-		core.createScene(self.data)
+		self.data.camera.setSpace(mat, f)
 
 	def print(self):
 		print('material binding')
 		for k in self.mtlBinding.keys():
 			print('[{:2}]'.format(self.mtlBinding[k]), k)
 		print()
-		core.print_scene(self.data)
+		self.data.print()

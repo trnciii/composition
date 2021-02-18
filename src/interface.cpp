@@ -202,16 +202,12 @@ void addMesh(Scene& scene, const boost::python::list& vertices, const boost::pyt
 		});
 	}
 
-	m.update();
-	scene.meshes.push_back(m);
+	m.buildTree();
+	scene.addMesh(m);
 }
 
-void addSphere(Scene& scene, glm::vec3 c, float r, uint32_t m){
-	scene.add(Sphere(c, r, m));
-}
-
-void setEnvironment(Scene& scene, Material m){
-	scene.materials[0] = m;
+void setMaterial(Scene& scene, uint32_t id, Material m){
+	scene.materials[id] = m;
 }
 
 void setCamera(Camera& camera, const boost::python::list& m, float focal){
@@ -281,20 +277,19 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("camera", &Scene::camera)
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("targetIDs", &Scene::targetMaterials)
-		.def("addMaterial", &Scene::addMaterial);
-
-	def("createScene", createScene);
-	def("addMesh", addMesh);
-	def("addSphere", addSphere);
-	def("setEnvironment", setEnvironment);
-	def("setCamera", setCamera);
-	def("print_scene", print_scene);
+		.def("addMaterial", &Scene::addMaterial)
+		.def("setMaterial", setMaterial)
+		.def("addSphere", &Scene::addSphere)
+		.def("addMesh", addMesh)
+		.def("createBoxScene", createScene)
+		.def("print", print_scene);
 
 	class_<Camera>("Camera")
 		.def_readwrite("toWorld", &Camera::toWorld)
 		.def_readwrite("position", &Camera::position)
 		.def_readwrite("focalLength", &Camera::flen)
-		.def("setSpace", &Camera::setDir);
+		.def("setDirection", &Camera::setDirection)
+		.def("setSpace", setCamera);
 
 	enum_<Material::Type>("MtlType")
 		.value("emit", Material::Type::EMIT)
@@ -316,9 +311,10 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("h", &Image::h)
 		.def_readwrite("pixels", &Image::pixels);
 
+
+	// functions
 	def("getImage", getBlenderImage);
 
-	// files
 	def("readPixels", readPixels);
 	def("writePixels", writePixels);
 

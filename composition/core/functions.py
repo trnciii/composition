@@ -20,13 +20,6 @@ def hitsToImage(hits, image, color):
         im[hit.pixel][1] += hit.weight.y * c.y
         im[hit.pixel][2] += hit.weight.z * c.z
 
-    # for i in range(len(hits.data)):
-    #     replace(res, i, hits.data, color)
-    # for i in range(len(hits.data)):
-    #     im[hits.data[i].pixel][0] += res[i][0]
-    #     im[hits.data[i].pixel][1] += res[i][1]
-    #     im[hits.data[i].pixel][2] += res[i][2]
-
     for i in range(len(image.pixels)):
         image.pixels[i] = cmp.vec3(im[i][0], im[i][1], im[i][2])
 

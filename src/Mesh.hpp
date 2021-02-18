@@ -86,7 +86,7 @@ struct Mesh{
 	std::vector<Node> nodes;
 	const uint32_t nElements = 10;
 
-	void update();
+	void buildTree();
 	void split(const uint32_t polygon_begin, const uint32_t polygon_end, const int axis);
 };
 
@@ -147,7 +147,7 @@ void Mesh::split(const uint32_t begin, const uint32_t end, const int axis){
 	nodes[p1].next = p2 - p1;
 }
 
-void Mesh::update(){
+void Mesh::buildTree(){
 	nodes.clear();
 	if(indices.size()<1) return;
 

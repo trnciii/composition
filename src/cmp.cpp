@@ -19,7 +19,7 @@ omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()) )
 
 int createScene(Scene*const s){
 	s->camera.position = glm::vec3(0, -10, 4);
-	s->camera.setDir(glm::vec3(0,1,0), glm::vec3(0,0,1));
+	s->camera.setDirection(glm::vec3(0,1,0), glm::vec3(0,0,1));
 	s->camera.flen = 2;
 
 	s->materials[s->environment].type = Material::Type::EMIT;
@@ -73,40 +73,43 @@ int createScene(Scene*const s){
 	uint32_t floor = s->addMaterial(mFloor);
 
 	// box
-	s->add(Sphere(glm::vec3(-1e4, 0, 0), 1e4-4, green)); // left
-	s->add(Sphere(glm::vec3( 1e4, 0, 0), 1e4-4, red)); // right
-	s->add(Sphere(glm::vec3(0, 0, -1e4), 1e4, white)); // bottom
-	s->add(Sphere(glm::vec3(0, 0,  1e4), 1e4-8, white)); // top
-	s->add(Sphere(glm::vec3(0,  1e4, 0), 1e4-4, white)); // back
-	s->add(Sphere(glm::vec3( 1.5, 0.0, 1.2), 1.2, target1)); // right
-	s->add(Sphere(glm::vec3(-1.5, 1.5, 1.5), 1.5, target2)); // left
-	s->add(Sphere(glm::vec3(0,0,6), 0.5, light)); // light
+	s->addSphere(glm::vec3(-1e4, 0, 0), 1e4-4, green); // left
+	s->addSphere(glm::vec3( 1e4, 0, 0), 1e4-4, red); // right
+	s->addSphere(glm::vec3(0, 0, -1e4), 1e4, white); // bottom
+	s->addSphere(glm::vec3(0, 0,  1e4), 1e4-8, white); // top
+	s->addSphere(glm::vec3(0,  1e4, 0), 1e4-4, white); // back
+	s->addSphere(glm::vec3( 1.5, 0.0, 1.2), 1.2, target1); // right
+	s->addSphere(glm::vec3(-1.5, 1.5, 1.5), 1.5, target2); // left
+	s->addSphere(glm::vec3(0,0,6), 0.5, light); // light
 
 	Mesh m;
-	std::vector<Vertex> v = {
-		{{-4, 0, 6}, {0, -1, 0}},
-		{{-4, 0, 2}, {0, -1, 0}},
-		{{ 0, 0, 2}, {0, -1, 0}},
-		{{ 0, 0, 6}, {0, -1, 0}},
-		{{ 4, 0, 6}, {0, -1, 0}},
-		{{ 4, 0, 2}, {0, -1, 0}}
-	};
+	{
+		std::vector<Vertex> v = {
+			{{-4, 0, 6}, {0, -1, 0}},
+			{{-4, 0, 2}, {0, -1, 0}},
+			{{ 0, 0, 2}, {0, -1, 0}},
+			{{ 0, 0, 6}, {0, -1, 0}},
+			{{ 4, 0, 6}, {0, -1, 0}},
+			{{ 4, 0, 2}, {0, -1, 0}}
+		};
 
-	std::vector<Index> i = {
-		{0, 1, 2, glm::normalize(glm::cross(v[1].position-v[0].position, v[2].position-v[0].position)), false, green},
-		{2, 3, 0, glm::normalize(glm::cross(v[3].position-v[2].position, v[0].position-v[2].position)), false, red},
-		{3, 2, 5, glm::normalize(glm::cross(v[2].position-v[3].position, v[5].position-v[3].position)), false, green},
-		{5, 4, 3, glm::normalize(glm::cross(v[4].position-v[5].position, v[3].position-v[5].position)), false, red}
-	};
-	
-	m.vertices.resize(v.size());
-	std::copy(v.begin(), v.end(), m.vertices.begin());
+		std::vector<Index> i = {
+			{0, 1, 2, glm::normalize(glm::cross(v[1].position-v[0].position, v[2].position-v[0].position)), false, green},
+			{2, 3, 0, glm::normalize(glm::cross(v[3].position-v[2].position, v[0].position-v[2].position)), false, red},
+			{3, 2, 5, glm::normalize(glm::cross(v[2].position-v[3].position, v[5].position-v[3].position)), false, green},
+			{5, 4, 3, glm::normalize(glm::cross(v[4].position-v[5].position, v[3].position-v[5].position)), false, red}
+		};
+		
+		m.vertices.resize(v.size());
+		std::copy(v.begin(), v.end(), m.vertices.begin());
 
-	m.indices.resize(i.size());
-	std::copy(i.begin(), i.end(), m.indices.begin());
+		m.indices.resize(i.size());
+		std::copy(i.begin(), i.end(), m.indices.begin());
 
-	m.update();
-	s->meshes.push_back(m);
+		m.buildTree();	
+	}
+
+	s->addMesh(m);
 	return 0;
 }
 

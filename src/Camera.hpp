@@ -15,7 +15,7 @@ struct Camera{
 		return Ray(position, glm::normalize(toWorld*glm::vec3(x, y, -flen)));
 	}
 
-	inline void setDir(glm::vec3 dir, glm::vec3 up){
+	inline void setDirection(glm::vec3 dir, glm::vec3 up){
 		glm::vec3 b0 = glm::normalize(glm::cross(dir, up));
 		glm::vec3 b2 = -glm::normalize(dir);
 		glm::vec3 b1 = glm::cross(b2, b0);

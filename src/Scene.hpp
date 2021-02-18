@@ -11,27 +11,29 @@
 struct Scene{
 	Camera camera;
 	
-	const uint32_t environment = 0;
 	std::vector<Material> materials;
+	const uint32_t environment = 0;
+	std::vector<uint32_t> lights;
 	std::vector<uint32_t> targetMaterials;
 	
 	std::vector<Sphere> spheres;
-	std::vector<uint32_t> lights;
-
 	std::vector<Mesh> meshes;
 
 	inline Scene():materials(1, Material()){}
 	
-	inline void add(Sphere s){
-		if(materials.size() <= s.mtlID) return;
+	inline void addSphere(glm::vec3 c, float r, uint32_t m){
+		if(materials.size() <= m) return;
 
-		if(materials[s.mtlID].type == Material::Type::EMIT)
+		if(materials[m].type == Material::Type::EMIT)
 			lights.push_back(spheres.size());
 
-		spheres.push_back(s);
+		spheres.push_back(Sphere(c, r, m));
 	}
 
-	inline void add(Mesh m){meshes.push_back(m);}
+	inline void addMesh(Mesh m){
+		for(const Index& i : m.indices)if(materials.size() <= i.mtlID)return;
+		meshes.push_back(m);
+	}
 
 	inline uint32_t addMaterial(Material m){
 		materials.push_back(m);
