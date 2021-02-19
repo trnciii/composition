@@ -60,7 +60,7 @@ std::string str(const Material::Type& t){
 
 std::string str(const Material& m){
 	std::string s = str(m.type);
-	s += " color:" + str(m.color);
+	s += " | color:" + str(m.color);
 
 	if(m.type == Material::Type::GGX_REFLECTION)
 		s += " | roughness:" + str(m.a);
@@ -79,6 +79,13 @@ std::string str(const Camera& c){
 	return s;
 }
 
+template<typename T> int getMaxNameSize(const std::vector<T>& v){
+	return std::max_element(v.begin(), v.end(),
+		[](const T& a, const T& b){
+			return a.name.size() < b.name.size();
+		})->name.size();
+}
+
 std::string str(const Scene& scene){
 	std::stringstream s;
 
@@ -86,61 +93,68 @@ std::string str(const Scene& scene){
 
 	s <<"camera\n" <<str(scene.camera);
 
-	s <<"\nmaterials\n";
-	std::vector<Material> materials = scene.materials;
-	std::sort(materials.begin(), materials.end(),
-		[](const Material& a, const Material& b){
-			std::string na = a.name;
-			std::string nb = b.name;
-			transform(na.begin(), na.end(), na.begin(), tolower);
-			transform(nb.begin(), nb.end(), nb.begin(), tolower);
-			return na < nb;
-		});
-	for(const Material& m : materials){
-		int width = 8;
-		std::string name = m.name;
-		if(name.size()>width) name.resize(width);
 
-		s <<"[" <<std::setw(width) <<name <<"] " <<str(m) <<"\n";
+	s <<"\nmaterials\n";{
+		std::vector<Material> materials = scene.materials;
+		std::sort(materials.begin(), materials.end(),
+			[](const Material& a, const Material& b){
+				std::string na = a.name;
+				std::string nb = b.name;
+				transform(na.begin(), na.end(), na.begin(), tolower);
+				transform(nb.begin(), nb.end(), nb.begin(), tolower);
+				return na < nb;
+			});
+		
+		int width = getMaxNameSize(materials)+1;
+		for(const Material& m : materials){
+			s <<std::setw(width) <<std::left <<m.name <<": " <<str(m) <<"\n";
+		}
 	}
 
-	s <<"\ntarget materials: [";
+
+	s <<"\ntarget materials: [ ";
 	for(uint32_t i : scene.targetMaterials){
 		s <<scene.materials[i].name;
 		if(i != scene.targetMaterials.back())
 			s <<", ";
 	}
-	s <<"]\n";
+	s <<" ]\n";
 
-	s <<"\nspheres\n";
-	for(int i=0; i<scene.spheres.size(); i++){
-		const Sphere& sp = scene.spheres[i];
-		std::string spstr = str(sp);
-		spstr.resize(spstr.size()-2);
-		s <<"[" <<std::setw(2) <<i <<"]" <<spstr <<scene.materials[sp.mtlID].name <<"\n";
+
+	s <<"\nspheres\n";{
+		int width = getMaxNameSize(scene.spheres)+1;
+		for(const Sphere& sphere : scene.spheres){
+			std::string spstr = str(sphere);
+			spstr.resize(spstr.size() - std::string("xx").size());
+			s <<std::setw(width) <<sphere.name <<":"
+				<<spstr <<scene.materials[sphere.mtlID].name <<"\n";
+		}
 	}
 
-	s <<"\nmeshes\n";
-	for(int i=0; i<scene.meshes.size(); i++){
-		s <<"[" <<std::setw(2) <<i <<"] ";
 
-		// create the list of materials assigned to this mesh
-		std::vector<uint32_t> mtls;
-		for(const Index& i : scene.meshes[i].indices){
-			if(std::find(mtls.begin(), mtls.end(), i.mtlID) == mtls.end())
-				mtls.push_back(i.mtlID);
+	s <<"\nmeshes\n";{
+		int width = getMaxNameSize(scene.meshes)+1;
+		for(int i=0; i<scene.meshes.size(); i++){
+			s <<std::setw(width) <<std::left <<scene.meshes[i].name <<": ";
+
+			// create the list of materials assigned to this mesh
+			std::vector<uint32_t> mtls;
+			for(const Index& i : scene.meshes[i].indices){
+				if(std::find(mtls.begin(), mtls.end(), i.mtlID) == mtls.end())
+					mtls.push_back(i.mtlID);
+			}
+
+			s <<scene.meshes[i].vertices.size() <<" vertices, "
+				<<scene.meshes[i].indices.size() <<" triangles, "
+				<<"materials: [ ";
+
+			for(int i=0; i<mtls.size(); i++){
+				s <<scene.materials[mtls[i]].name;
+				if(i!=mtls.size()-1) s <<", ";
+			}
+
+			s <<" ]\n";
 		}
-
-		s <<scene.meshes[i].vertices.size() <<" vertices, "
-			<<scene.meshes[i].indices.size() <<" triangles, "
-			<<"materials: [ ";
-
-		for(int i=0; i<mtls.size(); i++){
-			s <<scene.materials[mtls[i]].name;
-			if(i!=mtls.size()-1) s <<", ";
-		}
-
-		s <<" ]\n";
 	}
 
 	s <<"----------  ----------  ----------\n";

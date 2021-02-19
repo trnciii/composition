@@ -178,10 +178,15 @@ void hitsToImage(const hitpoints_wrap& hits, Image& result, const boost::python:
 }
 
 
-void addMesh(Scene& scene, const boost::python::list& vertices, const boost::python::list& indices){
+void addMesh(Scene& scene,
+	const boost::python::list& vertices,
+	const boost::python::list& indices,
+	std::string name)
+{
 	using namespace boost::python;
 
 	Mesh m;
+	m.name = name;
 
 	for(int i=0; i<len(vertices); i++){
 		m.vertices.push_back({

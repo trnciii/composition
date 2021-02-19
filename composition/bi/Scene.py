@@ -115,9 +115,9 @@ class Scene:
 			return
 		
 		mesh = getTriangles(obj)
-		names = [m.name for m in mesh.materials]
+		materialNames = [m.name for m in mesh.materials]
 
-		for name in names:
+		for name in materialNames:
 			if name not in self.mtlBinding.keys():
 				self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
 		  
@@ -128,9 +128,9 @@ class Scene:
 			for v in mesh.vertices]
 		indices = [[ p.vertices[0], p.vertices[1], p.vertices[2],
 			toGLM((OW@p.normal-OW.to_translation()).normalized()), p.use_smooth,
-			self.mtlBinding[names[p.material_index]] ] for p in mesh.polygons]
+			self.mtlBinding[materialNames[p.material_index]] ] for p in mesh.polygons]
 		
-		self.data.addMesh(list(vertices), list(indices))
+		self.data.addMesh(list(vertices), list(indices), key)
 		bpy.data.meshes.remove(mesh)		
 
 	def addSphere(self, key):
@@ -144,7 +144,7 @@ class Scene:
 		if name not in self.mtlBinding.keys():
 			self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
 
-		self.data.addSphere(toGLM(o.location), sum(o.dimensions)/6, self.mtlBinding[name])
+		self.data.addSphere(toGLM(o.location), sum(o.dimensions)/6, self.mtlBinding[name], key)
 
 	def create(self, spheres, meshes, targets):
 

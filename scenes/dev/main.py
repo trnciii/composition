@@ -85,13 +85,12 @@ def render():
 
     cmp.scene.create(spheres,meshes,targetMaterials)
     cmp.setTargets(targetMaterials)
-    pirnt(cmp.scene.data)
+    print(cmp.scene.data)
 
     time.sleep(0.1)
 
     cmp.pt_ref('pt', 1000)
     cmp.save('pt', cmp.path+'im_pt')
-    return
 
     print('pt_nt');
     cmp.pt_nt('nt', 100)
@@ -102,7 +101,7 @@ def render():
     cmp.ppm_targets_ex(param)
 
     cmp.remapAll([col.basis.radiance]*len(cmp.targetNames))
-    print('-- end renderingz --')
+    print('-- end rendering --')
 
 def remap():
     print('\033[36mremapping\033[0m')

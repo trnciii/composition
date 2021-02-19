@@ -1,11 +1,10 @@
 #pragma once
 
+#include <string>
 #include <vector>
 #include <glm/glm.hpp>
 
 #include "accel.hpp"
-
-#include <iostream>
 
 struct Vertex{
 	glm::vec3 position;
@@ -26,6 +25,7 @@ struct Index{
 struct Mesh{
 	std::vector<Vertex> vertices;
 	std::vector<Index> indices;
+	std::string name;
 	
 	inline std::vector<Vertex> polygon(const Index i)const{
 		std::vector<Vertex> res = {

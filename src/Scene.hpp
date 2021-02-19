@@ -26,17 +26,20 @@ struct Scene{
 		materials[0].type = Material::Type::EMIT;
 	}
 	
-	inline void addSphere(glm::vec3 c, float r, uint32_t m){
+	inline void addSphere(glm::vec3 c, float r, uint32_t m, std::string n=""){
 		if(materials.size() <= m) return;
 
 		if(materials[m].type == Material::Type::EMIT)
 			lights.push_back(spheres.size());
 
-		spheres.push_back(Sphere(c, r, m));
+		if(n.size()==0) n = "Sphere." + std::to_string(spheres.size());
+		spheres.push_back(Sphere(c, r, m, n));
 	}
 
 	inline void addMesh(Mesh m){
 		for(const Index& i : m.indices)if(materials.size() <= i.mtlID)return;
+
+		if(m.name.size()==0) m.name = "Mesh." + std::to_string(meshes.size());
 		meshes.push_back(m);
 	}
 

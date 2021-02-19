@@ -78,17 +78,19 @@ int createScene(Scene*const s){
 	uint32_t floor = s->addMaterial(mFloor);
 
 	// box
-	s->addSphere(glm::vec3(-1e4, 0, 0), 1e4-4, green); // left
-	s->addSphere(glm::vec3( 1e4, 0, 0), 1e4-4, red); // right
-	s->addSphere(glm::vec3(0, 0, -1e4), 1e4, white); // bottom
-	s->addSphere(glm::vec3(0, 0,  1e4), 1e4-8, white); // top
-	s->addSphere(glm::vec3(0,  1e4, 0), 1e4-4, white); // back
+	s->addSphere(glm::vec3(-1e4, 0, 0), 1e4-4, green, "left");
+	s->addSphere(glm::vec3( 1e4, 0, 0), 1e4-4, red, "right");
+	s->addSphere(glm::vec3(0, 0, -1e4), 1e4, white, "floor");
+	s->addSphere(glm::vec3(0, 0,  1e4), 1e4-8, white, "ceil");
+	s->addSphere(glm::vec3(0,  1e4, 0), 1e4-4, white, "bask");
 	s->addSphere(glm::vec3( 1.5, 0.0, 1.2), 1.2, target1); // right
 	s->addSphere(glm::vec3(-1.5, 1.5, 1.5), 1.5, target2); // left
-	s->addSphere(glm::vec3(0,0,6), 0.5, light); // light
+	s->addSphere(glm::vec3(0,0,6), 0.5, light, "light");
 
 	Mesh m;
 	{
+		m.name = "plane";
+		
 		std::vector<Vertex> v = {
 			{{-4, 0, 6}, {0, -1, 0}},
 			{{-4, 0, 2}, {0, -1, 0}},

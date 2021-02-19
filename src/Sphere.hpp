@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <glm/glm.hpp>
 #include "constant.h"
 #include "data.hpp"
@@ -10,8 +11,10 @@ struct Sphere{
 	float area;
 	uint32_t mtlID;
 
-	Sphere(glm::vec3 _p, float _r, uint32_t _m)
-	:p(_p), r(_r), mtlID(_m), area(4*kPI*_r*_r){}
+	std::string name;
+
+	Sphere(glm::vec3 _p, float _r, uint32_t _m, std::string n)
+	:p(_p), r(_r), mtlID(_m), area(4*kPI*_r*_r), name(n){}
 
 	float dist(const Ray& ray)const;
 	void intersect(Intersection* is, const Ray& ray)const;
