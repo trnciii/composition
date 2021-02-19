@@ -85,8 +85,8 @@ def render():
 
     cmp.scene.create(spheres,meshes,targetMaterials)
     cmp.setTargets(targetMaterials)
+    pirnt(cmp.scene.data)
 
-    cmp.scene.print()
     time.sleep(0.1)
 
     cmp.pt_ref('pt', 1000)

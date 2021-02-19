@@ -113,13 +113,14 @@ int main(void){
 		int nRay = 512;
 		int nDepth = 1;
 		RNG rng(0);
+		uint32_t mtl = scene.targetMaterials[i];
 
-		std::cout <<"collecting hitpoints on material " <<scene.targetMaterials[i] <<std::endl;
+		std::cout <<"collecting hitpoints on " <<scene.materials[mtl].name <<std::endl;
 	
 		hits[i].reserve(dim.x*dim.y*nRay/2);
 
 		// uint32_t targetID = 0;
-		collectHitpoints_target_exclusive(hits[i], scene.targetMaterials[i], nDepth,
+		collectHitpoints_target_exclusive(hits[i], mtl, nDepth,
 			dim.x, dim.y, nRay, scene, rng);
 
 		// save hitpoints
@@ -176,11 +177,13 @@ int main(void){
 	}
 
 	// save all image
+	std::cout <<std::endl;
 	for(auto& [key, image] : pass){
 		std::string name = outDir+"/"+key+".png";
 		if(writeImage(image.data(), image.w, image.h, name))
 			std::cout <<"saved " <<name <<std::endl;
 	}
+	std::cout <<std::endl;
 
 	return 0;
 }

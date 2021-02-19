@@ -46,17 +46,20 @@ std::string str(const Ray& ray){
 
 std::string str(const Sphere& s){
 	char m[20];
-	std::sprintf(m, "mtl: %2d", s.mtlID);
+	std::sprintf(m, "material: %2d", s.mtlID);
 	return str(s.p) + " | " + str(s.r) + " | " + m;
 }
 
-std::string str(const Material& m){
-	std::string s;
-	if(m.type == Material::Type::EMIT)				s +="   EMIT";
-	if(m.type == Material::Type::LAMBERT)			s +="LAMBERT";
-	if(m.type == Material::Type::GGX_REFLECTION)	s +="    GGX";
-	if(m.type == Material::Type::GLASS)				s +="  GLASS";
+std::string str(const Material::Type& t){
+	if(t == Material::Type::EMIT)			return "   EMIT";
+	if(t == Material::Type::LAMBERT)		return "LAMBERT";
+	if(t == Material::Type::GGX_REFLECTION) return "    GGX";
+	if(t == Material::Type::GLASS)			return "  GLASS";
+	return "----";
+}
 
+std::string str(const Material& m){
+	std::string s = str(m.type);
 	s += " color:" + str(m.color);
 
 	if(m.type == Material::Type::GGX_REFLECTION)
@@ -72,13 +75,11 @@ std::string str(const Camera& c){
 
 	glm::mat3 w = glm::transpose(c.toWorld);
 	s += "transform\n" + str(w[0])+"\n" + str(w[1])+"\n" + str(w[2])+"\n";
-
 	s += "focal length\n" + str(c.flen) + "\n";
-
 	return s;
 }
 
-std::string str(const Scene scene){
+std::string str(const Scene& scene){
 	std::stringstream s;
 
 	s <<"scene\n" <<"----------  ----------  ----------\n";
@@ -86,17 +87,38 @@ std::string str(const Scene scene){
 	s <<"camera\n" <<str(scene.camera);
 
 	s <<"\nmaterials\n";
-	for(int i=0; i<scene.materials.size(); i++){
-		if(std::find(scene.targetMaterials.begin(), scene.targetMaterials.end(), i) != scene.targetMaterials.end())
-			s <<"[C" <<std::setw(2) <<i <<"] ";
-		else s <<"[ " <<std::setw(2) <<i <<"] ";
+	std::vector<Material> materials = scene.materials;
+	std::sort(materials.begin(), materials.end(),
+		[](const Material& a, const Material& b){
+			std::string na = a.name;
+			std::string nb = b.name;
+			transform(na.begin(), na.end(), na.begin(), tolower);
+			transform(nb.begin(), nb.end(), nb.begin(), tolower);
+			return na < nb;
+		});
+	for(const Material& m : materials){
+		int width = 8;
+		std::string name = m.name;
+		if(name.size()>width) name.resize(width);
 
-		s <<str(scene.materials[i]) <<"\n";
+		s <<"[" <<std::setw(width) <<name <<"] " <<str(m) <<"\n";
 	}
 
+	s <<"\ntarget materials: [";
+	for(uint32_t i : scene.targetMaterials){
+		s <<scene.materials[i].name;
+		if(i != scene.targetMaterials.back())
+			s <<", ";
+	}
+	s <<"]\n";
+
 	s <<"\nspheres\n";
-	for(int i=0; i<scene.spheres.size(); i++)
-		s <<"[" <<std::setw(2) <<i <<"]" <<str(scene.spheres[i]) <<"\n";
+	for(int i=0; i<scene.spheres.size(); i++){
+		const Sphere& sp = scene.spheres[i];
+		std::string spstr = str(sp);
+		spstr.resize(spstr.size()-2);
+		s <<"[" <<std::setw(2) <<i <<"]" <<spstr <<scene.materials[sp.mtlID].name <<"\n";
+	}
 
 	s <<"\nmeshes\n";
 	for(int i=0; i<scene.meshes.size(); i++){
@@ -111,14 +133,14 @@ std::string str(const Scene scene){
 
 		s <<scene.meshes[i].vertices.size() <<" vertices, "
 			<<scene.meshes[i].indices.size() <<" triangles, "
-			<<"materials: [";
+			<<"materials: [ ";
 
 		for(int i=0; i<mtls.size(); i++){
-			s <<mtls[i];
+			s <<scene.materials[mtls[i]].name;
 			if(i!=mtls.size()-1) s <<", ";
 		}
 
-		s <<"]\n";
+		s <<" ]\n";
 	}
 
 	s <<"----------  ----------  ----------\n";

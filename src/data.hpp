@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <glm/glm.hpp>
 
 struct Ray;
@@ -24,6 +25,8 @@ struct Material{
 		GGX_REFLECTION,
 		GLASS,
 	};
+
+	std::string name;
 
 	Type type = Type::EMIT;
 	glm::vec3 color = glm::vec3(0.6, 0.6, 0.6);

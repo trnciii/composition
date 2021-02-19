@@ -26,18 +26,21 @@ int createScene(Scene*const s){
 	s->materials[s->environment].color = glm::vec3(0.05);
 
 	Material mLight;
+		mLight.name = "light";
 		mLight.type = Material::Type::EMIT;
 		mLight.color = glm::vec3(30);
 
 	uint32_t light = s->addMaterial(mLight);
 
 	Material mWhite;
+		mWhite.name = "white";
 		mWhite.type = Material::Type::LAMBERT;
 		mWhite.color = glm::vec3(0.6);
 
 	uint32_t white = s->addMaterial(mWhite);
 
 	Material mRed;
+		mRed.name = "red";
 		mRed.type = Material::Type::LAMBERT;
 		mRed.color = glm::vec3(0.85, 0.1, 0.1);
 
@@ -50,6 +53,7 @@ int createScene(Scene*const s){
 	uint32_t green = s->addMaterial(mGreen);
 
 	Material mTarget1;
+		mTarget1.name = "right";
 		mTarget1.type = Material::Type::GLASS;
 		mTarget1.color = glm::vec3(1);
 		mTarget1.a = 0.1;
@@ -58,6 +62,7 @@ int createScene(Scene*const s){
 	s->targetMaterials.push_back(target1);
 
 	Material mTarget2;
+		mTarget2.name = "left";
 		mTarget2.type = Material::Type::GGX_REFLECTION;
 		mTarget2.color = glm::vec3(1);
 		mTarget2.a = 0.04;

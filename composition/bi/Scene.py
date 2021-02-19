@@ -34,11 +34,14 @@ def createMaterial(key):
 
 	shader = shaders[0]
 
+	m = core.Material()
+	m.name = key
+	print(key, m.name)
+
 	if shader.type == 'EMISSION':
 		c = shader.inputs[0].default_value
 		s = shader.inputs[1].default_value
 		
-		m = core.Material()
 		m.type = core.MtlType.emit
 		m.color = core.vec3(c[0]*s, c[1]*s, c[2]*s)
 		
@@ -47,7 +50,6 @@ def createMaterial(key):
 	elif shader.type == 'BSDF_DIFFUSE':
 		c = shader.inputs['Color'].default_value
 		
-		m = core.Material()
 		m.type = core.MtlType.lambert
 		m.color = core.vec3(c[0], c[1], c[2])
 		
@@ -57,7 +59,6 @@ def createMaterial(key):
 		c = shader.inputs['Color'].default_value
 		a = shader.inputs['Roughness'].default_value
 		
-		m = core.Material()
 		m.type = core.MtlType.glossy
 		m.color = core.vec3(c[0], c[1], c[2])
 		m.a = a*a
@@ -69,7 +70,6 @@ def createMaterial(key):
 		a = shader.inputs['Roughness'].default_value
 		ior = shader.inputs['IOR'].default_value
 
-		m = core.Material()
 		m.type = core.MtlType.glass
 		m.color = core.vec3(c[0], c[1], c[2])
 		m.a = a*a
@@ -102,6 +102,7 @@ class Scene:
 		self.mtlBinding = {}
 
 		env = core.Material()
+		env.name = 'env'
 		env.type = core.MtlType.emit
 		env.color = core.vec3(0, 0, 0)
 		self.data.setMaterial(0,env)
@@ -169,10 +170,3 @@ class Scene:
 		f = 2*cam.data.lens/cam.data.sensor_height
 		mat = sum([list(r) for r in cam.matrix_world], [])
 		self.data.camera.setSpace(mat, f)
-
-	def print(self):
-		print('material binding')
-		for k in self.mtlBinding.keys():
-			print('[{:2}]'.format(self.mtlBinding[k]), k)
-		print()
-		print(self.data)

@@ -297,6 +297,7 @@ BOOST_PYTHON_MODULE(composition){
 		.export_values();
 
 	class_<Material>("Material")
+		.def_readwrite("name", &Material::name)
 		.def_readwrite("type", &Material::type)
 		.def_readwrite("color", &Material::color)
 		.def_readwrite("a", &Material::a)
