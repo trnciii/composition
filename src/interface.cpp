@@ -87,35 +87,7 @@ void pt_notTarget(Image& result, const int spp, const Scene& scene)
 	delete[] rngForEveryPixel;
 }
 
-class hitpoints_wrap{
-public:
-	std::vector<hitpoint> data;
-
-	hitpoints_wrap():data(0){}
-	hitpoints_wrap(std::vector<hitpoint> h):data(h){}
-
-	std::string save(const std::string& s){
-		std::string result;
-		if(writeVector(data, s))
-			result = "Saved " + std::to_string(data.size()) + " hitpoints as " + s;
-		else
-			result = "failed to save hitpoints as " + s;
-		std::cout <<result <<std::endl;
-		return result;
-	}
-
-	std::string load(const std::string& s){
-		std::string result;
-		if(readVector(data, s))
-			result = "Read " + std::to_string(data.size()) +  " hitpoints from " + s;
-		else
-			result = "failed to read hitpoints from " + s;
-		std::cout <<result <<std::endl;
-		return result;
-	}
-};
-
-hitpoints_wrap collectHits_target_wrap(const int depth, const int w, const int h, const int nRay,
+std::vector<hitpoint> collectHits_target_wrap(const int depth, const int w, const int h, const int nRay,
 	const Scene& scene, const uint32_t target)
 // todo: passing rng state
 {
@@ -125,10 +97,10 @@ hitpoints_wrap collectHits_target_wrap(const int depth, const int w, const int h
 
 	collectHitpoints_target(hits, target, depth, w, h, nRay, scene, rng);
 
-	return hitpoints_wrap(hits);
+	return hits;
 }
 
-hitpoints_wrap collectHits_target_exclusive_wrap(const int depth, const int w, const int h, const int nRay,
+std::vector<hitpoint> collectHits_target_exclusive_wrap(const int depth, const int w, const int h, const int nRay,
 	const Scene& scene, const uint32_t target)
 // todo: passing rng state
 {
@@ -138,10 +110,10 @@ hitpoints_wrap collectHits_target_exclusive_wrap(const int depth, const int w, c
 
 	collectHitpoints_target_exclusive(hits, target, depth, w, h, nRay, scene, rng);
 
-	return hitpoints_wrap(hits);
+	return hits;
 }
 
-void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
+void progressiveRadianceEstimate_target(std::vector<hitpoint>& hits,
 	const float R0, const int iteration, const int nPhoton, const float alpha,
 	const Scene& scene, const uint32_t target)
 {
@@ -150,7 +122,7 @@ void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 	for(int i=0; i<nThreads; i++)
 		rngs.push_back(RNG(i));
 
-	for(hitpoint& hit : hits.data)hit.clear(R0);
+	for(hitpoint& hit : hits)hit.clear(R0);
 
 	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
 
@@ -158,17 +130,17 @@ void progressiveRadianceEstimate_target(hitpoints_wrap& hits,
 		if((i*40)%iteration < 39) std::cout <<"+" <<std::flush;
 		
 		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rngs.data(), nThreads);
-		accumulateRadiance(hits.data, photonmap, scene, alpha);
+		accumulateRadiance(hits, photonmap, scene, alpha);
 	}
 	std::cout <<"|" <<std::endl;
 }
 
-void hitsToImage(const hitpoints_wrap& hits, Image& result, const boost::python::object& remap){
+void hitsToImage(const std::vector<hitpoint>& hits, Image& result, const boost::python::object& remap){
 	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
 
-	for(int i=0; i<hits.data.size(); i++){
-		const hitpoint& hit = hits.data[i];
-		if(i%(hits.data.size()/39) == 0) std::cout <<"+" <<std::flush;
+	for(int i=0; i<hits.size(); i++){
+		const hitpoint& hit = hits[i];
+		if(i%(hits.size()/39) == 0) std::cout <<"+" <<std::flush;
 
 		const glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
 		result.pixels[hit.pixel] += hit.weight * t;
@@ -234,6 +206,25 @@ void setCamera(Camera& camera, const boost::python::list& m, float focal){
 
 std::string Scene_str(const Scene& s){return str(s);}
 
+void load_image(Image& image, const std::string name){image.load(name);}
+
+std::string save_hitpoints(std::vector<hitpoint>& data, const std::string& name){
+	std::string result;
+	if(writeVector(data, name))
+		return "Saved " + std::to_string(data.size()) + " hitpoints as " + name;
+	else
+		return "failed to save hitpoints as " + name;
+}
+
+std::string load_hitpoints(std::vector<hitpoint>& data, const std::string& name){
+	std::string result;
+	if(readVector(data, name))
+		return "Read " + std::to_string(data.size()) +  " hitpoints from " + name;
+	else
+		return "failed to read hitpoints from " + name;
+}
+
+
 BOOST_PYTHON_MODULE(composition){
 	using namespace boost::python;
 
@@ -267,12 +258,9 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("depth", &hitpoint::depth);
 
 	class_<std::vector<hitpoint>>("vec_hitpoint")
-		.def(vector_indexing_suite<std::vector<hitpoint>>());
-
-	class_<hitpoints_wrap>("hitpoints")
-		.def_readonly("data", &hitpoints_wrap::data)
-		.def("save", &hitpoints_wrap::save)
-		.def("load", &hitpoints_wrap::load);
+		.def(vector_indexing_suite<std::vector<hitpoint>>())
+		.def("save", save_hitpoints)
+		.def("load", load_hitpoints);
 
 
 	// scene
@@ -313,14 +301,12 @@ BOOST_PYTHON_MODULE(composition){
 	class_<Image>("Image", init<int, int>())
 		.def_readwrite("w", &Image::w)
 		.def_readwrite("h", &Image::h)
-		.def_readwrite("pixels", &Image::pixels);
+		.def_readwrite("pixels", &Image::pixels)
+		.def(init<std::string>())
+		.def("save", &Image::save)
+		.def("load", load_image);
 
-
-	// functions
 	def("getImage", getBlenderImage);
-
-	def("readPixels", readPixels);
-	def("writePixels", writePixels);
 
 	// renderers
 	def("pt", pt);

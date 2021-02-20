@@ -106,6 +106,8 @@ class Scene:
 		env.color = core.vec3(0, 0, 0)
 		self.data.setMaterial(0,env)
 
+	def __str__(self): return self.data.__str__()
+
 	def addMesh(self, key):
 		obj = bpy.data.objects[key]
 

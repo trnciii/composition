@@ -41,14 +41,14 @@ class Context:
 		bpy.data.images[key].pixels = core.getImage(self.images[key])
 
 	def save(self, key, path):
-		if core.writePixels(self.images[key], path):
+		if self.images[key].save(path):
 			print('Saved ', key, ' as \'', path, '\'')
 		else:
 			print('failed to save \'', key, 'as \'', path, '\'')
 
 	def load(self, key, path):
-		im = core.Image(self.w, self.h)
-		if core.readPixels(im, path):
+		im = core.Image(path)
+		if im and im.w == self.w and im.h == self.h:
 			print("Read an image:", path)
 			self.images[key] = im
 			self.copyImage(key)

@@ -12,9 +12,9 @@ def hitsToImage(hits, image, color):
     print("using python for replacement")
 
     im  = [[0.]*3 for i in range(len(image.pixels))]
-    res = [[0.]*3 for i in range(len(hits.data))]
+    res = [[0.]*3 for i in range(len(hits))]
 
-    for hit in hits.data:
+    for hit in hits:
         c = color(hit)
         im[hit.pixel][0] += hit.weight.x * c.x
         im[hit.pixel][1] += hit.weight.y * c.y
@@ -26,7 +26,7 @@ def hitsToImage(hits, image, color):
 def mask(hits, image, nRay):
     count = [0]*len(image.pixels)
 
-    for hit in hits.data:
+    for hit in hits:
         count[hit.pixel] += 1
 
     for i in range(len(image.pixels)):
@@ -37,7 +37,7 @@ def depth(hits, image, nRay):
     count = [0]*len(image.pixels)
     max = 0
 
-    for hit in hits.data:
+    for hit in hits:
         d[hit.pixel] += hit.depth
         count[hit.pixel] += 1
         max = hit.depth if hit.depth > max else max

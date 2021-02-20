@@ -38,7 +38,7 @@ int main(void){
 
 	Scene scene;
 	createScene(&scene);
-	// std::cout <<str(scene) <<std::endl;
+	std::cout <<str(scene) <<std::endl;
 
 	if(scene.targetMaterials.size()==0){
 		puts("no target");
@@ -60,11 +60,10 @@ int main(void){
 		auto t1 = std::chrono::high_resolution_clock::now();
 		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
 		
-		// writeLayer(images, reference, outDir + "/reference");
+		im.save(outDir+"/reference");
 		delete[] rngForEveryPixel;
-
-		images["pt"] = im;
 	}
+	images["pt"] = Image(outDir+"/reference");
 
 	{
 		Image im(dim.x, dim.y);
@@ -118,12 +117,11 @@ int main(void){
 		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
 
 		delete[] rngForEveryPixel;
-		// writeLayer(images["nt"], nontarget, outDir + "/nontarget");
-		writeVector(im.pixels, outDir + "/" + "nt");
-	}
+		im.save(outDir+"/nontarget");
 
-	images["nt"] = Image(dim.x, dim.y);
-	readVector(images["nt"].pixels, outDir+"/nt");
+		im = Image();
+		images["nt"] = im.load(outDir+"/nontarget");
+	}
 
 
 	// // collect hitpoints
