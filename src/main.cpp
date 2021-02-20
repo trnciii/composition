@@ -6,6 +6,7 @@
 #include <bitset>
 #include <omp.h>
 #include <unordered_map>
+#include <chrono>
 
 #include "Image.hpp"
 #include "Random.hpp"
@@ -28,14 +29,16 @@ int main(void){
 		std::cout <<"mkdir " <<outDir <<std::endl;
 		assert(std::filesystem::create_directory(outDir));
 	}
-	
-	Scene scene;
-	createScene(&scene);
-	std::cout <<str(scene) <<std::endl;
 
 	RNG rand;
 	glm::dvec2 dim(512, 512);
-	std::unordered_map<std::string, Image> pass;
+	std::unordered_map<std::string, Image> images;
+
+	std::cout <<"image size: " <<dim.x <<", " <<dim.y <<std::endl;
+
+	Scene scene;
+	createScene(&scene);
+	// std::cout <<str(scene) <<std::endl;
 
 	if(scene.targetMaterials.size()==0){
 		puts("no target");
@@ -44,22 +47,28 @@ int main(void){
 
 	{
 		Image im(dim.x, dim.y);
-		std::cout <<"reference path tracing" <<std::endl;
+		std::cout <<"reference path tracing " <<std::flush;
 
 		RNG* rngForEveryPixel = new RNG[im.len()];
 		for(int i=0; i<im.len(); i++)
 			rngForEveryPixel[i] = RNG(i);
 
+		auto t0 = std::chrono::high_resolution_clock::now();
+
 		pathTracing(im.data(),im.w, im.h, 200, scene, rngForEveryPixel);
-		// writeLayer(pass, reference, outDir + "/reference");
+
+		auto t1 = std::chrono::high_resolution_clock::now();
+		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
+		
+		// writeLayer(images, reference, outDir + "/reference");
 		delete[] rngForEveryPixel;
 
-		pass["pt"] = im;
+		images["pt"] = im;
 	}
 
 	{
 		Image im(dim.x, dim.y);
-		std::cout <<"reference photon mapping" <<std::endl;
+		std::cout <<"reference photon mapping " <<std::flush;
 
 		int nRay = 4;
 		int nPhoton = 10000;
@@ -71,6 +80,8 @@ int main(void){
 		std::vector<RNG> rngs(0);
 		for(int i=0; i<nThreads+1; i++)
 			rngs.push_back(RNG(i));
+
+		auto t0 = std::chrono::high_resolution_clock::now();
 
 		std::vector<hitpoint> hits;
 		hits.reserve(im.len()*nRay);
@@ -85,26 +96,34 @@ int main(void){
 		for(hitpoint& hit : hits)
 			im.pixels[hit.pixel] += hit.tau * hit.weight / (float)iteration;
 		
-		pass["ppm"] = im;
+		auto t1 = std::chrono::high_resolution_clock::now();
+		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
+
+		images["ppm"] = im;
 	}
 
 	{
 		Image im(dim.x, dim.y);
-		std::cout <<"path tracing for non-target component" <<std::endl;
+		std::cout <<"path tracing for non-target component " <<std::flush;
 
 		RNG* rngForEveryPixel = new RNG[im.len()];
 		for(int i=0; i<im.len(); i++)
 			rngForEveryPixel[i] = RNG(i);
 
+		auto t0 = std::chrono::high_resolution_clock::now();
+
 		pathTracing_notTarget(im.data(), im.w, im.h, 1000, scene, rngForEveryPixel);
 
+		auto t1 = std::chrono::high_resolution_clock::now();
+		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
+
 		delete[] rngForEveryPixel;
-		// writeLayer(pass["nt"], nontarget, outDir + "/nontarget");
+		// writeLayer(images["nt"], nontarget, outDir + "/nontarget");
 		writeVector(im.pixels, outDir + "/" + "nt");
 	}
 
-	pass["nt"] = Image(dim.x, dim.y);
-	readVector(pass["nt"].pixels, outDir+"/nt");
+	images["nt"] = Image(dim.x, dim.y);
+	readVector(images["nt"].pixels, outDir+"/nt");
 
 
 	// // collect hitpoints
@@ -115,13 +134,18 @@ int main(void){
 		RNG rng(0);
 		uint32_t mtl = scene.targetMaterials[i];
 
-		std::cout <<"collecting hitpoints on " <<scene.materials[mtl].name <<std::endl;
+		std::cout <<"collecting hitpoints on " <<scene.materials[mtl].name <<" " <<std::flush;
 	
 		hits[i].reserve(dim.x*dim.y*nRay/2);
 
 		// uint32_t targetID = 0;
-		collectHitpoints_target_exclusive(hits[i], mtl, nDepth,
-			dim.x, dim.y, nRay, scene, rng);
+
+		auto t0 = std::chrono::high_resolution_clock::now();
+
+		collectHitpoints_target_exclusive(hits[i], mtl, nDepth, dim.x, dim.y, nRay, scene, rng);
+
+		auto t1 = std::chrono::high_resolution_clock::now();
+		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
 
 		// save hitpoints
 		// if(writeVector(hits, outDir + "/hit_2")) std::cout <<"hitpoints saved" <<std::endl;
@@ -155,12 +179,12 @@ int main(void){
 	}
 
 	// // composition
-	pass["composed"] = pass["nt"];
+	images["composed"] = images["nt"];
 	for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
 		std::string raw = "mtl_" + std::to_string(scene.targetMaterials[i]) + "_raw";
 		std::string remap = "mtl_" + std::to_string(scene.targetMaterials[i]) + "_remap";
-		pass[raw] = Image(dim.x, dim.y);
-		pass[remap] = Image(dim.x, dim.y);
+		images[raw] = Image(dim.x, dim.y);
+		images[remap] = Image(dim.x, dim.y);
 
 		for(hitpoint hit : hits[i]){
 			glm::vec3 tau = hit.tau/(float)(hit.iteration);
@@ -168,17 +192,17 @@ int main(void){
 			double u = std::max(tau.x, std::max(tau.y, tau.z));
 			u = pow(8*u, 1);
 
-			pass[remap].pixels[hit.pixel] += tau*colormap_4(u) * hit.weight;
-			pass[raw].pixels[hit.pixel] += tau*hit.weight;
+			images[remap].pixels[hit.pixel] += tau*colormap_4(u) * hit.weight;
+			images[raw].pixels[hit.pixel] += tau*hit.weight;
 		}
 
 		for(int i=0; i<dim.x*dim.y; i++)
-			pass["composed"].pixels[i] += pass[remap].pixels[i];
+			images["composed"].pixels[i] += images[remap].pixels[i];
 	}
 
 	// save all image
 	std::cout <<std::endl;
-	for(auto& [key, image] : pass){
+	for(auto& [key, image] : images){
 		std::string name = outDir+"/"+key+".png";
 		if(writeImage(image.data(), image.w, image.h, name))
 			std::cout <<"saved " <<name <<std::endl;

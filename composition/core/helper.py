@@ -8,7 +8,7 @@ class PPMParam:
 		self.alpha = 0.6
 		self.R0 = 1.0
 
-	def __repr__(self):
+	def __str__(self):
 		return\
 			"nRay    " + str(self.nRay) + "\n"\
 			"nPhoton " + str(self.nPhoton) + "\n"\

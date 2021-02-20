@@ -36,7 +36,6 @@ def createMaterial(key):
 
 	m = core.Material()
 	m.name = key
-	print(key, m.name)
 
 	if shader.type == 'EMISSION':
 		c = shader.inputs[0].default_value

@@ -32,7 +32,7 @@ param_final.itr = 10000
 param = param_preview
 
 def target0():
-    ramp = col.RampData(ramp_green, 'const')    
+    ramp = col.RampData(ramp_green, 'const')
     # print(ramp)
     # remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
     # ramp = 'ColorRamp'
@@ -79,6 +79,8 @@ spheres = ['Sphere.001', 'Icosphere', 'Sphere']
 meshes = ['Sphere.002', 'floor']
 
 def render():
+    print('\033[36mrendering\033[0m')
+
     cmp = composition.bi.Context()
 
     cmp.addImages(['nt', 'pt'])
@@ -92,7 +94,7 @@ def render():
     cmp.pt_ref('pt', 1000)
     cmp.save('pt', cmp.path+'im_pt')
 
-    print('pt_nt');
+    print('pt_nt')
     cmp.pt_nt('nt', 100)
     cmp.save('nt', cmp.path+"im_nontarget")
     print('')
@@ -101,7 +103,7 @@ def render():
     cmp.ppm_targets_ex(param)
 
     cmp.remapAll([col.basis.radiance]*len(cmp.targetNames))
-    print('-- end rendering --')
+
 
 def remap():
     print('\033[36mremapping\033[0m')
@@ -116,8 +118,5 @@ def remap():
     cmp.remapAll(targetRemap)
     cmp.maskAll()
 
-    print('-- end reamapping --')
-    return
-
 render()
-#remap()
+remap()

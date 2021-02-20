@@ -71,11 +71,11 @@ std::string str(const Material& m){
 }
 
 std::string str(const Camera& c){
-	std::string s = "position\n" + str(c.position) + "\n";
-
 	glm::mat3 w = glm::transpose(c.toWorld);
-	s += "transform\n" + str(w[0])+"\n" + str(w[1])+"\n" + str(w[2])+"\n";
-	s += "focal length\n" + str(c.flen) + "\n";
+	
+	std::string s = "position:\n" + str(c.position) + "\n";
+	s += "transform:\n" + str(w[0])+"\n" + str(w[1])+"\n" + str(w[2])+"\n";
+	s += "focal:\n" + str(c.flen) + "\n";
 	return s;
 }
 
@@ -92,7 +92,6 @@ std::string str(const Scene& scene){
 	s <<"scene\n" <<"----------  ----------  ----------\n";
 
 	s <<"camera\n" <<str(scene.camera);
-
 
 	s <<"\nmaterials\n";{
 		std::vector<Material> materials = scene.materials;

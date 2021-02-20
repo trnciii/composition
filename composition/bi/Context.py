@@ -8,25 +8,30 @@ from .helper import addImage
 class Context:
 
 	def __init__(self):
-		self.projectName = bpy.path.display_name(bpy.data.filepath).lower()
 		self.path = bpy.path.abspath('//') + "result/"
 		os.makedirs(self.path, exist_ok=True)
 		
-		r_scale = bpy.context.scene.render.resolution_percentage/100
-		self.w = int(bpy.context.scene.render.resolution_x * r_scale)
-		self.h = int(bpy.context.scene.render.resolution_y * r_scale)
-		self.images = {}
-		print('image size', self.w, self.h)
-
-		self.scene = Scene()
-
 		self.files = self.getFiles()
 
+		scale = bpy.context.scene.render.resolution_percentage/100
+		self.w = int(bpy.context.scene.render.resolution_x * scale)
+		self.h = int(bpy.context.scene.render.resolution_y * scale)
+
+		self.images = {}
+		self.scene = Scene()
 		self.targetNames = []
+
 		self.hits_all = {}
 		self.hits_ex = {}
+
 		self.nRay_all = 0
 		self.nRay_ex = 0
+
+		print('image size', self.w, self.h)
+		print('files in', self.path)
+		for f in self.files:
+			print('--',f)
+		print()
 
 # image
 	def bindImage(self, key):
@@ -37,9 +42,9 @@ class Context:
 
 	def save(self, key, path):
 		if core.writePixels(self.images[key], path):
-			print("Saved an image <", key, "> as <", path, ">")
+			print('Saved ', key, ' as \'', path, '\'')
 		else:
-			print("failed to save an image <", key, "> as <", path, ">")
+			print('failed to save \'', key, 'as \'', path, '\'')
 
 	def load(self, key, path):
 		im = core.Image(self.w, self.h)
@@ -61,7 +66,6 @@ class Context:
 		self.addImages(targetMaterials)
 		self.addImages([t+'_mask' for t in targetMaterials])
 		self.addImages([t+'_depth' for t in targetMaterials])
-		print()
 
 
 # rendering
@@ -155,7 +159,7 @@ class Context:
 	def depth(self, hits, key, nRay):
 		max = core.depth(hits, self.images[key], nRay)
 		self.copyImage(key)
-		print("max depth of", hits , "is", max)
+		print("max depth of", key , ": ", max)
 		return max
 
 # more large converter
@@ -183,12 +187,6 @@ class Context:
 	def getFiles(self):
 		files = os.listdir(self.path)
 		files.sort()
-
-		print('files in', self.path)
-		for f in files:
-			print('--',f)
-		print()
-
 		return files
 
 	def loadFiles(self, nRay):
