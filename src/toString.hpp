@@ -159,3 +159,55 @@ std::string str(const Scene& scene){
 	s <<"----------  ----------  ----------\n";
 	return s.str();
 }
+
+std::string str(const Mesh& mesh){
+	std::stringstream s;
+	s <<mesh.name <<"\n----------  ----------  ----------\n";
+
+	s <<"material ids : [ ";
+	std::vector<uint32_t> mtls;
+	for(const Index& i : mesh.indices){
+		if(std::find(mtls.begin(), mtls.end(), i.mtlID) == mtls.end())
+			mtls.push_back(i.mtlID);
+	}
+
+	for(int i=0; i<mtls.size(); i++){
+		s <<mtls[i];
+		if(i!=mtls.size()-1) s <<", ";
+	}
+	s <<" ]\n";
+
+
+	s <<"\nvertex [position, normal]\n";
+	int wv = ceil(log10(mesh.vertices.size()));
+	for(int i=0; i<mesh.vertices.size(); i++){
+		const Vertex& v = mesh.vertices[i];
+		s <<"[" <<std::setw(wv) <<i <<"] ";
+		s <<str(v.position) <<" | " <<str(v.normal) <<"\n";
+	}
+
+	s <<"\nindex [triangle, normal, shading, material]\n";
+	int wi = ceil(log10(mesh.indices.size()));
+	for(int i=0; i<mesh.indices.size(); i++){
+		const Index& index = mesh.indices[i];
+		s <<"[" <<std::setw(wi) <<i <<"]  ";
+		
+		s <<std::setw(wv) <<index.v0 <<" - ";
+		s <<std::setw(wv) <<index.v1 <<" - ";
+		s <<std::setw(wv) <<index.v2 <<" | ";
+
+		s <<str(index.normal) <<" | ";
+
+		if(index.use_smooth)
+			s <<"smooth | ";
+		else
+			s <<"  flat | ";
+
+		s <<index.mtlID;
+
+		s <<"\n";
+	}
+
+	s <<"----------  ----------  ----------\n";
+	return s.str();
+}
