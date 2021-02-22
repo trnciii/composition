@@ -134,8 +134,8 @@ glm::vec3 sampleNDF_GGX(float u1, float u2, const float a2, float* const p = nul
 	return glm::vec3(r*cos(u2), r*sin(u2), z);
 }
 
-void sampleBSDF(Ray& ray, glm::vec3& throuput,
-	const Intersection& is, const Material& mtl, const Scene& scene,
+void sampleBSDF(Ray* ray, glm::vec3* throuput,
+	const Intersection& is, const Material& mtl,
 	RNG& rand, float* const p = nullptr)
 {
 	if(mtl.type == Material::Type::LAMBERT){
@@ -143,13 +143,13 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		tangentspace(is.n, tan);
 		glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
 
-		ray.o = offset(is.p, is.n);
-		ray.d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-		throuput *= mtl.color;
+		ray->o = offset(is.p, is.n);
+		ray->d = (is.n*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
+		*throuput *= mtl.color;
 	}
 
 	else if(mtl.type == Material::Type::GGX_REFLECTION){
-		const glm::vec3 wi = -ray.d;
+		const glm::vec3 wi = -ray->d;
 		glm::vec3 tan[2];
 		tangentspace(is.n, tan);
 
@@ -165,13 +165,13 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 		float F = 1;
 		float w = fabs( F* gi*go * glm::dot(wi, m_w)/(glm::dot(wi, is.n)*m_tan.z + 1e-4) );
 
-		ray.o = offset(is.p, is.n);
-		ray.d = wo;
-		throuput *= w*mtl.color;
+		ray->o = offset(is.p, is.n);
+		ray->d = wo;
+		*throuput *= w*mtl.color;
 	}
 
 	else if(mtl.type == Material::Type::GLASS){
-		const glm::vec3 wi = -ray.d;
+		const glm::vec3 wi = -ray->d;
 		glm::vec3 tan[2];
 		tangentspace(is.n, tan);
 
@@ -193,9 +193,9 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 			float go = smith_mask(wo, is.n, a2);
 			float w = fabs( gi*go * glm::dot(wi, m_w)/(glm::dot(wi, is.n)*m_tan.z + 1e-4) );
 
-			ray.o = offset(is.p, is.n);
-			ray.d = wo;
-			throuput *= w*mtl.color;
+			ray->o = offset(is.p, is.n);
+			ray->d = wo;
+			*throuput *= w*mtl.color;
 		}
 		else{
 			const glm::vec3 wo = -(wi - (m_w*cos))/nr - (float)sqrt(nwo2)*m_w;
@@ -204,14 +204,14 @@ void sampleBSDF(Ray& ray, glm::vec3& throuput,
 			float go = smith_mask(wo,-is.n, a2);
 			float w = fabs( gi*go * glm::dot(wi, m_w)/(glm::dot(wi, is.n)*m_tan.z + 1e-4) );
 
-			ray.o = offset(is.p, -is.n);
-			ray.d = wo;
-			throuput *= w*mtl.color;
+			ray->o = offset(is.p, -is.n);
+			ray->d = wo;
+			*throuput *= w*mtl.color;
 		}
 	}
 }
 
-glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
+glm::vec3 pathTracingKernel(Ray ray, const Scene& scene, RNG& rand){
 	glm::vec3 throuput(1);
 	float pTerminate = 1;
 
@@ -222,7 +222,7 @@ glm::vec3 pathTracingKernel_total(Ray ray, const Scene& scene, RNG& rand){
 		if(mtl.type == Material::Type::EMIT)
 			return throuput*mtl.color;
 
-		sampleBSDF(ray, throuput, is, mtl, scene, rand);
+		sampleBSDF(&ray, &throuput, is, mtl, rand);
 		throuput /= pTerminate;
 		pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 		if(pTerminate > 0.99)pTerminate = 0.99;
@@ -245,7 +245,7 @@ glm::vec3 pathTracingKernel_nonTarget(Ray ray, const Scene& scene, RNG& rand){
 		if(std::find(targets.begin(), targets.end(), is.mtlID) != targets.end())
 			return glm::vec3(0);
 
-		sampleBSDF(ray, throuput, is, mtl, scene, rand);
+		sampleBSDF(&ray, &throuput, is, mtl, rand);
 		throuput /= pTerminate;
 		pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 		if(pTerminate > 0.99) pTerminate = 0.99;

@@ -80,6 +80,7 @@ std::string str(const Camera& c){
 }
 
 template<typename T> int getMaxNameSize(const std::vector<T>& v){
+	if(v.size()==0) return 0;
 	return std::max_element(v.begin(), v.end(),
 		[](const T& a, const T& b){
 			return a.name.size() < b.name.size();

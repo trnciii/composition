@@ -91,16 +91,16 @@ def render():
 
     time.sleep(0.1)
 
-    cmp.pt_ref('pt', 1000)
-    cmp.save('pt', cmp.path+'im_pt')
+#    cmp.pt_ref('pt', 1000)
+#    cmp.save('pt', cmp.path+'im_pt')
 
-    print('pt_nt')
-    cmp.pt_nt('nt', 100)
-    cmp.save('nt', cmp.path+"im_nontarget")
-    print('')
+#    print('pt_nt')
+#    cmp.pt_nt('nt', 100)
+#    cmp.save('nt', cmp.path+"im_nontarget")
+#    print('')
 
-    cmp.ppm_targets(param)
-    cmp.ppm_targets_ex(param)
+    cmp.pt_targets(param, 2000)
+    cmp.pt_targets_ex(param, 2000)
 
     cmp.remapAll([col.basis.radiance]*len(cmp.targetNames))
 

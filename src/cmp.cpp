@@ -116,7 +116,7 @@ int createScene(Scene*const s){
 		m.buildTree();	
 	}
 
-	s->addMesh(m);
+	// s->addMesh(m);
 	return 0;
 }
 
@@ -134,7 +134,7 @@ void pathTracing(glm::vec3*const result, const int w, const int h, const int spp
 			double y = (double)-(2*(yi+rand.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);			
-			result[i] += pathTracingKernel_total(view, scene, rand);
+			result[i] += pathTracingKernel(view, scene, rand);
 		}
 		result[i] /= spp;
 	}
@@ -215,7 +215,7 @@ void collectHitpoints_target(std::vector<hitpoint>& hits,
 				}
 			}
 
-			sampleBSDF(ray, throuput, is, mtl, scene, rng);
+			sampleBSDF(&ray, &throuput, is, mtl, rng);
 			throuput /= pTerminate;
 			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 			if(10<d_all) pTerminate *= 0.5;
@@ -277,7 +277,7 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 
 			if(hasHitOthers && hasHitMe) break;
 
-			sampleBSDF(ray, throuput, is, mtl, scene, rng);
+			sampleBSDF(&ray, &throuput, is, mtl, rng);
 			throuput /= pTerminate;
 			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 			if(10<depth_all) pTerminate *= 0.5;
@@ -333,64 +333,10 @@ Tree createPhotonmap(const Scene& scene, const int nPhoton, RNG*const rngs, cons
 
 			photons.push_back(Photon(is.p, ph, -ray.d));
 
-			sampleBSDF(ray, ph, is, mtl, scene, rand);
+			sampleBSDF(&ray, &ph, is, mtl, rand);
 			ph /= pTerminate;
 			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
 			if(10<depth) pTerminate *= 0.5; 
-		}
-	}
-
-	Tree tree;
-	tree.copyElements(photons.data(), photons.size());
-	tree.build();
-
-	return tree;
-}
-
-Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t tMtl, RNG* rngs, int nThreads){
-	if(scene.lights.size()==0) return Tree();
-
-	std::vector<Photon> photons;
-	photons.reserve(10*nPhoton);
-
-	const Sphere& source = scene.spheres[scene.lights[0]];
-
-	#pragma omp parallel for reduction(merge: photons) schedule(dynamic) num_threads(nThreads)
-	for(int n=0; n<nPhoton; n++){
-		RNG& rand = rngs[omp_get_thread_num()];
-
-		glm::vec3 ro, rd;
-		{
-			glm::vec3 N = sampleUniformSphere(rand.uniform(), rand.uniform());
-			glm::vec3 P = source.p + (source.r + kTINY)*N;
-			glm::vec3 tan[2];
-			tangentspace(N, tan);
-
-			glm::vec3 hemi = sampleCosinedHemisphere(rand.uniform(), rand.uniform());
-
-			ro = offset(P, N);
-			rd = (N*hemi.z) + (tan[0]*hemi.x) + (tan[1]*hemi.y);
-		}
-		Ray ray(ro,rd);
-		
-		glm::vec3 ph = scene.materials[source.mtlID].color * source.area * kPI / (float)nPhoton;
-		float pTerminate = 1;
-		int depth = 0;
-
-		while(rand.uniform() < pTerminate){
-		// for(int depth=0; depth<5; depth++){
-			depth++;
-			Intersection is = intersect(ray, scene);
-			const Material& mtl = scene.materials[is.mtlID];
-
-			if(mtl.type == Material::Type::EMIT) break;
-
-			if(tMtl == is.mtlID) photons.push_back(Photon(is.p, ph, -ray.d));
-
-			sampleBSDF(ray, ph, is, mtl, scene, rand);
-			ph /= pTerminate;
-			pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-			if(10<depth) pTerminate *= 0.5;
 		}
 	}
 

@@ -27,5 +27,4 @@ void collectHitpoints_target(std::vector<hitpoint>& hits,
 	const Scene& scene, RNG& rng);
 
 Tree createPhotonmap(const Scene& scene, const int nPhoton, RNG*const rng, const int nThreads);
-Tree createPhotonmap_target(const Scene& scene, int nPhoton, const uint32_t target, RNG* rng, int nThreads);
 void accumulateRadiance(std::vector<hitpoint>& hitpoints, const Tree& photonmap, const Scene& scene, const double alpha);

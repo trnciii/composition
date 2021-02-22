@@ -20,10 +20,14 @@ glm::vec3 colormap_4(double u){
 	return glm::vec3(0.85, 0.1 , 0.1 );
 }
 
+void sampleBSDF(Ray* ray, glm::vec3* throuput,
+	const Intersection& is, const Material& mtl,
+	RNG& rand, float* const p = nullptr);
+
+glm::vec3 pathTracingKernel(Ray ray, const Scene& scene, RNG& rand);
+
 int main(void){
-	// create output directory.
-	// using string for dir-name to later create output filename
-	// because the format of path::c_str depends on OS.
+
 	std::string outDir("result");
 	if(!( std::filesystem::exists(outDir) && std::filesystem::is_directory(outDir) )){
 		std::cout <<"mkdir " <<outDir <<std::endl;
@@ -152,27 +156,56 @@ int main(void){
 
 	// // ppm
 	// // todo: takeover RNG state. currently hits are cleared before this iterations.
+	// {
+	// 	const int nPhoton = 1000;
+	// 	const int iteration = 10;
+	// 	const float alpha = 0.6;
+	// 	const float R0 = 0.5;
+
+	// 	for(std::vector<hitpoint>& vhit : hits) for(hitpoint& hit : vhit) hit.clear(R0);
+
+	// 	const int nThreads = omp_get_max_threads();
+	// 	std::vector<RNG> rngs(0);
+	// 	for(int i=0; i<nThreads; i++)
+	// 		rngs.push_back(RNG(i));
+
+	// 	for(uint32_t n=0; n<iteration; n++){
+	// 		const Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
+	// 		for(std::vector<hitpoint>& h : hits) accumulateRadiance(h, photonmap, scene, alpha);
+	// 	}
+
+	// 	for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
+	// 		std::string name = "hits" + std::to_string(scene.targetMaterials[i]) + "_glass_64";
+	// 		writeVector(hits[i], outDir + "/" + name);
+	// 	}
+	// }
+
+	// // pt
 	{
-		const int nPhoton = 1000;
-		const int iteration = 10;
-		const float alpha = 0.6;
-		const float R0 = 0.5;
+		for(std::vector<hitpoint>& target : hits){
+			std::cout <<"path tracing from hitpoints on " <<std::endl;
+			#pragma omp parallel for schedule(dynamic)
+			for(int i=0; i<target.size(); i++){
+				hitpoint& hit = target[i];
+				RNG rng(i);
 
-		for(std::vector<hitpoint>& vhit : hits) for(hitpoint& hit : vhit) hit.clear(R0);
+				hit.tau = glm::vec3(0);
+				hit.iteration = 10 + 500*std::max(hit.weight.x, std::max(hit.weight.y, hit.weight.z));
+				for(int j=0; j<hit.iteration; j++){
+					glm::vec3 th(1);
+					Ray ray(glm::vec3(0), -hit.wo);
+					Intersection is;
+						is.dist = kHUGE;
+						is.p = hit.p;
+						is.n = hit.n;
+						is.ng = hit.ng;
+						is.mtlID = hit.mtlID;
+						is.backfacing = false; // ?
 
-		const int nThreads = omp_get_max_threads();
-		std::vector<RNG> rngs(0);
-		for(int i=0; i<nThreads; i++)
-			rngs.push_back(RNG(i));
-
-		for(uint32_t n=0; n<iteration; n++){
-			const Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
-			for(std::vector<hitpoint>& h : hits) accumulateRadiance(h, photonmap, scene, alpha);
-		}
-
-		for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
-			std::string name = "hits" + std::to_string(scene.targetMaterials[i]) + "_glass_64";
-			writeVector(hits[i], outDir + "/" + name);
+					sampleBSDF(&ray, &th, is, scene.materials[is.mtlID], rng);
+					hit.tau += th * pathTracingKernel(ray, scene, rng);
+				}
+			}
 		}
 	}
 

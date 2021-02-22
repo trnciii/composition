@@ -13,6 +13,12 @@
 #include "data.hpp"
 #include "toString.hpp"
 
+void sampleBSDF(Ray* ray, glm::vec3* throuput,
+	const Intersection& is, const Material& mtl,
+	RNG& rand, float* const p = nullptr);
+
+glm::vec3 pathTracingKernel(Ray ray, const Scene& scene, RNG& rand);
+
 inline std::vector<float> getBlenderImage(const Image& im){
 	std::vector<float> f(im.len()*4);
 	for(int y=0; y<im.h; y++){
@@ -41,9 +47,8 @@ void pt(
 	delete[] rngForEveryPixel;
 }
 
-void ppm(Image& result,
-	int nRay, int nPhoton, int iteration, float alpha, float R0,
-	const Scene& scene)
+void ppm(Image& result, const Scene& scene,
+	int nRay, int nPhoton, int iteration, float alpha, float R0)
 {
 
 	int nThreads = omp_get_max_threads();
@@ -113,9 +118,8 @@ std::vector<hitpoint> collectHits_target_exclusive_wrap(const int depth, const i
 	return hits;
 }
 
-void progressiveRadianceEstimate_target(std::vector<hitpoint>& hits,
-	const float R0, const int iteration, const int nPhoton, const float alpha,
-	const Scene& scene, const uint32_t target)
+void radiance_PPM(std::vector<hitpoint>& hits, const Scene& scene,
+	const float R0, const int iteration, const int nPhoton, const float alpha)
 {
 	int nThreads = omp_get_max_threads();
 	std::vector<RNG> rngs(0);
@@ -129,13 +133,40 @@ void progressiveRadianceEstimate_target(std::vector<hitpoint>& hits,
 	for(int i=0; i<iteration; i++){
 		if((i*40)%iteration < 39) std::cout <<"+" <<std::flush;
 		
-		Tree photonmap = createPhotonmap_target(scene, nPhoton, target, rngs.data(), nThreads);
+		Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
 		accumulateRadiance(hits, photonmap, scene, alpha);
 	}
 	std::cout <<"|" <<std::endl;
 }
 
-void hitsToImage(const std::vector<hitpoint>& hits, Image& result, const boost::python::object& remap){
+void radiance_PT(std::vector<hitpoint>& hits, const Scene& scene, int spp){
+	#pragma omp parallel for schedule(dynamic)
+	for(int i=0; i<hits.size(); i++){
+		hitpoint& hit = hits[i];
+		RNG rng(i);
+
+		hit.tau = glm::vec3(0);
+		hit.iteration = 10 + spp*std::max(hit.weight.x, std::max(hit.weight.y, hit.weight.z));
+		for(int j=0; j<hit.iteration; j++){
+			glm::vec3 th(1);
+			Ray ray(glm::vec3(0), -hit.wo);
+			Intersection is;
+				is.dist = kHUGE;
+				is.p = hit.p;
+				is.n = hit.n;
+				is.ng = hit.ng;
+				is.mtlID = hit.mtlID;
+				is.backfacing = false; // ?
+
+			sampleBSDF(&ray, &th, is, scene.materials[is.mtlID], rng);
+			hit.tau += th * pathTracingKernel(ray, scene, rng);
+		}
+	}
+}
+
+void hitsToImage(const std::vector<hitpoint>& hits, Image& result,
+	const boost::python::object& remap)
+{
 	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
 
 	for(int i=0; i<hits.size(); i++){
@@ -315,7 +346,8 @@ BOOST_PYTHON_MODULE(composition){
 
 	def("collectHits_target_exclusive", collectHits_target_exclusive_wrap);
 	def("collectHits_target", collectHits_target_wrap);
-	def("radiance_target", progressiveRadianceEstimate_target);
-	
+	def("radiance_ppm", radiance_PPM);
+	def("radiance_pt", radiance_PT);
+
 	def("hitsToImage_cpp", hitsToImage);
 }

@@ -17,7 +17,7 @@ class PPMParam:
 			"R0      " + str(self.R0) + "\n"
 
 def ppm(image, param, scene):
-	composition.ppm(image, param.nRay, param.nPhoton, param.itr, param.alpha, param.R0, scene)
+	composition.ppm(image, scene, param.nRay, param.nPhoton, param.itr, param.alpha, param.R0)
 
 def radiance_target(hits, target, param, scene):
-	composition.radiance_target(hits, param.R0, param.itr, param.nPhoton, param.alpha, scene, target)
+	composition.radiance_ppm(hits, scene, param.R0, param.itr, param.nPhoton, param.alpha)

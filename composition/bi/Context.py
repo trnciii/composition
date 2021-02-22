@@ -104,7 +104,6 @@ class Context:
 		self.hits_all[target] = hits
 		print()
 
-
 	def ppm_target_ex(self, target, param):
 		print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', target, '\033[0m')
 		hits = self.genHits_ex(target, param.nRay)
@@ -139,6 +138,36 @@ class Context:
 
 			print('estimating radiance')
 			self.ppm_radiance(hits, target, param)
+			hits.save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
+
+			res[target] = hits
+			print()
+
+		self.hits_ex = res
+
+	def pt_targets(self, param, spp):
+		res = {}
+		for target in self.targetNames:
+			print('collecting\033[32m all\033[0m hitpoints on\033[33m', target, '\033[0m')
+			hits = self.genHits(target, param.nRay)
+
+			print('estimating radiance')
+			core.radiance_pt(hits, self.scene.data, spp)
+			hits.save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
+
+			res[target] = hits
+			print()
+
+		self.hits_all = res
+
+	def pt_targets_ex(self, param, spp):
+		res = {}
+		for target in self.targetNames:
+			print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', target, '\033[0m')
+			hits = self.genHits_ex(target, param.nRay)
+
+			print('estimating radiance')
+			core.radiance_pt(hits, self.scene.data, spp)
 			hits.save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
 
 			res[target] = hits
