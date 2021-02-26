@@ -8,6 +8,9 @@
 #include <unordered_map>
 #include <chrono>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
+
 #include "Image.hpp"
 #include "Random.hpp"
 #include "file.hpp"
@@ -18,6 +21,27 @@ glm::vec3 colormap_4(double u){
 	if(u<0.5 ) return glm::vec3(0.1 , 0.85, 0.1 );
 	if(u<0.75) return glm::vec3(0.85, 0.85, 0.1 );
 	return glm::vec3(0.85, 0.1 , 0.1 );
+}
+
+unsigned char tonemap(double c){
+	int c_out = 255*pow(c,(1/2.2)) +0.5;
+	if(255 < c_out)c_out = 255;
+	if(c_out < 0)c_out = 0;
+	return c_out&0xff;
+}
+
+int writeImage(glm::vec3* color, int w, int h, const std::string& name){
+	unsigned char *tone = new unsigned char[3*w*h];
+	for(int i=0; i<w*h; i++){
+		tone[3*i  ] = tonemap(color[i].x);
+		tone[3*i+1] = tonemap(color[i].y);
+		tone[3*i+2] = tonemap(color[i].z);
+	}
+
+	int result = stbi_write_png(name.c_str(), w, h, 3, tone, 3*w);
+
+	delete[] tone;
+	return result;
 }
 
 void sampleBSDF(Ray* ray, glm::vec3* throuput,
