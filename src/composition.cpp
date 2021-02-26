@@ -1,7 +1,8 @@
 #define IMPLEMENT_SPHERE
 #define IMPLEMENT_TREE
 #define IMPLEMENT_MESH
-#include "cmp.hpp"
+
+#include "composition.hpp"
 
 #include <stb/stb_image_write.h>
 #include <omp.h>
@@ -10,12 +11,17 @@
 #include <glm/glm.hpp>
 #include <algorithm>
 
-#include "Random.hpp"
 #include "render_sub.hpp"
 
 #pragma omp declare reduction (merge:\
 std::vector<Photon>, std::vector<hitpoint>:\
 omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()) )
+
+std::vector<RNG> createRNGVector(int len, int offset){
+	std::vector<RNG> rngs;
+	for(int i=0; i<len; i++) rngs.push_back(RNG(i+offset));
+	return rngs;
+}
 
 int createScene(Scene*const s){
 	s->camera.position = glm::vec3(0, -10, 4);
@@ -120,53 +126,66 @@ int createScene(Scene*const s){
 	return 0;
 }
 
-void pathTracing(glm::vec3*const result, const int w, const int h, const int spp,
-	const Scene& scene, RNG*const rngs)
+
+Image PT(int w, int h, const Scene& scene, const int spp,
+	std::vector<RNG>& rng_per_pixel)
 {
+	Image image(w, h);
+
 	#pragma omp parallel for schedule(dynamic)
 	for(int i=0; i<w*h; i++){
 		int xi = i%w;
 		int yi = i/w;
-		RNG& rand = rngs[i];
+		RNG& rng = rng_per_pixel[i];
 
 		for(int n=0; n<spp; n++){
-			double x = (double) (2*(xi+rand.uniform())-w)/h;
-			double y = (double)-(2*(yi+rand.uniform())-h)/h;
+			double x = (double) (2*(xi+rng.uniform())-w)/h;
+			double y = (double)-(2*(yi+rng.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);			
-			result[i] += pathTracingKernel(view, scene, rand);
+			image.pixels[i] += pathTracingKernel(view, scene, rng);
 		}
-		result[i] /= spp;
+		image.pixels[i] /= spp;
 	}
+
+	return image;
 }
 
-void pathTracing_notTarget(glm::vec3*const result, const int w, const int h, const int spp,
-	const Scene& scene, RNG*const rngs)
+Image PT_notTarget(const int w, const int h, const Scene& scene,
+	const int spp, std::vector<RNG>& rng_per_pixel)
 {
+	Image image(w, h);
+	
 	#pragma omp parallel for schedule(dynamic)
 	for(int i=0; i<w*h; i++){
 		int xi = i%w;
 		int yi = i/w;
-		RNG& rand = rngs[i];
+		RNG& rng = rng_per_pixel[i];
 
 		for(int n=0; n<spp; n++){
-			double x = (double) (2*(xi+rand.uniform())-w)/h;
-			double y = (double)-(2*(yi+rand.uniform())-h)/h;
+			double x = (double) (2*(xi+rng.uniform())-w)/h;
+			double y = (double)-(2*(yi+rng.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);			
-			result[i] += pathTracingKernel_nonTarget(view, scene, rand);
+			image.pixels[i] += pathTracingKernel_notTarget(view, scene, rng);
 		}
-		result[i] /= spp;
+		image.pixels[i] /= spp;
 	}
+
+	return image;
 }
 
-void collectHitpoints(std::vector<hitpoint>& hits,
-	const int w, const int h, const int nRay,
-	const Scene& scene, RNG& rng)
+std::vector<hitpoint> collectHitpoints(const int w, const int h,
+	const int nRay, const Scene& scene, std::vector<RNG>& rng_per_thread)
 {
-	// #pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	std::vector<hitpoint> hits;
+
+	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)\
+	num_threads(rng_per_thread.size())
 	for(int i=0; i<w*h*nRay; i++){
 		int p = i/nRay;
+		RNG& rng = rng_per_thread[omp_get_thread_num()];
+
 		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
 		float y = (float)-(2*((p/w)+rng.uniform())-h)/h;
 		Ray ray = scene.camera.ray(x, y);
@@ -176,19 +195,25 @@ void collectHitpoints(std::vector<hitpoint>& hits,
 		if( scene.materials[is.mtlID].type != Material::Type::EMIT )
 			hits.push_back(hitpoint(is, glm::vec3(1.0/(float)nRay), p, ray, 1));
 	}
+
+	return hits;
 }
 
-void collectHitpoints_target(std::vector<hitpoint>& hits, 
-	const uint32_t tMtl, const int targetDepth,
+std::vector<hitpoint> collectHitpoints_target
+(	const uint32_t tMtl, const int targetDepth,
 	const int w, const int h, const int nRay,
-	const Scene& scene, RNG& rng)
+	const Scene& scene, std::vector<RNG>& rng_per_thread)
 {
+	std::vector<hitpoint> hits;
 	std::vector<uint32_t> others;
 	for(uint32_t i : scene.targetMaterials)if(i!=tMtl)others.push_back(i);
 
-	// #pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)\
+	num_threads(rng_per_thread.size())
 	for(int i=0; i<w*h*nRay; i++){
 		int p = i/nRay;
+		RNG& rng = rng_per_thread[omp_get_thread_num()];
+
 		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
 		float y = (float)-(2*((p/w)+rng.uniform())-h)/h;
 		
@@ -221,19 +246,25 @@ void collectHitpoints_target(std::vector<hitpoint>& hits,
 			if(10<d_all) pTerminate *= 0.5;
 		}
 	}
+
+	return hits;
 }
 
-void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
-	const uint32_t tMtl, const int targetDepth,
+std::vector<hitpoint> collectHitpoints_target_exclusive
+(	const uint32_t tMtl, const int targetDepth,
 	const int w, const int h, const int nRay,
-	const Scene& scene, RNG& rng)
+	const Scene& scene, std::vector<RNG>& rng_per_thread)
 {
+	std::vector<hitpoint> hits;
 	std::vector<uint32_t> others;
 	for(uint32_t i : scene.targetMaterials)if(i != tMtl)others.push_back(i);
 
-	// #pragma omp parallel for reduction(merge: hits) schedule(dynamic)
+	#pragma omp parallel for reduction(merge: hits) schedule(dynamic)\
+	num_threads(rng_per_thread.size())
 	for(int i=0; i<w*h*nRay; i++){
 		int p = i/nRay;
+		RNG& rng = rng_per_thread[omp_get_thread_num()];
+
 		float x = (float) (2*((p%w)+rng.uniform())-w)/h;
 		float y = (float)-(2*((p/w)+rng.uniform())-h)/h;
 		
@@ -285,15 +316,19 @@ void collectHitpoints_target_exclusive(std::vector<hitpoint>& hits,
 
 		if(hasHitMe && !hasHitOthers) hits.push_back(firstMe);
 		else if(hasHitMe && hasHitOthers){
-			if(firstMe.depth<firstOthers.depth && scene.materials[firstMe.mtlID].type == Material::Type::LAMBERT)hits.push_back(firstMe);
+			if(firstMe.depth<firstOthers.depth
+			&& scene.materials[firstMe.mtlID].type == Material::Type::LAMBERT){
+				hits.push_back(firstMe);
+			}
 			else if(firstMe.depth>1)hits.push_back(firstMe);
 			else if(firstOthers.depth == 1 && firstMe.depth == 2)hits.push_back(firstMe);
 		}
-
 	}
+
+	return hits;
 }
 
-Tree createPhotonmap(const Scene& scene, const int nPhoton, RNG*const rngs, const int nThreads){
+Tree createPhotonmap(const Scene& scene, const int nPhoton, std::vector<RNG>& rng_per_thread){
 	if(scene.lights.size()==0) return Tree();
 
 	std::vector<Photon> photons;
@@ -301,9 +336,10 @@ Tree createPhotonmap(const Scene& scene, const int nPhoton, RNG*const rngs, cons
 
 	const Sphere& source = scene.spheres[scene.lights[0]];
 
-	#pragma omp parallel for reduction(merge: photons) schedule(dynamic) num_threads(nThreads)
+	#pragma omp parallel for reduction(merge: photons) schedule(dynamic)\
+	num_threads(rng_per_thread.size())
 	for(int n=0; n<nPhoton; n++){
-		RNG& rand = rngs[omp_get_thread_num()];
+		RNG& rand = rng_per_thread[omp_get_thread_num()];
 
 		glm::vec3 ro, rd;
 		{
@@ -347,7 +383,9 @@ Tree createPhotonmap(const Scene& scene, const int nPhoton, RNG*const rngs, cons
 	return tree;
 }
 
-void accumulateRadiance(std::vector<hitpoint>& hitpoints, const Tree& photonmap, const Scene& scene, const double alpha){
+void progressiveRadianceEstimate(std::vector<hitpoint>& hitpoints, const Tree& photonmap,
+	const Scene& scene, const double alpha)
+{
 	#pragma omp parallel for schedule(dynamic)
 	for(hitpoint& hit : hitpoints){
 		const Material& mtl = scene.materials[hit.mtlID];
@@ -377,7 +415,62 @@ void accumulateRadiance(std::vector<hitpoint>& hitpoints, const Tree& photonmap,
 
 			hit.N = Nnext;
 			hit.R *= sqrt(ratio);
-			hit.tau = (hit.tau + tauM)*ratio;			
+			hit.tau = (hit.tau + tauM)*ratio;
+		}
+	}
+}
+
+Image PPM(const int w, const int h, const Scene& scene,
+	const int nRay, const int nPhoton, const int iteration, const float alpha, const float R0,
+	std::vector<RNG>& rng_per_thread)
+{
+
+	std::cout <<"collecting hitpoints" <<std::endl;
+	std::vector<hitpoint> hits = collectHitpoints(w, h, nRay, scene, rng_per_thread);
+	for(hitpoint& hit : hits)hit.clear(R0);
+	
+	std::cout <<"radiance estimation" <<std::endl;
+	radiance_PPM(hits, scene, nPhoton, iteration, alpha, rng_per_thread);
+	
+	Image im(w, h);
+	for(hitpoint& hit : hits)
+		im.pixels[hit.pixel] += hit.tau * hit.weight / (float)iteration;
+	return im;
+}
+
+void radiance_PPM(std::vector<hitpoint>& hits, const Scene& scene,
+	const int nPhoton, const int iteration, const float alpha,
+	std::vector<RNG>& rng_per_thread)
+{
+	for(int i=0; i<iteration; i++){
+		Tree photonmap = createPhotonmap(scene, nPhoton, rng_per_thread);
+		progressiveRadianceEstimate(hits, photonmap, scene, alpha);
+	}
+}
+
+void radiance_PT(std::vector<hitpoint>& hits, const Scene& scene,
+	const int spp, std::vector<RNG>& rng_per_thread)
+{
+	#pragma omp parallel for schedule(dynamic) num_threads(rng_per_thread.size())
+	for(int i=0; i<hits.size(); i++){
+		hitpoint& hit = hits[i];
+		RNG& rng = rng_per_thread[omp_get_thread_num()];
+
+		hit.tau = glm::vec3(0);
+		hit.iteration = 10 + spp*std::max(hit.weight.x, std::max(hit.weight.y, hit.weight.z));
+		for(int j=0; j<hit.iteration; j++){
+			glm::vec3 th(1);
+			Ray ray(glm::vec3(0), -hit.wo);
+			Intersection is;
+				is.dist = kHUGE;
+				is.p = hit.p;
+				is.n = hit.n;
+				is.ng = hit.ng;
+				is.mtlID = hit.mtlID;
+				is.backfacing = false; // ?
+
+			sampleBSDF(&ray, &th, is, scene.materials[is.mtlID], rng);
+			hit.tau += th * pathTracingKernel(ray, scene, rng);
 		}
 	}
 }

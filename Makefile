@@ -8,17 +8,16 @@ ifeq ($(OS),Windows_NT)
 
 # lib
 .PHONY: composition
-composition: $(SRCDIR)/interface.cpp $(OUTDIR)/cmp.o
-	g++ -o $(ADDON) -shared $(OUTDIR)/cmp.o $(SRCDIR)/interface.cpp\
+composition: $(SRCDIR)/interface.cpp $(OUTDIR)/composition.o
+	g++ -o $(ADDON) -shared $(OUTDIR)/composition.o $(SRCDIR)/interface.cpp\
 	 -O3 -fopenmp -std=c++17	-I /mingw64/include/python3.8\
 	 -static $(LIBS)/libboost_python37-mgw10-mt-x64-1_74.a $(LIBS)/python37.dll
 
-$(OUTDIR)/cmp.o: $(SRCDIR)/cmp.cpp
-	g++ -c -o $(OUTDIR)/cmp.o  $(SRCDIR)/cmp.cpp -O3 -fopenmp -std=c++17
+$(OUTDIR)/composition.o: $(SRCDIR)/composition.cpp
+	g++ -c -o $(OUTDIR)/composition.o  $(SRCDIR)/composition.cpp -O3 -fopenmp -std=c++17
 
 # exe
-.PHONY: main
-main: $(SRCDIR)/main.cpp $(SRCDIR)/cmp.cpp
-	g++ -o $(OUTDIR)/main.exe $(SRCDIR)/main.cpp $(SRCDIR)/cmp.cpp -O3 -fopenmp -std=c++17
+main: $(SRCDIR)/main.cpp $(SRCDIR)/composition.cpp
+	g++ -o $(OUTDIR)/main.exe $(SRCDIR)/main.cpp $(SRCDIR)/composition.cpp -O3 -fopenmp -std=c++17
 
 endif

@@ -7,17 +7,12 @@
 #include <string>
 #include <omp.h>
 
-#include "cmp.hpp"
+#include "composition.hpp"
 #include "Image.hpp"
 #include "file.hpp"
 #include "data.hpp"
 #include "toString.hpp"
 
-void sampleBSDF(Ray* ray, glm::vec3* throuput,
-	const Intersection& is, const Material& mtl,
-	RNG& rand, float* const p = nullptr);
-
-glm::vec3 pathTracingKernel(Ray ray, const Scene& scene, RNG& rand);
 
 inline std::vector<float> getBlenderImage(const Image& im){
 	std::vector<float> f(im.len()*4);
@@ -35,133 +30,70 @@ inline std::vector<float> getBlenderImage(const Image& im){
 	return f;
 }
 
-void pt(
-	Image& result, const int spp, const Scene& scene)
-{
-	RNG* rngForEveryPixel = new RNG[result.len()];
-	for(int i=0; i<result.len(); i++)
-		rngForEveryPixel[i] = RNG(i);
+Image PT_wrap(int w, int h, const Scene& scene, const int spp){
+	std::vector<RNG> rng_per_pixel;
+	for(int i=0; i<w*h; i++) rng_per_pixel.push_back(RNG(i));
 
-	pathTracing(result.data(), result.w, result.h, spp, scene, rngForEveryPixel);
-
-	delete[] rngForEveryPixel;
+	return PT(w, h, scene, spp, rng_per_pixel);
 }
 
-void ppm(Image& result, const Scene& scene,
-	int nRay, int nPhoton, int iteration, float alpha, float R0)
+Image PT_notTarget_wrap(int w, int h, const Scene& scene, const int spp){
+	std::vector<RNG> rng_per_pixel;
+	for(int i=0; i<w*h; i++) rng_per_pixel.push_back(RNG(i));
+
+	return PT_notTarget(w, h, scene, spp, rng_per_pixel);
+}
+
+Image PPM_wrap(const int w, const int h, const Scene& scene,
+	const int nRay, const int nPhoton, const int iteration, const float alpha, const float R0)
 {
+	std::vector<RNG> rng_per_thread;
+	for(int i=0; i<omp_get_max_threads(); i++)
+		rng_per_thread.push_back(RNG(i));
 
-	int nThreads = omp_get_max_threads();
-	std::vector<RNG> rngs(0);
-	for(int i=0; i<nThreads+1; i++)
-		rngs.push_back(RNG(i));
+	return PPM(w, h, scene, nRay, nPhoton, iteration, alpha, R0, rng_per_thread);
+}
 
-	std::vector<hitpoint> hits;
-	hits.reserve(result.len()*nRay);
+std::vector<hitpoint> collectHits_target_wrap(const int depth, const int w, const int h,
+	const int nRay, const float R0,
+	const Scene& scene, const uint32_t target)
+{
+	std::vector<RNG> rng_per_thread = createRNGVector(omp_get_max_threads(), 0);
 
-	std::cout <<"collecting hitpoints" <<std::endl;
-
-	collectHitpoints(hits, result.w, result.h, nRay, scene, rngs[nThreads]);
+	std::vector<hitpoint> hits = collectHitpoints_target(target, depth, w, h, nRay, scene, rng_per_thread);
 	for(hitpoint& hit : hits)hit.clear(R0);
-	
-	std::cout <<"radiance estimation\n"
-	<<"|--------- --------- --------- --------- |\n"
-	<<"|" <<std::flush;
-
-	for(int i=0; i<iteration; i++){
-		if((i*40)%iteration < 39) std::cout <<"+" <<std::flush;
-
-		Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
-		accumulateRadiance(hits, photonmap, scene, alpha);
-	}
-
-	std::cout <<"|" <<std::endl;
-
-	for(hitpoint& hit : hits)
-		result.pixels[hit.pixel] += hit.tau * hit.weight / (float)iteration;
-}
-
-void pt_notTarget(Image& result, const int spp, const Scene& scene)
-{
-	RNG* rngForEveryPixel = new RNG[result.len()];
-	for(int i=0; i<result.len(); i++)
-		rngForEveryPixel[i] = RNG(i);
-
-	pathTracing_notTarget(result.data(), result.w, result.h, spp, scene, rngForEveryPixel);
-
-	delete[] rngForEveryPixel;
-}
-
-std::vector<hitpoint> collectHits_target_wrap(const int depth, const int w, const int h, const int nRay,
-	const Scene& scene, const uint32_t target)
-// todo: passing rng state
-{
-	std::vector<hitpoint> hits;
-	hits.reserve(w*h*nRay);
-	RNG rng(0);
-
-	collectHitpoints_target(hits, target, depth, w, h, nRay, scene, rng);
 
 	return hits;
 }
 
-std::vector<hitpoint> collectHits_target_exclusive_wrap(const int depth, const int w, const int h, const int nRay,
+std::vector<hitpoint> collectHits_target_exclusive_wrap(const int depth, const int w, const int h,
+	const int nRay, const float R0,
 	const Scene& scene, const uint32_t target)
-// todo: passing rng state
 {
-	std::vector<hitpoint> hits;
-	hits.reserve(w*h*nRay);
-	RNG rng(0);
+	std::vector<RNG> rng_per_thread = createRNGVector(omp_get_max_threads(), 0);
 
-	collectHitpoints_target_exclusive(hits, target, depth, w, h, nRay, scene, rng);
+	std::vector<hitpoint> hits = collectHitpoints_target_exclusive(target, depth, w, h, nRay, scene, rng_per_thread);
+	for(hitpoint& hit : hits)hit.clear(R0);
 
 	return hits;
 }
 
-void radiance_PPM(std::vector<hitpoint>& hits, const Scene& scene,
+void radiance_PPM_wrap(std::vector<hitpoint>& hits, const Scene& scene,
 	const float R0, const int iteration, const int nPhoton, const float alpha)
 {
-	int nThreads = omp_get_max_threads();
-	std::vector<RNG> rngs(0);
-	for(int i=0; i<nThreads; i++)
-		rngs.push_back(RNG(i));
+	std::vector<RNG> rng_per_thread;
+	for(int i=0; i<omp_get_max_threads(); i++)
+		rng_per_thread.push_back(RNG(i));
 
-	for(hitpoint& hit : hits)hit.clear(R0);
-
-	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
-
-	for(int i=0; i<iteration; i++){
-		if((i*40)%iteration < 39) std::cout <<"+" <<std::flush;
-		
-		Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
-		accumulateRadiance(hits, photonmap, scene, alpha);
-	}
-	std::cout <<"|" <<std::endl;
+	radiance_PPM(hits, scene, nPhoton, iteration, alpha, rng_per_thread);
 }
 
-void radiance_PT(std::vector<hitpoint>& hits, const Scene& scene, int spp){
-	#pragma omp parallel for schedule(dynamic)
-	for(int i=0; i<hits.size(); i++){
-		hitpoint& hit = hits[i];
-		RNG rng(i);
+void radiance_PT_wrap(std::vector<hitpoint>& hits, const Scene& scene, const int spp){
+	std::vector<RNG> rng_per_thread;
+	for(int i=0; i<omp_get_max_threads(); i++)
+		rng_per_thread.push_back(RNG(i));
 
-		hit.tau = glm::vec3(0);
-		hit.iteration = 10 + spp*std::max(hit.weight.x, std::max(hit.weight.y, hit.weight.z));
-		for(int j=0; j<hit.iteration; j++){
-			glm::vec3 th(1);
-			Ray ray(glm::vec3(0), -hit.wo);
-			Intersection is;
-				is.dist = kHUGE;
-				is.p = hit.p;
-				is.n = hit.n;
-				is.ng = hit.ng;
-				is.mtlID = hit.mtlID;
-				is.backfacing = false; // ?
-
-			sampleBSDF(&ray, &th, is, scene.materials[is.mtlID], rng);
-			hit.tau += th * pathTracingKernel(ray, scene, rng);
-		}
-	}
+	radiance_PT(hits, scene, spp, rng_per_thread);
 }
 
 void hitsToImage(const std::vector<hitpoint>& hits, Image& result,
@@ -214,9 +146,7 @@ void addMesh(Scene& scene,
 	scene.addMesh(m);
 }
 
-void setMaterial(Scene& scene, uint32_t id, Material m){
-	scene.materials[id] = m;
-}
+void setMaterial(Scene& scene, uint32_t id, Material m){scene.materials[id] = m;}
 
 void setCamera(Camera& camera, const boost::python::list& m, float focal){
 	using namespace boost::python;
@@ -293,6 +223,9 @@ BOOST_PYTHON_MODULE(composition){
 		.def("save", save_hitpoints)
 		.def("load", load_hitpoints);
 
+	class_<std::vector<RNG>>("rngs");
+
+	def("createRNGs", createRNGVector);
 
 	// scene
 	class_<Scene>("Scene")
@@ -340,14 +273,14 @@ BOOST_PYTHON_MODULE(composition){
 	def("getImage", getBlenderImage);
 
 	// renderers
-	def("pt", pt);
-	def("ppm", ppm);
-	def("pt_notTarget", pt_notTarget);
+	def("pt", PT_wrap);
+	def("ppm", PPM_wrap);
+	def("pt_notTarget", PT_notTarget_wrap);
 
 	def("collectHits_target_exclusive", collectHits_target_exclusive_wrap);
 	def("collectHits_target", collectHits_target_wrap);
-	def("radiance_ppm", radiance_PPM);
-	def("radiance_pt", radiance_PT);
+	def("radiance_ppm", radiance_PPM_wrap);
+	def("radiance_pt", radiance_PT_wrap);
 
 	def("hitsToImage_cpp", hitsToImage);
 }

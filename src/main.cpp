@@ -1,4 +1,4 @@
-#include "cmp.hpp"
+#include "composition.hpp"
 
 #include <filesystem>
 #include <cassert>
@@ -44,12 +44,6 @@ int writeImage(glm::vec3* color, int w, int h, const std::string& name){
 	return result;
 }
 
-void sampleBSDF(Ray* ray, glm::vec3* throuput,
-	const Intersection& is, const Material& mtl,
-	RNG& rand, float* const p = nullptr);
-
-glm::vec3 pathTracingKernel(Ray ray, const Scene& scene, RNG& rand);
-
 int main(void){
 
 	std::string outDir("result");
@@ -58,11 +52,12 @@ int main(void){
 		assert(std::filesystem::create_directory(outDir));
 	}
 
-	RNG rand;
 	glm::dvec2 dim(512, 512);
 	std::unordered_map<std::string, Image> images;
-
 	std::cout <<"image size: " <<dim.x <<", " <<dim.y <<std::endl;
+
+	std::vector<RNG> rng_per_pixel = createRNGVector(dim.x*dim.y, 0);
+	std::vector<RNG> rng_per_thread = createRNGVector(omp_get_max_threads(), dim.x*dim.y);
 
 	Scene scene;
 	createScene(&scene);
@@ -73,78 +68,51 @@ int main(void){
 		return 0;
 	}
 
+
 	{
-		Image im(dim.x, dim.y);
 		std::cout <<"reference path tracing " <<std::flush;
-
-		RNG* rngForEveryPixel = new RNG[im.len()];
-		for(int i=0; i<im.len(); i++)
-			rngForEveryPixel[i] = RNG(i);
-
+		
 		auto t0 = std::chrono::high_resolution_clock::now();
 
-		pathTracing(im.data(),im.w, im.h, 200, scene, rngForEveryPixel);
+		Image im = PT(dim.x, dim.y, scene, 200, rng_per_pixel);
 
 		auto t1 = std::chrono::high_resolution_clock::now();
 		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
 		
 		im.save(outDir+"/reference");
-		delete[] rngForEveryPixel;
 	}
 	images["pt"] = Image(outDir+"/reference");
 
-	{
-		Image im(dim.x, dim.y);
-		std::cout <<"reference photon mapping " <<std::flush;
 
+	{
+		std::cout <<"reference photon mapping " <<std::flush;
 		int nRay = 4;
 		int nPhoton = 10000;
 		int iteration = 100;
 		float alpha = 0.6;
 		float R0 = 1;
 
-		int nThreads = omp_get_max_threads();
-		std::vector<RNG> rngs(0);
-		for(int i=0; i<nThreads+1; i++)
-			rngs.push_back(RNG(i));
-
 		auto t0 = std::chrono::high_resolution_clock::now();
 
-		std::vector<hitpoint> hits;
-		hits.reserve(im.len()*nRay);
-		collectHitpoints(hits, im.w, im.h, nRay, scene, rngs[nThreads]);
-		for(hitpoint& hit : hits)hit.clear(R0);
+		Image im = PPM(dim.x, dim.y, scene, nRay, nPhoton, iteration, alpha, R0, rng_per_thread);
 
-		for(int i=0; i<iteration; i++){
-			Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
-			accumulateRadiance(hits, photonmap, scene, alpha);
-		}
-
-		for(hitpoint& hit : hits)
-			im.pixels[hit.pixel] += hit.tau * hit.weight / (float)iteration;
-		
 		auto t1 = std::chrono::high_resolution_clock::now();
 		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
 
 		images["ppm"] = im;
 	}
 
-	{
-		Image im(dim.x, dim.y);
-		std::cout <<"path tracing for non-target component " <<std::flush;
 
-		RNG* rngForEveryPixel = new RNG[im.len()];
-		for(int i=0; i<im.len(); i++)
-			rngForEveryPixel[i] = RNG(i);
+	{
+		std::cout <<"path tracing for non-target component " <<std::flush;
 
 		auto t0 = std::chrono::high_resolution_clock::now();
 
-		pathTracing_notTarget(im.data(), im.w, im.h, 1000, scene, rngForEveryPixel);
+		Image im = PT_notTarget(dim.x, dim.y, scene, 1000, rng_per_pixel);
 
 		auto t1 = std::chrono::high_resolution_clock::now();
 		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
 
-		delete[] rngForEveryPixel;
 		im.save(outDir+"/nontarget");
 
 		im = Image();
@@ -157,6 +125,7 @@ int main(void){
 	for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
 		int nRay = 512;
 		int nDepth = 1;
+		float R0 = 1;
 		RNG rng(0);
 		uint32_t mtl = scene.targetMaterials[i];
 
@@ -168,7 +137,8 @@ int main(void){
 
 		auto t0 = std::chrono::high_resolution_clock::now();
 
-		collectHitpoints_target_exclusive(hits[i], mtl, nDepth, dim.x, dim.y, nRay, scene, rng);
+		hits[i] = collectHitpoints_target_exclusive(mtl, nDepth, dim.x, dim.y, nRay, scene, rng_per_thread);
+		for(hitpoint& hit : hits[i])hit.clear(R0);
 
 		auto t1 = std::chrono::high_resolution_clock::now();
 		std::cout <<std::chrono::duration<double, std::milli>(t1-t0).count() <<" ms" <<std::endl;
@@ -178,58 +148,16 @@ int main(void){
 	}
 
 
-	// // ppm
-	// // todo: takeover RNG state. currently hits are cleared before this iterations.
-	// {
-	// 	const int nPhoton = 1000;
-	// 	const int iteration = 10;
-	// 	const float alpha = 0.6;
-	// 	const float R0 = 0.5;
-
-	// 	for(std::vector<hitpoint>& vhit : hits) for(hitpoint& hit : vhit) hit.clear(R0);
-
-	// 	const int nThreads = omp_get_max_threads();
-	// 	std::vector<RNG> rngs(0);
-	// 	for(int i=0; i<nThreads; i++)
-	// 		rngs.push_back(RNG(i));
-
-	// 	for(uint32_t n=0; n<iteration; n++){
-	// 		const Tree photonmap = createPhotonmap(scene, nPhoton, rngs.data(), nThreads);
-	// 		for(std::vector<hitpoint>& h : hits) accumulateRadiance(h, photonmap, scene, alpha);
-	// 	}
-
-	// 	for(uint32_t i=0; i<scene.targetMaterials.size(); i++){
-	// 		std::string name = "hits" + std::to_string(scene.targetMaterials[i]) + "_glass_64";
-	// 		writeVector(hits[i], outDir + "/" + name);
-	// 	}
-	// }
-
-	// // pt
+	// // estimate exitance from hitpoints
 	{
+		const int nPhoton = 1000;
+		const int iteration = 10;
+		const float alpha = 0.6;
+		const int spp = 1000;
+		
 		for(std::vector<hitpoint>& target : hits){
-			std::cout <<"path tracing from hitpoints on " <<std::endl;
-			#pragma omp parallel for schedule(dynamic)
-			for(int i=0; i<target.size(); i++){
-				hitpoint& hit = target[i];
-				RNG rng(i);
-
-				hit.tau = glm::vec3(0);
-				hit.iteration = 10 + 500*std::max(hit.weight.x, std::max(hit.weight.y, hit.weight.z));
-				for(int j=0; j<hit.iteration; j++){
-					glm::vec3 th(1);
-					Ray ray(glm::vec3(0), -hit.wo);
-					Intersection is;
-						is.dist = kHUGE;
-						is.p = hit.p;
-						is.n = hit.n;
-						is.ng = hit.ng;
-						is.mtlID = hit.mtlID;
-						is.backfacing = false; // ?
-
-					sampleBSDF(&ray, &th, is, scene.materials[is.mtlID], rng);
-					hit.tau += th * pathTracingKernel(ray, scene, rng);
-				}
-			}
+			// radiance_PT(target, scene, spp, rng_per_thread);
+			radiance_PPM(target, scene, nPhoton, iteration, alpha, rng_per_thread);
 		}
 	}
 
