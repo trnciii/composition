@@ -24,8 +24,4 @@ from .composition import radiance_pt
 from .helper import PPMParam
 from .helper import ppm
 from .helper import radiance_target
-
-# composite
-from .functions import hitsToImage
-from .functions import mask
-from .functions import depth
+from .helper import hitsToImage_py

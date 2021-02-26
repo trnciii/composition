@@ -63,7 +63,7 @@ def ramp(coord, name):
 
 def addImage(name, w, h):
 	if name not in bpy.data.images.keys():
-		print('add image \''+name+'\'')
+		print('add image \''+name+'\'', w, h)
 		bpy.data.images.new(name, w, h)
 	else:
 		bpy.data.images[name].scale(w,h)

@@ -5,6 +5,9 @@ from .. import core
 from .Scene import Scene
 from .helper import addImage
 
+def quate(s):
+	return '\'' + s + '\''
+
 class Context:
 
 	def __init__(self):
@@ -35,51 +38,33 @@ class Context:
 
 # image
 	def bindImage(self, key):
+		addImage(key, self.w, self.h)
 		self.images[key] = core.Image(self.w, self.h)
 
 	def copyImage(self, key):
 		bpy.data.images[key].pixels = core.getImage(self.images[key])
 
-	def save(self, key, path):
-		if self.images[key].save(path):
-			print('Saved ', key, ' as \'', path, '\'')
-		else:
-			print('failed to save \'', key, 'as \'', path, '\'')
-
-	def load(self, key, path):
-		im = core.Image(path)
-		if im and im.w == self.w and im.h == self.h:
-			print("Read an image:", path)
-			self.images[key] = im
-			self.copyImage(key)
-		else:
-			print("failed to read an image", path)
-
-	def addImages(self, list):
-		for t in list:
-			addImage(t, self.w, self.h)
+	def setTargets(self, targets):
+		self.targetNames = targets
+		for t in targets + [t+'_mask' for t in targets] + [t+'_depth' for t in targets]:
 			self.bindImage(t)
-
-# target
-	def setTargets(self, targetMaterials):
-		self.targetNames = targetMaterials
-		self.addImages(targetMaterials)
-		self.addImages([t+'_mask' for t in targetMaterials])
-		self.addImages([t+'_depth' for t in targetMaterials])
-
 
 # rendering
 	def pt_ref(self, key, spp):
 		print('path tracing with sample size', spp)
+		self.bindImage(key)		
 		core.pt(self.images[key], spp, self.scene.data)
 		self.copyImage(key)
 
 	def ppm_ref(self, key, param):
+		print( 'progressive photon mapping:\n'+str(param) )
+		self.bindImage(key)
 		core.ppm(self.images[key], param, self.scene.data)
 		self.copyImage(key)
 		
 	def pt_nt(self, key, spp):
 		print('path tracing except for targets with sample size', spp)
+		self.bindImage(key)
 		core.pt_notTarget(self.images[key], spp, self.scene.data)
 		self.copyImage(key)
 
@@ -177,19 +162,41 @@ class Context:
 
 # convert
 	def hitsToImage(self, hits, key, color):
-		print('(running cpp)')
+		# core.hitsToImage_py(hits, self.images[key], color)
 		core.hitsToImage_cpp(hits, self.images[key], color)
 		self.copyImage(key)
 
 	def mask(self, hits, key, nRay):
-		core.mask(hits, self.images[key], nRay)
+		image = self.images[key]
+		count = [0]*len(image.pixels)
+
+		for hit in hits:
+			count[hit.pixel] += 1
+
+		for i in range(len(image.pixels)):
+			image.pixels[i] = core.vec3(count[i]/nRay, 0, 0)
+
 		self.copyImage(key)
 
 	def depth(self, hits, key, nRay):
-		max = core.depth(hits, self.images[key], nRay)
+		image = self.images[key]
+		d = [0]*len(image.pixels)
+		count = [0]*len(image.pixels)
+		maxDepth = 0
+
+		for hit in hits:
+			d[hit.pixel] += hit.depth
+			count[hit.pixel] += 1
+			maxDepth = hit.depth if hit.depth > maxDepth else maxDepth
+		
+		if maxDepth>0:
+			for i in range(len(image.pixels)):
+				if count[i] > 0:
+					image.pixels[i] = core.vec3(d[i]/nRay/maxDepth, 0, 0)
+
 		self.copyImage(key)
-		print("max depth of", key , ": ", max)
-		return max
+		print("max depth of", key , ": ", maxDepth)
+		return maxDepth
 
 # more large converter
 	def remapAll(self, remaps):
@@ -198,18 +205,14 @@ class Context:
 			return
 
 		for i in range(len(self.hits_ex)):
-			print('converting\033[33m', self.targetNames[i], '\033[0m', end='')
+			print('converting\033[33m', self.targetNames[i], '\033[0m')
 			self.hitsToImage(self.hits_ex[self.targetNames[i]], self.targetNames[i], remaps[i])
 			print()
 
 	def maskAll(self):
-		m = [t+'_mask' for t in self.targetNames]
-		d = [t+'_depth' for t in self.targetNames]
-		
-		for i in range(len(self.hits_all)):
-			self.mask(self.hits_all[self.targetNames[i]], m[i], self.nRay_all)
-			self.depth(self.hits_all[self.targetNames[i]], d[i], self.nRay_all)
-
+		for t in self.targetNames:
+			self.mask(self.hits_all[t], t+'_mask', self.nRay_all)
+			self.depth(self.hits_all[t], t+'_depth', self.nRay_all)
 		print()
 
 # file
@@ -218,7 +221,24 @@ class Context:
 		files.sort()
 		return files
 
-	def loadFiles(self, nRay):
+	def saveImage(self, key):
+		path = self.path + 'im_' + key
+		if self.images[key].save(path):
+			print('Saved', quate(key), 'as', quate(path))
+		else:
+			print('failed to save', quate(key), 'as', quate(path))
+
+	def loadImage(self, key, path):
+		im = core.Image(path)
+		if im:
+			print("Read an image:", quate(path), 'as', quate(key))
+			addImage(key, im.w, im.h)
+			self.images[key] = im
+			self.copyImage(key)
+		else:
+			print("failed to read an image", quate(path))
+
+	def loadAll(self, nRay):
 		for file in self.files:
 			words = file.split('_')
 			if words[0] == 'hit' and words[2] == str(nRay):
@@ -233,11 +253,8 @@ class Context:
 					self.nRay_all = nRay
 					self.hits_all[words[1]] = h
 
-			if words[0] == 'im' and words[1] == 'nontarget':
-				self.load('nt', self.path+file)
-
-			if words[0] == 'im' and words[1] == 'pt':
-				self.load('pt', self.path+file)
+			if words[0] == 'im':
+				self.loadImage(words[1], self.path+file)
 				
 		print()
 

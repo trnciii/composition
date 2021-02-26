@@ -21,3 +21,18 @@ def ppm(image, param, scene):
 
 def radiance_target(hits, target, param, scene):
 	composition.radiance_ppm(hits, scene, param.R0, param.itr, param.nPhoton, param.alpha)
+
+def hitsToImage_py(hits, image, color):
+    print("using python for replacement")
+
+    im  = [[0.]*3 for i in range(len(image.pixels))]
+    res = [[0.]*3 for i in range(len(hits))]
+
+    for hit in hits:
+        c = color(hit)
+        im[hit.pixel][0] += hit.weight.x * c.x
+        im[hit.pixel][1] += hit.weight.y * c.y
+        im[hit.pixel][2] += hit.weight.z * c.z
+
+    for i in range(len(image.pixels)):
+        image.pixels[i] = composition.vec3(im[i][0], im[i][1], im[i][2])
