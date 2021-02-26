@@ -84,17 +84,16 @@ def render():
     print('\033[36mrendering\033[0m')
     cmp = composition.bi.Context()
 
-    cmp.addImages(['nt', 'pt'])
     cmp.scene.create(spheres, meshes, targetMaterials)
     cmp.setTargets(targetMaterials)
     print(cmp.scene)
     time.sleep(0.1)
 
     cmp.pt_ref('pt', 1000)
-    cmp.save('pt', cmp.path+'im_pt')
+    cmp.saveImage('pt')
 
     cmp.pt_nt('nt', 1000)
-    cmp.save('nt', cmp.path+"im_nontarget")
+    cmp.saveImage('nt')
     print('')
 
     cmp.ppm_targets(param)
@@ -109,11 +108,8 @@ def remap():
     print('\033[36mremapping\033[0m')
 
     cmp = composition.bi.Context()
-
-    cmp.addImages(['nt', 'pt'])
     cmp.setTargets(targetMaterials)
-
-    cmp.loadFiles(param.nRay)
+    cmp.loadAll(param.nRay)
 
     cmp.remapAll(targetRemap)
     cmp.maskAll()
@@ -124,4 +120,4 @@ def remap():
 render()
 remap()
 
-#saveImages(bpy.path.abspath('//result/intermidiate/'), targetMaterials)
+#saveImages(bpy.path.abspath('//intermidiate/'), targetMaterials)

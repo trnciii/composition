@@ -68,19 +68,16 @@ def render():
     print('\033[36mrendering\033[0m')
     
     cmp = composition.bi.Context()
-
-    cmp.addImages(['nt', 'pt'])
     cmp.scene.create(spheres, meshes, targetMaterials)
     cmp.setTargets(targetMaterials)
     print(cmp.scene)
     time.sleep(0.1)
 
 #    cmp.pt_ref('pt', 2000)
-#    cmp.save('pt', cmp.path+'im_pt')
+#    cmp.saveImage('pt')
 
-#    print('pt_nt');
 #    cmp.pt_nt('nt', 2000)
-#    cmp.save('nt', cmp.path+"im_nontarget")
+#    cmp.saveImage('nt')
 #    print()    
 
     for t in cmp.targetNames:
@@ -95,11 +92,8 @@ def remap():
     print('\033[36mremapping\033[0m')
 
     cmp = composition.bi.Context()
-
-    cmp.addImages(['nt', 'pt'])
     cmp.setTargets(targetMaterials)
-
-    cmp.loadFiles(param.nRay)
+    cmp.loadAll(param.nRay)
 
     cmp.remapAll(targetRemap)
     cmp.maskAll()
