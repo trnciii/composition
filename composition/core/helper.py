@@ -16,12 +16,6 @@ class PPMParam:
 			"alpha   " + str(self.alpha) + "\n"\
 			"R0      " + str(self.R0) + "\n"
 
-def ppm(image, param, scene):
-	composition.ppm(image, scene, param.nRay, param.nPhoton, param.itr, param.alpha, param.R0)
-
-def radiance_target(hits, target, param, scene):
-	composition.radiance_ppm(hits, scene, param.R0, param.itr, param.nPhoton, param.alpha)
-
 def hitsToImage_py(hits, image, color):
     print("using python for replacement")
 

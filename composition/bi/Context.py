@@ -24,13 +24,18 @@ class Context:
 		self.scene = Scene()
 		self.targetNames = []
 
+		threads = os.cpu_count()
+		self.rng_thread = core.createRNGs(threads, 0)
+		self.rng_pixel = core.createRNGs(self.w*self.h, threads)
+
 		self.hits_all = {}
 		self.hits_ex = {}
 
 		self.nRay_all = 0
 		self.nRay_ex = 0
 
-		print('image size', self.w, self.h)
+		print('cpu count:', threads)
+		print('image size:', self.w, self.h)
 		print('files in', self.path)
 		for f in self.files:
 			print('--',f)
@@ -42,123 +47,109 @@ class Context:
 		self.images[key] = core.Image(self.w, self.h)
 
 	def copyImage(self, key):
-		bpy.data.images[key].pixels = core.getImage(self.images[key])
+		bpy.data.images[key].pixels = self.images[key].toList()
 
 	def setTargets(self, targets):
 		self.targetNames = targets
 		for t in targets + [t+'_mask' for t in targets] + [t+'_depth' for t in targets]:
 			self.bindImage(t)
 
-# rendering
+# ordinary rendering
 	def pt_ref(self, key, spp):
 		print('path tracing with sample size', spp)
-		self.bindImage(key)		
-		core.pt(self.images[key], spp, self.scene.data)
+		self.bindImage(key)
+		self.images[key] = core.pt(self.w, self.h, self.scene.data, spp, self.rng_pixel)
 		self.copyImage(key)
 
 	def ppm_ref(self, key, param):
 		print( 'progressive photon mapping:\n'+str(param) )
 		self.bindImage(key)
-		core.ppm(self.images[key], param, self.scene.data)
+		self.images[key] = core.ppm(self.w, self.h, self.scene.data,
+			param.nRay, param.nPhoton, param.itr, param.alpha, param.R0,
+			self.rng_thread)
 		self.copyImage(key)
-		
+
 	def pt_nt(self, key, spp):
 		print('path tracing except for targets with sample size', spp)
 		self.bindImage(key)
-		core.pt_notTarget(self.images[key], spp, self.scene.data)
+		self.images[key] = core.pt_notTarget(self.w, self.h, self.scene.data, spp, self.rng_pixel)
 		self.copyImage(key)
 
-	def genHits_ex(self, target, nRay):
-		return core.collectHits_target_exclusive(1, self.w, self.h, nRay, self.scene.data, self.scene.mtlBinding[target])
 
-	def genHits(self, target, nRay):
-		return core.collectHits_target(1, self.w, self.h, nRay, self.scene.data, self.scene.mtlBinding[target])
-
-	def ppm_radiance(self, hits, target, param):
-		core.radiance_target(hits, self.scene.mtlBinding[target], param, self.scene.data)
-
-# more large rendering processes
-	def ppm_target(self, target, param):
-		print('collecting\033[32m all\033[0m hitpoints on\033[33m', target, '\033[0m')
-		hits = self.genHits(target, param.nRay)
-
-		print('estimating radiance')
-		self.ppm_radiance(hits, target, param)
-
-		hits.save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
-		self.hits_all[target] = hits
-		print()
-
-	def ppm_target_ex(self, target, param):
+	def genHits_ex(self, target, nRay, R0):
 		print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', target, '\033[0m')
-		hits = self.genHits_ex(target, param.nRay)
 
-		print('estimating radiance')
-		self.ppm_radiance(hits, target, param)
+		depth = 1
+		h = core.collectHits_target_exclusive(self.scene.mtlBinding[target], depth,
+			self.w, self.h, nRay, self.scene.data, self.rng_thread)
+		
+		h.clear(R0)
 
-		hits.save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
-		self.hits_ex[target] = hits
-		print()
+		self.hits_ex[target] = h
+
+
+	def genHits_all(self, target, nRay, R0):
+		print('collecting\033[32m all\033[0m hitpoints on\033[33m', target, '\033[0m')
+
+		depth = 1
+		h = core.collectHits_target(self.scene.mtlBinding[target], depth,
+			self.w, self.h, nRay, self.scene.data, self.rng_thread)
+		
+		h.clear(R0)
+
+		self.hits_all[target] = h
+
+
+	def radiance_ppm(self, hit, param):
+		print('estimating radiance by ppm')
+		core.radiance_ppm(hit, self.scene.data, param.nPhoton, param.itr, param.alpha, self.rng_thread)
+
+	def radiance_pt(self, hit, spp):
+		print('estimating radiance by pt')
+		core.radiance_pt(hit, self.scene.data, spp, self.rng_thread)
+
 
 	def ppm_targets(self, param):
-		res = {}
 		for target in self.targetNames:
-			print('collecting\033[32m all\033[0m hitpoints on\033[33m', target, '\033[0m')
-			hits = self.genHits(target, param.nRay)
+			self.genHits_all(target, param.nRay, param.R0)
 
-			print('estimating radiance')
-			self.ppm_radiance(hits, target, param)
-			hits.save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
+			print('estimating radiance by ppm')
+			core.radiance_ppm(self.hits_all[target], self.scene.data, param.nPhoton, param.itr, param.alpha, self.rng_thread)
+			self.hits_all[target].save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
 
-			res[target] = hits
 			print()
-
-		self.hits_all = res
 
 	def ppm_targets_ex(self, param):
-		res = {}
 		for target in self.targetNames:
-			print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', target, '\033[0m')
-			hits = self.genHits_ex(target, param.nRay)
+			self.genHits_ex(target, param.nRay, param.R0)
 
-			print('estimating radiance')
-			self.ppm_radiance(hits, target, param)
-			hits.save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
+			print('estimating radiance by ppm')
+			core.radiance_ppm(self.hits_ex[target], self.scene.data, param.nPhoton, param.itr, param.alpha, self.rng_thread)
+			self.hits_ex[target].save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
 
-			res[target] = hits
 			print()
 
-		self.hits_ex = res
 
 	def pt_targets(self, param, spp):
-		res = {}
 		for target in self.targetNames:
-			print('collecting\033[32m all\033[0m hitpoints on\033[33m', target, '\033[0m')
-			hits = self.genHits(target, param.nRay)
+			self.genHits_all(target, param.nRay, param.R0)
 
-			print('estimating radiance')
-			core.radiance_pt(hits, self.scene.data, spp)
-			hits.save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
+			print('estimating radiance by pt')
+			core.radiance_pt(self.hits_all[target], self.scene.data, spp, self.rng_thread)
+			self.hits_all[target].save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
 
-			res[target] = hits
 			print()
-
-		self.hits_all = res
 
 	def pt_targets_ex(self, param, spp):
-		res = {}
 		for target in self.targetNames:
-			print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', target, '\033[0m')
-			hits = self.genHits_ex(target, param.nRay)
+			self.genHits_ex(target, param.nRay, param.R0)
 
-			print('estimating radiance')
-			core.radiance_pt(hits, self.scene.data, spp)
-			hits.save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
+			print('estimating radiance by pt')
+			core.radiance_pt(self.hits_ex[target], self.scene.data, spp, self.rng_thread)
+			self.hits_ex[target].save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
 
-			res[target] = hits
 			print()
 
-		self.hits_ex = res
 
 # convert
 	def hitsToImage(self, hits, key, color):

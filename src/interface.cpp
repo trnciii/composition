@@ -14,7 +14,33 @@
 #include "toString.hpp"
 
 
-inline std::vector<float> getBlenderImage(const Image& im){
+std::string Scene_str(const Scene& s){return str(s);}
+
+void setMaterial(Scene& scene, uint32_t id, Material m){scene.materials[id] = m;}
+
+std::string save_hitpoints(std::vector<hitpoint>& data, const std::string& name){
+	std::string result;
+	if(writeVector(data, name))
+		return "Saved " + std::to_string(data.size()) + " hitpoints as " + name;
+	else
+		return "failed to save hitpoints as " + name;
+}
+
+std::string load_hitpoints(std::vector<hitpoint>& data, const std::string& name){
+	std::string result;
+	if(readVector(data, name))
+		return "Read " + std::to_string(data.size()) +  " hitpoints from " + name;
+	else
+		return "failed to read hitpoints from " + name;
+}
+
+void clearHitpoints(std::vector<hitpoint>& hits, float R0){
+	for(hitpoint& hit : hits)hit.clear(R0);
+}
+
+void load_image(Image& image, const std::string name){image.load(name);}
+
+inline std::vector<float> toBlenderImage(const Image& im){
 	std::vector<float> f(im.len()*4);
 	for(int y=0; y<im.h; y++){
 		for(int x=0; x<im.w; x++){
@@ -28,72 +54,6 @@ inline std::vector<float> getBlenderImage(const Image& im){
 		}
 	}
 	return f;
-}
-
-Image PT_wrap(int w, int h, const Scene& scene, const int spp){
-	std::vector<RNG> rng_per_pixel;
-	for(int i=0; i<w*h; i++) rng_per_pixel.push_back(RNG(i));
-
-	return PT(w, h, scene, spp, rng_per_pixel);
-}
-
-Image PT_notTarget_wrap(int w, int h, const Scene& scene, const int spp){
-	std::vector<RNG> rng_per_pixel;
-	for(int i=0; i<w*h; i++) rng_per_pixel.push_back(RNG(i));
-
-	return PT_notTarget(w, h, scene, spp, rng_per_pixel);
-}
-
-Image PPM_wrap(const int w, const int h, const Scene& scene,
-	const int nRay, const int nPhoton, const int iteration, const float alpha, const float R0)
-{
-	std::vector<RNG> rng_per_thread;
-	for(int i=0; i<omp_get_max_threads(); i++)
-		rng_per_thread.push_back(RNG(i));
-
-	return PPM(w, h, scene, nRay, nPhoton, iteration, alpha, R0, rng_per_thread);
-}
-
-std::vector<hitpoint> collectHits_target_wrap(const int depth, const int w, const int h,
-	const int nRay, const float R0,
-	const Scene& scene, const uint32_t target)
-{
-	std::vector<RNG> rng_per_thread = createRNGVector(omp_get_max_threads(), 0);
-
-	std::vector<hitpoint> hits = collectHitpoints_target(target, depth, w, h, nRay, scene, rng_per_thread);
-	for(hitpoint& hit : hits)hit.clear(R0);
-
-	return hits;
-}
-
-std::vector<hitpoint> collectHits_target_exclusive_wrap(const int depth, const int w, const int h,
-	const int nRay, const float R0,
-	const Scene& scene, const uint32_t target)
-{
-	std::vector<RNG> rng_per_thread = createRNGVector(omp_get_max_threads(), 0);
-
-	std::vector<hitpoint> hits = collectHitpoints_target_exclusive(target, depth, w, h, nRay, scene, rng_per_thread);
-	for(hitpoint& hit : hits)hit.clear(R0);
-
-	return hits;
-}
-
-void radiance_PPM_wrap(std::vector<hitpoint>& hits, const Scene& scene,
-	const float R0, const int iteration, const int nPhoton, const float alpha)
-{
-	std::vector<RNG> rng_per_thread;
-	for(int i=0; i<omp_get_max_threads(); i++)
-		rng_per_thread.push_back(RNG(i));
-
-	radiance_PPM(hits, scene, nPhoton, iteration, alpha, rng_per_thread);
-}
-
-void radiance_PT_wrap(std::vector<hitpoint>& hits, const Scene& scene, const int spp){
-	std::vector<RNG> rng_per_thread;
-	for(int i=0; i<omp_get_max_threads(); i++)
-		rng_per_thread.push_back(RNG(i));
-
-	radiance_PT(hits, scene, spp, rng_per_thread);
 }
 
 void hitsToImage(const std::vector<hitpoint>& hits, Image& result,
@@ -146,8 +106,6 @@ void addMesh(Scene& scene,
 	scene.addMesh(m);
 }
 
-void setMaterial(Scene& scene, uint32_t id, Material m){scene.materials[id] = m;}
-
 void setCamera(Camera& camera, const boost::python::list& m, float focal){
 	using namespace boost::python;
 
@@ -163,26 +121,6 @@ void setCamera(Camera& camera, const boost::python::list& m, float focal){
 	camera.toWorld[0] = glm::vec3(extract<float>(m[ 0]), extract<float>(m[ 4]), extract<float>(m[ 8]));
 	camera.toWorld[1] = glm::vec3(extract<float>(m[ 1]), extract<float>(m[ 5]), extract<float>(m[ 9]));
 	camera.toWorld[2] = glm::vec3(extract<float>(m[ 2]), extract<float>(m[ 6]), extract<float>(m[10]));
-}
-
-std::string Scene_str(const Scene& s){return str(s);}
-
-void load_image(Image& image, const std::string name){image.load(name);}
-
-std::string save_hitpoints(std::vector<hitpoint>& data, const std::string& name){
-	std::string result;
-	if(writeVector(data, name))
-		return "Saved " + std::to_string(data.size()) + " hitpoints as " + name;
-	else
-		return "failed to save hitpoints as " + name;
-}
-
-std::string load_hitpoints(std::vector<hitpoint>& data, const std::string& name){
-	std::string result;
-	if(readVector(data, name))
-		return "Read " + std::to_string(data.size()) +  " hitpoints from " + name;
-	else
-		return "failed to read hitpoints from " + name;
 }
 
 
@@ -221,7 +159,8 @@ BOOST_PYTHON_MODULE(composition){
 	class_<std::vector<hitpoint>>("vec_hitpoint")
 		.def(vector_indexing_suite<std::vector<hitpoint>>())
 		.def("save", save_hitpoints)
-		.def("load", load_hitpoints);
+		.def("load", load_hitpoints)
+		.def("clear", clearHitpoints);
 
 	class_<std::vector<RNG>>("rngs");
 
@@ -268,19 +207,20 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("pixels", &Image::pixels)
 		.def(init<std::string>())
 		.def("save", &Image::save)
-		.def("load", load_image);
+		.def("load", load_image)
+		.def("toList", toBlenderImage);
 
-	def("getImage", getBlenderImage);
 
 	// renderers
-	def("pt", PT_wrap);
-	def("ppm", PPM_wrap);
-	def("pt_notTarget", PT_notTarget_wrap);
+	def("pt", PT);
+	def("ppm", PPM);
+	def("pt_notTarget", PT_notTarget);
 
-	def("collectHits_target_exclusive", collectHits_target_exclusive_wrap);
-	def("collectHits_target", collectHits_target_wrap);
-	def("radiance_ppm", radiance_PPM_wrap);
-	def("radiance_pt", radiance_PT_wrap);
+	def("collectHits_target_exclusive", collectHitpoints_target_exclusive);
+	def("collectHits_target", collectHitpoints_target);
+	
+	def("radiance_ppm", radiance_PPM);
+	def("radiance_pt", radiance_PT);
 
 	def("hitsToImage_cpp", hitsToImage);
 }
