@@ -1,12 +1,37 @@
 import bpy
 import os
+from enum import Enum
+from collections import namedtuple
 
 from .. import core
 from .Scene import Scene
 from .helper import addImage
 
+
 def quate(s):
 	return '\'' + s + '\''
+
+
+class HitsType(Enum):
+	EX = 'ex'
+	ALL = 'all'
+
+
+HitsKey = namedtuple('HitsKey', ['name', 'type', 'nRay'])
+
+def toFilename(key):
+	if isinstance(key, HitsKey):
+		return "hit_" + key.name +"_" + str(key.nRay) + '_' + key.type.value
+
+def toKey(s):
+	if isinstance(s, str):
+		words = s.split('_')
+		if words[0] == 'hit':
+			if words[3] == 'ex' : t = HitsType.EX
+			if words[3] == 'all': t = HitsType.ALL
+
+			return HitsKey(words[1], t, int(words[2]))
+
 
 class Context:
 
@@ -28,11 +53,7 @@ class Context:
 		self.rng_thread = core.createRNGs(threads, 0)
 		self.rng_pixel = core.createRNGs(self.w*self.h, threads)
 
-		self.hits_all = {}
-		self.hits_ex = {}
-
-		self.nRay_all = 0
-		self.nRay_ex = 0
+		self.hits = {}
 
 		print('cpu count:', threads)
 		print('image size:', self.w, self.h)
@@ -54,7 +75,7 @@ class Context:
 		for t in targets + [t+'_mask' for t in targets] + [t+'_depth' for t in targets]:
 			self.bindImage(t)
 
-# ordinary rendering
+# rendering
 	def pt_ref(self, key, spp):
 		print('path tracing with sample size', spp)
 		self.bindImage(key)
@@ -75,7 +96,6 @@ class Context:
 		self.images[key] = core.pt_notTarget(self.w, self.h, self.scene.data, spp, self.rng_pixel)
 		self.copyImage(key)
 
-
 	def genHits_ex(self, target, nRay, R0):
 		print('collecting\033[32m exclusive\033[0m hitpoints on\033[33m', target, '\033[0m')
 
@@ -85,8 +105,8 @@ class Context:
 		
 		h.clear(R0)
 
-		self.hits_ex[target] = h
-
+		key = HitsKey(target, HitsType.EX, nRay)
+		self.hits[key] = h
 
 	def genHits_all(self, target, nRay, R0):
 		print('collecting\033[32m all\033[0m hitpoints on\033[33m', target, '\033[0m')
@@ -97,58 +117,17 @@ class Context:
 		
 		h.clear(R0)
 
-		self.hits_all[target] = h
+		key = HitsKey(target, HitsType.ALL, nRay)
+		self.hits[key] = h
 
 
 	def radiance_ppm(self, hit, param):
-		print('estimating radiance by ppm')
+		print('estimating radiance by\033[32m ppm\033[0m')
 		core.radiance_ppm(hit, self.scene.data, param.nPhoton, param.itr, param.alpha, self.rng_thread)
 
 	def radiance_pt(self, hit, spp):
-		print('estimating radiance by pt')
+		print('estimating radiance by\033[32m pt\033[0m')
 		core.radiance_pt(hit, self.scene.data, spp, self.rng_thread)
-
-
-	def ppm_targets(self, param):
-		for target in self.targetNames:
-			self.genHits_all(target, param.nRay, param.R0)
-
-			print('estimating radiance by ppm')
-			core.radiance_ppm(self.hits_all[target], self.scene.data, param.nPhoton, param.itr, param.alpha, self.rng_thread)
-			self.hits_all[target].save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
-
-			print()
-
-	def ppm_targets_ex(self, param):
-		for target in self.targetNames:
-			self.genHits_ex(target, param.nRay, param.R0)
-
-			print('estimating radiance by ppm')
-			core.radiance_ppm(self.hits_ex[target], self.scene.data, param.nPhoton, param.itr, param.alpha, self.rng_thread)
-			self.hits_ex[target].save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
-
-			print()
-
-
-	def pt_targets(self, param, spp):
-		for target in self.targetNames:
-			self.genHits_all(target, param.nRay, param.R0)
-
-			print('estimating radiance by pt')
-			core.radiance_pt(self.hits_all[target], self.scene.data, spp, self.rng_thread)
-			self.hits_all[target].save(self.path + "hit_" + target +"_" + str(param.nRay) + "_all")
-
-			print()
-
-	def pt_targets_ex(self, param, spp):
-		for target in self.targetNames:
-			self.genHits_ex(target, param.nRay, param.R0)
-
-			print('estimating radiance by pt')
-			core.radiance_pt(self.hits_ex[target], self.scene.data, spp, self.rng_thread)
-			self.hits_ex[target].save(self.path + "hit_" + target + "_" + str(param.nRay) + "_ex")
-
-			print()
 
 
 # convert
@@ -157,8 +136,8 @@ class Context:
 		core.hitsToImage_cpp(hits, self.images[key], color)
 		self.copyImage(key)
 
-	def mask(self, hits, key, nRay):
-		image = self.images[key]
+	def mask(self, hits, ikey, nRay):
+		image = self.images[ikey]
 		count = [0]*len(image.pixels)
 
 		for hit in hits:
@@ -167,7 +146,7 @@ class Context:
 		for i in range(len(image.pixels)):
 			image.pixels[i] = core.vec3(count[i]/nRay, 0, 0)
 
-		self.copyImage(key)
+		self.copyImage(ikey)
 
 	def depth(self, hits, key, nRay):
 		image = self.images[key]
@@ -189,22 +168,19 @@ class Context:
 		print("max depth of", key , ": ", maxDepth)
 		return maxDepth
 
-# more large converter
-	def remapAll(self, remaps):
-		if not len(remaps) is len(self.targetNames):
-			print('failed remapping')
-			return
 
-		for i in range(len(self.hits_ex)):
-			print('converting\033[33m', self.targetNames[i], '\033[0m')
-			self.hitsToImage(self.hits_ex[self.targetNames[i]], self.targetNames[i], remaps[i])
-			print()
+	def remapAll(self, remaps):
+		for k, h in self.hits.items():
+			if k.type is HitsType.EX and k.name in remaps.keys():
+				print('converting\033[33m', k.name, '\033[0m')
+				self.hitsToImage(h, k.name, remaps[k.name])
+				print()
 
 	def maskAll(self):
-		for t in self.targetNames:
-			self.mask(self.hits_all[t], t+'_mask', self.nRay_all)
-			self.depth(self.hits_all[t], t+'_depth', self.nRay_all)
-		print()
+		for k, h in self.hits.items():
+			if k.type is HitsType.ALL:
+				self.mask(h, k.name+'_mask', k.nRay)
+				self.depth(h, k.name+'_depth', k.nRay)
 
 # file
 	def getFiles(self):
@@ -229,30 +205,32 @@ class Context:
 		else:
 			print("failed to read an image", quate(path))
 
+	def saveHits(self, key, nRay):
+		print(self.hits[key].save(self.path + toFilename(key)))
+
 	def loadAll(self, nRay):
 		for file in self.files:
-			words = file.split('_')
-			if words[0] == 'hit' and words[2] == str(nRay):
+			key = toKey(file)
+			if key:
 				h = core.Hits()
-				h.load(self.path+file)
+				h.load(self.path + file)
+				self.hits[toKey(file)] = h
 
-				if words[3] == 'ex':
-					self.nRay_ex = nRay
-					self.hits_ex[words[1]] = h
+			words = file.split('_')
 
-				if words[3] == 'all':
-					self.nRay_all = nRay
-					self.hits_all[words[1]] = h
+			# if words[0] == 'hit' and words[2] == str(nRay):
+			# 	h = core.Hits()
+			# 	h.load(self.path+file)
+
+			# 	if words[3] == HitsType.EX.value:
+			# 		key = HitsKey(words[1], HitsType.EX, nRay)
+			# 		self.hits[key] = h
+
+			# 	if words[3] == HitsType.ALL.value:
+			# 		key = HitsKey(words[1], HitsType.ALL, nRay)
+			# 		self.hits[key] = h
 
 			if words[0] == 'im':
 				self.loadImage(words[1], self.path+file)
 				
 		print()
-
-
-	def match(self, words, query):
-		res = True
-		for i in range(len(query)):
-			if len(query[i])>0:
-				res = res and words[i] == query[i]
-		return res
