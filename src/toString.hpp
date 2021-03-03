@@ -70,6 +70,25 @@ std::string str(const Material& m){
 	return s;
 }
 
+std::string str(const hitpoint& hit){
+	std::string s;
+
+	s += "position          : " + str(hit.p) + "\n";
+	s += "normal            : " + str(hit.n) + "\n";
+	s += "normal(g)         : " + str(hit.ng) + "\n";
+	s += "wo                : " + str(hit.wo) + "\n";
+	s += "material          : " + str(hit.mtlID) + "\n";
+	s += "pixel index       : " + str(hit.pixel) + "\n";
+	s += "radius            : " + str(hit.R) + "\n";
+	s += "photon count      : " + str(hit.N) + "\n";
+	s += "radiance          : " + str(hit.tau) + "\n";
+	s += "throupu           : " + str(hit.weight) + "\n";
+	s += "itration count    : " + str(hit.iteration) + "\n";
+	s += "target event count: " + str(hit.depth) + "\n";
+
+	return s;
+}
+
 std::string str(const Camera& c){
 	glm::mat3 w = glm::transpose(c.toWorld);
 	

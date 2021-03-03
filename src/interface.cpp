@@ -18,6 +18,9 @@ std::string Scene_str(const Scene& s){return str(s);}
 
 void setMaterial(Scene& scene, uint32_t id, Material m){scene.materials[id] = m;}
 
+
+std::string Hitpoint_str(const hitpoint& h){return str(h);}
+
 std::string save_hitpoints(std::vector<hitpoint>& data, const std::string& name){
 	std::string result;
 	if(writeVector(data, name))
@@ -37,6 +40,7 @@ std::string load_hitpoints(std::vector<hitpoint>& data, const std::string& name)
 void clearHitpoints(std::vector<hitpoint>& hits, float R0){
 	for(hitpoint& hit : hits)hit.clear(R0);
 }
+
 
 void load_image(Image& image, const std::string name){image.load(name);}
 
@@ -154,7 +158,8 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("tau", &hitpoint::tau)
 		.def_readwrite("weight", &hitpoint::weight)
 		.def_readwrite("iteration", &hitpoint::iteration)
-		.def_readwrite("depth", &hitpoint::depth);
+		.def_readwrite("depth", &hitpoint::depth)
+		.def("__str__", Hitpoint_str);
 
 	class_<std::vector<hitpoint>>("vec_hitpoint")
 		.def(vector_indexing_suite<std::vector<hitpoint>>())
