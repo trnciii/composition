@@ -2,7 +2,13 @@ from ..core.composition import vec3
 from .RampData import RampData
 from . import basis
 
-## instant helper
+## vector helper
+def add(a, b):
+	return vec3(a.x+b.x, a.y+b.y, a.z+b.z)
+
+def mul(a, b):
+	return vec3(a.x*b.x, a.y*b.y, a.z*b.z)
+
 def dot(x1, x2):
 	return x1.x*x2.x + x1.y*x2.y + x1.z*x2.z
 
@@ -36,8 +42,11 @@ def cel_diffuse(ramp, p):
 def cel_specular(ramp, p):
 	def f(hit):
 		l = normalize(vec3(p[0]-hit.p.x, p[1]-hit.p.y, p[2]-hit.p.z))
-		m = normalize(vec3(l.x+hit.wo.x, l.y+hit.wo.y, l.z+hit.wo.z))
-		d = dot(m, hit.n)
+
+		no = 2*dot(hit.n, hit.wo)
+		r = add( mul(hit.wo, vec3(-1, -1, -1)), mul(hit.n, vec3(no, no, no)) )
+
+		d = dot(l, r)
 		return ramp.eval(0.5*d + 0.5)
 	return f
 
