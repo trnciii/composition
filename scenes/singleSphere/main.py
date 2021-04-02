@@ -19,7 +19,7 @@ def target0():
     return remap
 
 targetMaterials = ['sphere']
-targetRemap = [target0()]
+targetRemap = {'sphere' : target0()}
 
 spheres = ['Sphere.001', 'Sphere']
 meshes = ['floor']
@@ -34,19 +34,28 @@ def render():
     cmp.pt_ref('pt', 1000)
     cmp.saveImage('pt')
     
-    cmp.ppm_ref('ppm', param)
-    return
-
     cmp.pt_nt('nt', 1000)
     cmp.saveImage('nt')
     print()
 
-    cmp.pt_targets(param, 100000)
-    cmp.pt_targets_ex(param, 100000)
+    for n in cmp.targetNames:
+        cmp.genHits_ex(n, param.nRay, param.R0)
+        cmp.genHits_all(n, param.nRay, param.R0)
 
+    for k, h in cmp.hits.items():
+        print(k)
 
-    cmp.remapAll([col.basis.radiance]*len(cmp.targetNames))
-    print('-- end renderingz --')
+        if k.type is composition.HitsType.EX:
+            cmp.radiance_pt(h, 100000)
+            # cmp.radiance_ppm(h, param)
+        
+        cmp.saveHits(k, param.nRay)
+
+        print()
+
+    cmp.remapAll({n : col.basis.radiance for n in cmp.targetNames})
+
+    print('-- end rendering --')
 
 def remap():
     print('\033[36mremapping\033[0m')

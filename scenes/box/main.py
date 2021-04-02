@@ -74,10 +74,9 @@ def render():
 
     cmp.pt_ref('pt', 1000)
     cmp.saveImage('pt')
-    return
 
-    # cmp.pt_nt('nt', 1000)
-    # cmp.saveImage('nt')
+    cmp.pt_nt('nt', 1000)
+    cmp.saveImage('nt')
 
     for t in cmp.targetNames:
         cmp.genHits_ex(t, param.nRay, param.R0)
@@ -89,7 +88,7 @@ def render():
         print(k)
 
         if k.type is composition.HitsType.EX:
-            cmp.radiance_pt(h, 1000)
+            cmp.radiance_pt(h, 10000)
             # cmp.radiance_ppm(h, param)
         
         cmp.saveHits(k, param.nRay)

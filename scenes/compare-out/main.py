@@ -38,26 +38,29 @@ def target0():
         return r
 
     composition.bi.rampToImage(targetMaterials[0]+'_texture', ramp, 256, 16)
-    remap = composition.bi.ramp(u, ramp)
-    return remap
+
+    return composition.bi.ramp(u, ramp)
+
+    # ramp_bin = col.RampData([(0, [0., 0., 1.]), (0.5, [1., 0., 0.])], 'const')
+    # l =  bpy.data.objects['Sphere.001'].location
+    # return col.basis.cel_diffuse(ramp_bin, list(l))
+
 
 targetMaterials = ['target1']
-targetRemap = [target0()]
+targetRemap = {'target1' : target0()}
+
 #targetRemap = [col.basis.const(0.8, 0.7, 0.2)]
 #targetRemap = [col.basis.radiance]
 
 spheres = ['Sphere', 'Sphere.001']
-meshes = [
-    'Sphere.002',
-    'right.001'
-]
+meshes = ['Sphere.002','right.001']
 
 def render():
     print('\033[36mrendering\033[0m')
-    cmp = composition.bi.Context()
+    cmp = composition.Context()
     cmp.scene.create(spheres, meshes, targetMaterials)
     cmp.setTargets(targetMaterials)
-    print(cmp.scene)
+    print(cmp.scene.data)
     time.sleep(0.1)
 
     cmp.pt_ref('pt', 1000)
@@ -65,15 +68,29 @@ def render():
 
     cmp.pt_nt('nt', 1000)
     cmp.saveImage('nt')
-    print('')
 
-    cmp.ppm_targets(param)
-    cmp.ppm_targets_ex(param)
+    for t in cmp.targetNames:
+        cmp.genHits_ex(t, param.nRay, param.R0)
+        cmp.genHits_all(t, param.nRay, param.R0)
 
-    cmp.remapAll([col.basis.radiance]*len(cmp.targetNames))
+    print()
+
+    for k, h in cmp.hits.items():
+        print(k)
+
+        if k.type is composition.HitsType.EX:
+            # cmp.radiance_pt(h, 1000)
+            cmp.radiance_ppm(h, param)
+        
+        cmp.saveHits(k, param.nRay)
+
+        print()
+
+
+    cmp.remapAll({n : col.basis.radiance for n in cmp.targetNames})
     
-    print('-- end rendering --')
     return
+
 
 def remap():
     print('\033[36mremapping\033[0m')
