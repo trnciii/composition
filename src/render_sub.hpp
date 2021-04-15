@@ -252,3 +252,51 @@ glm::vec3 pathTracingKernel_notTarget(Ray ray, const Scene& scene, RNG& rand){
 	}
 	return glm::vec3(0);
 }
+
+glm::vec3 RGBtoXYZ(const glm::vec3& rgb){
+	glm::vec3 xyz;
+
+	xyz[0] = rgb[0] * 0.4124 + rgb[1] * 0.3576 + rgb[2] * 0.1805;
+	xyz[1] = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+	xyz[2] = rgb[0] * 0.0193 + rgb[1] * 0.1192 + rgb[2] * 0.9505;
+
+	xyz[0] /= 0.95047;
+	xyz[2] /= 108.883;
+
+	return xyz;
+}
+
+glm::vec3 nprrKernel(Ray ray, const Scene& scene, RNG& rng,
+	const std::vector<std::function<glm::vec3(float)>>& remaps)
+{
+	const std::vector<uint32_t>& targets = scene.targetMaterials;
+	glm::vec3 throuput(1);
+
+	const Intersection is = intersect(ray, scene);
+	const Material& mtl = scene.materials[is.mtlID];
+
+	if(mtl.type == Material::Type::EMIT)
+		return throuput*mtl.color;
+
+	const float r = 0.9;
+	float pTerminate = std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+	if(pTerminate > r) pTerminate = r;
+
+	if(rng.uniform() < pTerminate){
+		sampleBSDF(&ray, &throuput, is, mtl, rng);
+
+		auto it = std::find(targets.begin(), targets.end(), is.mtlID);
+		if(it != targets.end()){
+			// on a target material
+			glm::vec3 L = nprrKernel(ray, scene, rng, remaps);
+			float I = RGBtoXYZ(L).y;
+			glm::vec3 c = remaps[it - targets.begin()](I);
+
+			return c * std::max(I, 0.1f) / pTerminate;
+		}
+		else
+			// on a ordinary material
+			return throuput * nprrKernel(ray, scene, rng, remaps) / pTerminate;
+	}
+	else return glm::vec3(0);
+}
