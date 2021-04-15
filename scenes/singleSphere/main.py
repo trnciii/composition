@@ -5,12 +5,11 @@ col = composition.color
 
 # define ramps
 
-param_preview = composition.core.PPMParam()
-param_preview.nRay = 8
-param_preview.nPhoton = 50000
-param_preview.itr = 20
-
-param = param_preview
+param = composition.core.PPMParam()
+param.nRay = 8
+param.R0 = 0.5
+param.nPhoton = 50000
+param.itr = 1
 
 def target0():
     ramp = 'ColorRamp.001'
@@ -24,7 +23,7 @@ targetRemap = {'sphere' : target0()}
 spheres = ['Sphere.001', 'Sphere']
 meshes = ['floor']
 
-def render():
+def render_2():
     cmp = composition.bi.Context()
     cmp.scene.create(spheres, meshes, targetMaterials)
     cmp.setTargets(targetMaterials)
@@ -46,8 +45,8 @@ def render():
         print(k)
 
         if k.type is composition.HitsType.EX:
-            cmp.radiance_pt(h, 100000)
-            # cmp.radiance_ppm(h, param)
+            # cmp.radiance_pt(h, 1000)
+            cmp.radiance_ppm(h, param)
         
         cmp.saveHits(k, param.nRay)
 
@@ -70,5 +69,26 @@ def remap():
     print('-- end reamapping --')
     return
 
-render()
-remap()
+def render_1():
+    cmp = composition.bi.Context()
+    cmp.scene.create(spheres, meshes, targetMaterials)
+    cmp.setTargets(targetMaterials)
+    print(cmp.scene.data)
+    time.sleep(0.1)
+
+    nodes = {'sphere' : 'ColorRamp.001'}
+    
+    remap = []
+
+    for k, node in nodes.items():
+        image = k+'_texture'
+        composition.bi.rampToImage(image, node, 256, 16)
+        remap.append((composition.sliceImage(image, 8), 0, 10))
+
+    cmp.nprr('nprr', 1000, remap)
+
+    print('-- end nprr --')
+
+render_1()
+# render_2()
+# remap()
