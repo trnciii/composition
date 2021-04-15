@@ -21,10 +21,13 @@ def rampToImage(name, ramp, w, h):
 		c = [1., 0., 1.]
 		if isinstance(ramp, color.RampData):
 			c = case_RampData()
-		if isinstance(ramp, list):
+		elif isinstance(ramp, list):
 			c = case_image()
-		if ramp in nodes.keys():
+		elif ramp in nodes.keys():
 			c = list(nodes[ramp].color_ramp.evaluate(i/w))
+		else:
+			print('failed to find ramp data <{}>'.format(name))
+			return
 
 		for j in range(h):
 			idx = j*w + i
