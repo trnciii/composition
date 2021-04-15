@@ -83,7 +83,7 @@ class Context:
 		self.copyImage(key)
 
 	def ppm_ref(self, key, param):
-		print( 'progressive photon mapping:\n'+str(param) )
+		print('progressive photon mapping:\n'+str(param) )
 		self.bindImage(key)
 		self.images[key] = core.ppm(self.w, self.h, self.scene.data,
 			param.nRay, param.nPhoton, param.itr, param.alpha, param.R0,
@@ -94,6 +94,12 @@ class Context:
 		print('path tracing except for targets with sample size', spp)
 		self.bindImage(key)
 		self.images[key] = core.pt_notTarget(self.w, self.h, self.scene.data, spp, self.rng_pixel)
+		self.copyImage(key)
+
+	def nprr(self, key, spp, remap):
+		print('nprr path tracing with', spp, 'sample')
+		self.bindImage(key)
+		self.images[key] = core.nprr(self.w, self.h, self.scene.data, spp, self.rng_pixel, remap)
 		self.copyImage(key)
 
 	def genHits_ex(self, target, nRay, R0):
