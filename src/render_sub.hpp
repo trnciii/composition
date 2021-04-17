@@ -214,18 +214,19 @@ void sampleBSDF(Ray* ray, glm::vec3* throuput,
 glm::vec3 pathTracingKernel(Ray ray, const Scene& scene, RNG& rand){
 	glm::vec3 throuput(1);
 	float pTerminate = 1;
+	float r = 0.99;
 
 	while(rand.uniform() < pTerminate){
 		const Intersection is = intersect(ray, scene);
 		const Material& mtl = scene.materials[is.mtlID];
+		throuput /= pTerminate;
 
 		if(mtl.type == Material::Type::EMIT)
 			return throuput*mtl.color;
 
 		sampleBSDF(&ray, &throuput, is, mtl, rand);
-		throuput /= pTerminate;
-		pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-		if(pTerminate > 0.99)pTerminate = 0.99;
+		pTerminate = std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
+		if(pTerminate > r) pTerminate = r;
 	}
 	return glm::vec3(0);
 }
@@ -234,10 +235,12 @@ glm::vec3 pathTracingKernel_notTarget(Ray ray, const Scene& scene, RNG& rand){
 	const std::vector<uint32_t>& targets = scene.targetMaterials;
 	glm::vec3 throuput(1);
 	float pTerminate = 1;
+	float r = 0.99;
 
 	while(rand.uniform() < pTerminate){
 		const Intersection is = intersect(ray, scene);
 		const Material& mtl = scene.materials[is.mtlID];
+		throuput /= pTerminate;
 
 		if(mtl.type == Material::Type::EMIT)
 			return throuput*mtl.color;
@@ -246,9 +249,8 @@ glm::vec3 pathTracingKernel_notTarget(Ray ray, const Scene& scene, RNG& rand){
 			return glm::vec3(0);
 
 		sampleBSDF(&ray, &throuput, is, mtl, rand);
-		throuput /= pTerminate;
 		pTerminate *= std::max(mtl.color.x, std::max(mtl.color.y, mtl.color.z));
-		if(pTerminate > 0.99) pTerminate = 0.99;
+		if(pTerminate > r) pTerminate = r;
 	}
 	return glm::vec3(0);
 }
