@@ -12,3 +12,6 @@ text/
 
 main
 main.exe
+
+Makefile
+lib
