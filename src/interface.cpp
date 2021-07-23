@@ -102,7 +102,7 @@ void addMesh(Scene& scene,
 			(extract<uint32_t>(index[2])),	// v2
 			(extract<glm::vec3>(index[3])),	// normal
 			(extract<bool>(index[4])),		// smooth	
-			(extract<uint32_t>(index[5]))	// matgrial
+			(extract<uint32_t>(index[5]))	// material
 		});
 	}
 
