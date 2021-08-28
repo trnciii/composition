@@ -169,7 +169,26 @@ BOOST_PYTHON_MODULE(composition){
 	class_<glm::vec3>("vec3", init<float, float, float>())
 		.def_readwrite("x", &glm::vec3::x)
 		.def_readwrite("y", &glm::vec3::y)
-		.def_readwrite("z", &glm::vec3::z);
+		.def_readwrite("z", &glm::vec3::z)
+
+		.def(self + glm::vec3())
+		.def(self * glm::vec3())
+		.def(self - glm::vec3())
+		.def(self / glm::vec3())
+
+		.def(self + float())
+		.def(self - float())
+		.def(self * float())
+		.def(self / float())
+		.def(float() + self)
+		.def(float() - self)
+		.def(float() * self)
+
+		.def(self += glm::vec3())
+		.def(self -= glm::vec3())
+		.def(self *= glm::vec3())
+		.def(self /= glm::vec3());
+
 
 	class_<std::vector<glm::vec3>>("vec_vec3")
 		.def(vector_indexing_suite<std::vector<glm::vec3>>());
