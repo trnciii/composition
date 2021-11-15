@@ -10,19 +10,15 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/composition/core)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/composition/core)
 
 # include libs
-find_package(PythonLibs 3.7 REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
-
-find_package(Boost COMPONENTS python REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
+set(PYBIND11_PYTHON_VERSION 3.9)
+add_subdirectory(${PROJECT_SOURCE_DIR}/ext/pybind11)
 
 find_package(OpenMP REQUIRED)
 
 find_package(GLM REQUIRED)
 include_directories(${GLM_INCLUDE_DIRS})
 
-find_package(STB_IMAGE REQUIRED)
-include_directories(${STB_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/ext)
 
 
 # options
@@ -37,11 +33,9 @@ if(APPLE)
 	add_library(composition SHARED src/interface.cpp src/composition.cpp)
 	set_target_properties(composition PROPERTIES PREFIX "")
 	set_target_properties(composition PROPERTIES SUFFIX ".so")
-	target_link_libraries(composition PRIVATE ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} OpenMP::OpenMP_CXX)
+	target_link_libraries(composition PRIVATE OpenMP::OpenMP_CXX)
 else()
-	add_library(composition SHARED src/interface.cpp src/composition.cpp)
-	set_target_properties(composition PROPERTIES PREFIX "")
-	target_link_libraries(composition ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+	pybind11_add_module(composition src/interface.cpp src/composition.cpp)
 endif()
 
 # add the cpp only executable

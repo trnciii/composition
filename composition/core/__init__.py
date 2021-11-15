@@ -2,7 +2,7 @@
 from .composition import vec3
 
 from .composition import hitpoint as Hit
-from .composition import vec_hitpoint as Hits
+# from .composition import vec_hitpoint as Hits
 
 from .composition import createRNGs
 
