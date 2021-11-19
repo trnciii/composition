@@ -10,7 +10,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/composition/core)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/composition/core)
 
 # include libs
-find_package(PythonLibs 3.7 REQUIRED)
+find_package(PythonLibs 3.9 REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 find_package(Boost COMPONENTS python REQUIRED)
