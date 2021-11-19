@@ -128,21 +128,6 @@ void addMesh(Scene& scene,
 	scene.addMesh(m);
 }
 
-void setCamera(Camera& camera, const std::vector<float>& m, float focal){
-	camera.flen = focal;
-
-	if(m.size()!=16){
-		std::cout <<"wrong input" <<std::endl;
-		return;
-	}
-
-	camera.position = glm::vec3(m[3], m[7], m[11]);
-
-	camera.toWorld[0] = glm::vec3(m[ 0], m[ 4], m[ 8]);
-	camera.toWorld[1] = glm::vec3(m[ 1], m[ 5], m[ 9]);
-	camera.toWorld[2] = glm::vec3(m[ 2], m[ 6], m[10]);
-}
-
 
 PYBIND11_MODULE(composition, m){
 
@@ -208,8 +193,6 @@ PYBIND11_MODULE(composition, m){
 		.def("__str__", Scene_str);
 	
 	py::class_<Camera>(m, "Camera")
-		// .def_readwrite("toWorld", &Camera::toWorld)
-		// .def_readwrite("position", &Camera::position)
 		.def_property("toWorld",
 			[](const Camera& self){
 				return (py::array_t<float>)py::buffer_info(
@@ -222,9 +205,12 @@ PYBIND11_MODULE(composition, m){
 					);
 			},
 			[](Camera& self, py::array_t<float>& x){
-				auto r = x.mutable_unchecked<2>();
-				assert(x.shape(0) == 3 && x.shape(1) == 3);
-				memcpy(&self.toWorld, r.data(0,0), 9*sizeof(float));
+				auto r = x.unchecked<2>();
+				assert(r.shape(0) == 3 && r.shape(1) == 3);
+				for(int i=0; i<3; i++){
+					for(int j=0; j<3; j++)
+						self.toWorld[i][j] = r(j, i); // row major (numpy) to column major (glm)
+				}
 			})
 		.def_property("position", PROPERTY_FLOAT3(Camera, position))
 		.def_readwrite("focalLength", &Camera::flen)
