@@ -169,5 +169,6 @@ class Scene:
 		cam = bpy.context.scene.camera
 		cam.data.sensor_fit = 'VERTICAL'
 		f = 2*cam.data.lens/cam.data.sensor_height
-		mat = sum([list(r) for r in cam.matrix_world], [])
-		self.data.camera.setSpace(mat, f)
+		mat = cam.matrix_world
+		self.data.camera.position = mat.to_translation()
+		self.data.camera.toWorld = mat.to_3x3()

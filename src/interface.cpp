@@ -1,5 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 
 #include <algorithm>
 #include <string>
@@ -14,6 +16,22 @@
 
 
 namespace py = pybind11;
+
+
+#define PROPERTY_FLOAT3(Class, member)                  \
+	[](const Class& self){                                \
+		return (py::array_t<float>)py::buffer_info(         \
+			(float*)&self.member,                             \
+			sizeof(float),                                    \
+			py::format_descriptor<float>::format(),           \
+			1,{3},{sizeof(float)}                             \
+			);                                                \
+	},                                                    \
+	[](Class& self, py::array_t<float>& x){               \
+		auto r = x.mutable_unchecked<1>();                  \
+		assert(r.shape(0) == 3);                            \
+		memcpy(&self.member, x.data(0), sizeof(glm::vec3)); \
+	}
 
 
 std::string Scene_str(const Scene& s){return str(s);}
@@ -39,7 +57,7 @@ std::string load_hitpoints(std::vector<hitpoint>& data, const std::string& name)
 		return "failed to read hitpoints from " + name;
 }
 
-void clearHitpoints(std::vector<hitpoint>& hits, float R0){
+void clear_hitpoints(std::vector<hitpoint>& hits, float R0){
 	for(hitpoint& hit : hits)hit.clear(R0);
 }
 
@@ -154,16 +172,6 @@ PYBIND11_MODULE(composition, m){
 		.def(py::self /= glm::vec3());
 
 
-	// class_<std::vector<glm::vec3>>("vec_vec3")
-		// .def(vector_indexing_suite<std::vector<glm::vec3>>());
-
-	// class_<std::vector<uint32_t>>("vec_uint32t")
-		// .def(vector_indexing_suite<std::vector<uint32_t>>());
-
-	// class_<std::vector<float>>("vec_float")
-		// .def(vector_indexing_suite<std::vector<float>>());
-
-
 	py::class_<hitpoint>(m, "hitpoint")
 		.def_readwrite("p", &hitpoint::p)
 		.def_readwrite("n", &hitpoint::n)
@@ -178,18 +186,17 @@ PYBIND11_MODULE(composition, m){
 		.def_readwrite("depth", &hitpoint::depth)
 		.def("__str__", Hitpoint_str);
 
-	// py::class_<std::vector<hitpoint>>("vec_hitpoint")
-	// 	.def(vector_indexing_suite<std::vector<hitpoint>>())
-	// 	.def("save", save_hitpoints)
-	// 	.def("load", load_hitpoints)
-	// 	.def("clear", clearHitpoints);
+	m.def("save_hitpoints", save_hitpoints)
+		.def("load_hitpoints", load_hitpoints)
+		.def("clear_hitpoints", clear_hitpoints);
 
-	py::class_<std::vector<RNG>>(m, "rngs");
+	py::class_<RNG>(m, "rng");
 
 	m.def("createRNGs", createRNGVector);
 
 	// scene
 	py::class_<Scene>(m, "Scene")
+		.def(py::init<>())
 		.def_readwrite("camera", &Scene::camera)
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("targetIDs", &Scene::targetMaterials)
@@ -201,11 +208,28 @@ PYBIND11_MODULE(composition, m){
 		.def("__str__", Scene_str);
 	
 	py::class_<Camera>(m, "Camera")
-		.def_readwrite("toWorld", &Camera::toWorld)
-		.def_readwrite("position", &Camera::position)
+		// .def_readwrite("toWorld", &Camera::toWorld)
+		// .def_readwrite("position", &Camera::position)
+		.def_property("toWorld",
+			[](const Camera& self){
+				return (py::array_t<float>)py::buffer_info(
+					(float*)&self.toWorld,
+					sizeof(float),
+					py::format_descriptor<float>::format(),
+					2,
+					{3, 3},
+					{sizeof(glm::vec3), sizeof(float)}
+					);
+			},
+			[](Camera& self, py::array_t<float>& x){
+				auto r = x.mutable_unchecked<2>();
+				assert(x.shape(0) == 3 && x.shape(1) == 3);
+				memcpy(&self.toWorld, r.data(0,0), 9*sizeof(float));
+			})
+		.def_property("position", PROPERTY_FLOAT3(Camera, position))
 		.def_readwrite("focalLength", &Camera::flen)
-		.def("setDirection", &Camera::setDirection)
-		.def("setSpace", setCamera);
+		.def("setDirection", &Camera::setDirection);
+
 
 	py::enum_<Material::Type>(m, "MtlType")
 		.value("emit", Material::Type::EMIT)
@@ -215,6 +239,7 @@ PYBIND11_MODULE(composition, m){
 		.export_values();
 
 	py::class_<Material>(m, "Material")
+		.def(py::init<>())
 		.def_readwrite("name", &Material::name)
 		.def_readwrite("type", &Material::type)
 		.def_readwrite("color", &Material::color)
