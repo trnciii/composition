@@ -16,7 +16,7 @@
 #include "file.hpp"
 #include "toString.hpp"
 
-glm::vec3 colormap_4(double u){
+glm::vec3 colormap_4(float u){
 	if(u<0.25) return glm::vec3(0.1 , 0.1 , 0.85);
 	if(u<0.5 ) return glm::vec3(0.1 , 0.85, 0.1 );
 	if(u<0.75) return glm::vec3(0.85, 0.85, 0.1 );
@@ -66,6 +66,25 @@ int main(void){
 	if(scene.targetMaterials.size()==0){
 		puts("no target");
 		return 0;
+	}
+
+
+	{
+		std::cout <<"nprr " <<std::flush;
+
+		std::vector<std::function<glm::vec3(float)>> remaps(0);
+		for(int i=0; i<scene.targetMaterials.size(); i++)
+			remaps.push_back(colormap_4);
+
+		images["nprr"] = nprr(dim.x, dim.y, scene, 200, rng_per_pixel, remaps);
+	}
+
+
+	std::cout <<std::endl;
+	for(auto& [key, image] : images){
+		std::string name = outDir+"/"+key+".png";
+		if(writeImage(image.data(), image.w, image.h, name))
+			std::cout <<"saved " <<name <<std::endl;
 	}
 
 

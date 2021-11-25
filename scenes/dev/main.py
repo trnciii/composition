@@ -132,5 +132,31 @@ def remap():
     cmp.remapAll(targetRemap)
     cmp.maskAll()
 
-render()
-remap()
+def nprr():
+    cmp = composition.bi.Context()
+    cmp.scene.create(spheres, meshes, targetMaterials)
+    cmp.setTargets(targetMaterials)
+    print(cmp.scene.data)
+    time.sleep(0.1)
+
+    nodes = {
+        'target1' : col.RampData(ramp_green),
+        'target2' : col.RampData(ramp_red),
+        'glossy' : 'ColorRamp.002'
+    }
+
+    remap = []
+
+    # the order of remapping may not match
+    for key, node in nodes.items():
+        image = key + '_texture'
+        composition.bi.rampToImage(image, node, 256, 16)
+        remap.append((composition.sliceImage(image, 8), 0, 35))
+
+    cmp.nprr('nprr', 1000, remap)
+
+    print('-- end nprr --')
+
+nprr()
+# render()
+# remap()

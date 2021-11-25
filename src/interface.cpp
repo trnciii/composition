@@ -127,6 +127,40 @@ void setCamera(Camera& camera, const boost::python::list& m, float focal){
 	camera.toWorld[2] = glm::vec3(extract<float>(m[ 2]), extract<float>(m[ 6]), extract<float>(m[10]));
 }
 
+Image _nprr(const int w, const int h, const Scene& scene,
+	const int spp, std::vector<RNG>& rng_per_pixel,
+	const boost::python::list& remaps_py)
+{
+	using namespace boost::python;
+
+	std::vector<std::function<glm::vec3(float)>> remaps_cpp;
+	for(int i=0; i<len(remaps_py); i++){
+		list data = extract<list>(remaps_py[i][0]);
+		float min = extract<float>(remaps_py[i][1]);
+		float max = extract<float>(remaps_py[i][2]);
+
+		std::vector<glm::vec3> image(0);
+		for(int j=0; j<len(data); j++){
+			list px = extract<list>(data[j]);
+			image.push_back(glm::vec3(extract<float>(px[0]), extract<float>(px[1]), extract<float>(px[2])));
+		}
+
+		remaps_cpp.push_back([image, min, max](float u){
+			u = (u-min)/(max-min);
+
+			int w = image.size();
+			int co = u*w;
+
+			if(co < 0) co = 0;
+			if(w-1 < co) co = w-1;
+
+			return image[co];
+		});
+	}
+
+	return nprr(w, h, scene, spp, rng_per_pixel, remaps_cpp);
+}
+
 
 BOOST_PYTHON_MODULE(composition){
 	using namespace boost::python;
@@ -247,4 +281,7 @@ BOOST_PYTHON_MODULE(composition){
 	def("radiance_pt", radiance_PT);
 
 	def("hitsToImage_cpp", hitsToImage);
+
+	// nprr
+	def("nprr", _nprr);
 }

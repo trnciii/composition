@@ -6,7 +6,7 @@ HitsType = composition.HitsType
 
 param = composition.core.PPMParam()
 param.nRay = 16
-param.nPhoton = 1000
+param.nPhoton = 100000
 param.itr = 200
 
 
@@ -19,24 +19,31 @@ ramp_green2 = [
 
 ramp_red0 = [
     (0, [0.1, 0.02, 0.02]),
-    (0.25, [0.5, 0.4, 0.8]),
     (0.3, [0.5, 0.1, 0.1]),
     (0.65, [0.8, 0.7, 0.2]),
     (1.5, [1, 1, 0.95])
 ]
 
 
-def target0():
+def cel0():
+    l =  bpy.data.objects['Sphere.001'].location
     ramp = col.RampData(ramp_green2, 'const')    
+    return col.basis.cel_specular(ramp, list(l))
+
+def cel1():
+    l =  bpy.data.objects['Sphere.001'].location
+    ramp = col.RampData(ramp_red0, 'linear')    
+    return col.basis.cel_specular(ramp, list(l))
+
+
+def target0():
     # print(ramp)
     # remap = col.basis.ramp(col.basis.sumRadianceRGB, ramp)
-    # ramp = 'ColorRamp'
-    # l =  bpy.data.objects['Sphere.001'].location
+    ramp = 'ColorRamp'
 
     composition.rampToImage(targetMaterials[0]+'_texture', ramp, 256, 16)
 
     remap = composition.ramp(col.basis.sumRadianceRGB, ramp)
-    # remap = col.basis.cel_diffuse(ramp, list(l))
 
     return remap
 
@@ -88,8 +95,8 @@ def render():
         print(k)
 
         if k.type is composition.HitsType.EX:
-            cmp.radiance_pt(h, 10000)
-            # cmp.radiance_ppm(h, param)
+            # cmp.radiance_pt(h, 10000)
+            cmp.radiance_ppm(h, param)
         
         cmp.saveHits(k, param.nRay)
 
@@ -97,7 +104,7 @@ def render():
 
 
     cmp.remapAll({n : col.basis.radiance for n in cmp.targetNames})
-    
+
     print()
     return
 
@@ -117,5 +124,30 @@ def remap():
     print()
     return
 
+def nprr():
+    cmp = composition.bi.Context()
+    cmp.scene.create(spheres, meshes, targetMaterials)
+    cmp.setTargets(targetMaterials)
+    print(cmp.scene.data)
+    time.sleep(0.1)
+
+    nodes = {
+        'target1' : 'ColorRamp',
+        'target2' : 'ColorRamp.001'
+    }
+    
+    remap = []
+
+    # the order of remapping may not match the materials
+    for key, node in nodes.items():
+        image = key+'_texture'
+        composition.bi.rampToImage(image, node, 256, 16)
+        remap.append((composition.sliceImage(image, 8), 0, 25))
+
+    cmp.nprr('nprr', 1000, remap)
+
+    print('-- end nprr --')
+
+nprr()
 # render()
-remap()
+# remap()

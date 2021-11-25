@@ -41,3 +41,7 @@ void radiance_PT(std::vector<hitpoint>& hits, const Scene& scene,
 void radiance_PPM(std::vector<hitpoint>& hits, const Scene& scene,
 	const int nPhoton, const int iteration, const float alpha,
 	std::vector<RNG>& rngs);
+
+Image nprr(const int w, const int h, const Scene& scene,
+	const int spp, std::vector<RNG>& rng_per_pixel,
+	const std::vector<std::function<glm::vec3(float)>>& remaps);

@@ -25,6 +25,8 @@ from .composition import radiance_ppm
 
 from .composition import hitsToImage_cpp
 
+from .composition import nprr
+
 # wrapped renderers
 from .helper import PPMParam
 from .helper import hitsToImage_py

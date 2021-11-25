@@ -474,3 +474,28 @@ void radiance_PT(std::vector<hitpoint>& hits, const Scene& scene,
 		}
 	}
 }
+
+Image nprr(const int w, const int h, const Scene& scene,
+	const int spp, std::vector<RNG>& rng_per_pixel,
+	const std::vector<std::function<glm::vec3(float)>>& remaps)
+{
+	Image image(w, h);
+
+	#pragma omp parallel for schedule(dynamic)
+	for(int i=0; i<w*h; i++){
+		int xi = i%w;
+		int yi = i/w;
+		RNG& rng = rng_per_pixel[i];
+
+		for(int n=0; n<spp; n++){
+			double x = (double) (2*(xi+rng.uniform())-w)/h;
+			double y = (double)-(2*(yi+rng.uniform())-h)/h;
+
+			Ray view = scene.camera.ray(x, y);			
+			image.pixels[i] += nprrKernel(view, scene, rng, remaps);
+		}
+		image.pixels[i] /= spp;
+	}
+
+	return image;
+}
