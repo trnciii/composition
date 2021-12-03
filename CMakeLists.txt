@@ -21,8 +21,7 @@ find_package(OpenMP REQUIRED)
 find_package(GLM REQUIRED)
 include_directories(${GLM_INCLUDE_DIRS})
 
-find_package(STB_IMAGE REQUIRED)
-include_directories(${STB_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/ext)
 
 
 # options
