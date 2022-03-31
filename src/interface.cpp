@@ -1,17 +1,42 @@
-#define BOOST_PYTHON_STATIC_LIB
-#define BOOST_DISABLE_PRAGMA_MESSAGE
-#include <boost/python.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/operators.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 #include <algorithm>
 #include <string>
 #include <omp.h>
+#include <iostream>
 
 #include "composition.hpp"
 #include "Image.hpp"
 #include "file.hpp"
 #include "data.hpp"
 #include "toString.hpp"
+
+
+namespace py = pybind11;
+
+
+#define PROPERTY_FLOAT3(Class, member)                  \
+	[](const Class& self){                                \
+		return (py::array_t<float>)py::buffer_info(         \
+			(float*)&self.member,                             \
+			sizeof(float),                                    \
+			py::format_descriptor<float>::format(),           \
+			1,{3},{sizeof(float)}                             \
+			);                                                \
+	},                                                    \
+	[](Class& self, py::array_t<float>& x){               \
+		auto r = x.mutable_unchecked<1>();                  \
+		assert(r.shape(0) == 3);                            \
+		memcpy(&self.member, x.data(0), sizeof(glm::vec3)); \
+	}
+
+
+PYBIND11_MAKE_OPAQUE(std::vector<int>);
+PYBIND11_MAKE_OPAQUE(std::vector<hitpoint>);
 
 
 std::string Scene_str(const Scene& s){return str(s);}
@@ -37,7 +62,7 @@ std::string load_hitpoints(std::vector<hitpoint>& data, const std::string& name)
 		return "failed to read hitpoints from " + name;
 }
 
-void clearHitpoints(std::vector<hitpoint>& hits, float R0){
+void clear_hitpoints(std::vector<hitpoint>& hits, float R0){
 	for(hitpoint& hit : hits)hit.clear(R0);
 }
 
@@ -61,7 +86,7 @@ inline std::vector<float> toBlenderImage(const Image& im){
 }
 
 void hitsToImage(const std::vector<hitpoint>& hits, Image& result,
-	const boost::python::object& remap)
+	const py::function& remap)
 {
 	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
 
@@ -69,7 +94,7 @@ void hitsToImage(const std::vector<hitpoint>& hits, Image& result,
 		const hitpoint& hit = hits[i];
 		if(i%(hits.size()/39) == 0) std::cout <<"+" <<std::flush;
 
-		const glm::vec3 t = boost::python::extract<glm::vec3>(remap(hit));
+		const glm::vec3 t = remap(hit).cast<glm::vec3>();
 		result.pixels[hit.pixel] += hit.weight * t;
 	}
 
@@ -78,31 +103,29 @@ void hitsToImage(const std::vector<hitpoint>& hits, Image& result,
 
 
 void addMesh(Scene& scene,
-	const boost::python::list& vertices,
-	const boost::python::list& indices,
+	const std::vector<py::list>& vertices,
+	const std::vector<py::list>& indices,
 	std::string name)
 {
-	using namespace boost::python;
-
 	Mesh m;
 	m.name = name;
 
-	for(int i=0; i<len(vertices); i++){
+	for(int i=0; i<vertices.size(); i++){
 		m.vertices.push_back({
-			extract<glm::vec3>(vertices[i][0]),	// position
-			extract<glm::vec3>(vertices[i][1])	// normal
+			vertices[i][0].cast<glm::vec3>(),	// position
+			vertices[i][1].cast<glm::vec3>()	// normal
 		});
 	}
 
-	for(int i=0; i<len(indices); i++){
-		const object& index = indices[i];
+	for(int i=0; i<indices.size(); i++){
+		const py::list& index = indices[i];
 		m.indices.push_back({
-			(extract<uint32_t>(index[0])),	// v0
-			(extract<uint32_t>(index[1])),	// v1
-			(extract<uint32_t>(index[2])),	// v2
-			(extract<glm::vec3>(index[3])),	// normal
-			(extract<bool>(index[4])),		// smooth	
-			(extract<uint32_t>(index[5]))	// material
+			index[0].cast<uint32_t>(),	// v0
+			index[1].cast<uint32_t>(),	// v1
+			index[2].cast<uint32_t>(),	// v2
+			index[3].cast<glm::vec3>(),	// normal
+			index[4].cast<bool>(),		// smooth
+			index[5].cast<uint32_t>()	// material
 		});
 	}
 
@@ -110,51 +133,26 @@ void addMesh(Scene& scene,
 	scene.addMesh(m);
 }
 
-void setCamera(Camera& camera, const boost::python::list& m, float focal){
-	using namespace boost::python;
 
-	camera.flen = focal;
-
-	if(len(m)!=16){
-		std::cout <<"wrong input" <<std::endl;
-		return;
-	}
-
-	camera.position = glm::vec3(extract<float>(m[3]), extract<float>(m[7]), extract<float>(m[11]));
-
-	camera.toWorld[0] = glm::vec3(extract<float>(m[ 0]), extract<float>(m[ 4]), extract<float>(m[ 8]));
-	camera.toWorld[1] = glm::vec3(extract<float>(m[ 1]), extract<float>(m[ 5]), extract<float>(m[ 9]));
-	camera.toWorld[2] = glm::vec3(extract<float>(m[ 2]), extract<float>(m[ 6]), extract<float>(m[10]));
-}
+using remap_for_nprr = std::tuple<std::vector<float>, float, float>;
 
 Image _nprr(const int w, const int h, const Scene& scene,
 	const int spp, std::vector<RNG>& rng_per_pixel,
-	const boost::python::list& remaps_py)
+	const std::vector<remap_for_nprr>& remaps_py)
 {
-	using namespace boost::python;
-
 	std::vector<std::function<glm::vec3(float)>> remaps_cpp;
-	for(int i=0; i<len(remaps_py); i++){
-		list data = extract<list>(remaps_py[i][0]);
-		float min = extract<float>(remaps_py[i][1]);
-		float max = extract<float>(remaps_py[i][2]);
-
-		std::vector<glm::vec3> image(0);
-		for(int j=0; j<len(data); j++){
-			list px = extract<list>(data[j]);
-			image.push_back(glm::vec3(extract<float>(px[0]), extract<float>(px[1]), extract<float>(px[2])));
-		}
-
+	for(const auto& remap : remaps_py){
+		const auto& [image, min, max] = remap;
 		remaps_cpp.push_back([image, min, max](float u){
 			u = (u-min)/(max-min);
 
-			int w = image.size();
+			int w = image.size()/3;
 			int co = u*w;
 
 			if(co < 0) co = 0;
 			if(w-1 < co) co = w-1;
 
-			return image[co];
+			return glm::vec3(image[3*co], image[3*co+1], image[3*co+2]);
 		});
 	}
 
@@ -162,45 +160,38 @@ Image _nprr(const int w, const int h, const Scene& scene,
 }
 
 
-BOOST_PYTHON_MODULE(composition){
-	using namespace boost::python;
+PYBIND11_MODULE(composition, m){
+
+	py::bind_vector<std::vector<int>>(m, "IntVector");
+	py::bind_vector<std::vector<hitpoint>>(m, "Hitpoints");
 
 	// basic data types
-	class_<glm::vec3>("vec3", init<float, float, float>())
+	py::class_<glm::vec3>(m, "vec3")
+		.def(py::init<float, float, float>())
 		.def_readwrite("x", &glm::vec3::x)
 		.def_readwrite("y", &glm::vec3::y)
 		.def_readwrite("z", &glm::vec3::z)
 
-		.def(self + glm::vec3())
-		.def(self * glm::vec3())
-		.def(self - glm::vec3())
-		.def(self / glm::vec3())
+		.def(py::self + glm::vec3())
+		.def(py::self * glm::vec3())
+		.def(py::self - glm::vec3())
+		.def(py::self / glm::vec3())
 
-		.def(self + float())
-		.def(self - float())
-		.def(self * float())
-		.def(self / float())
-		.def(float() + self)
-		.def(float() - self)
-		.def(float() * self)
+		.def(py::self + float())
+		.def(py::self - float())
+		.def(py::self * float())
+		.def(py::self / float())
+		.def(float() + py::self)
+		.def(float() - py::self)
+		.def(float() * py::self)
 
-		.def(self += glm::vec3())
-		.def(self -= glm::vec3())
-		.def(self *= glm::vec3())
-		.def(self /= glm::vec3());
-
-
-	class_<std::vector<glm::vec3>>("vec_vec3")
-		.def(vector_indexing_suite<std::vector<glm::vec3>>());
-
-	class_<std::vector<uint32_t>>("vec_uint32t")
-		.def(vector_indexing_suite<std::vector<uint32_t>>());
-
-	class_<std::vector<float>>("vec_float")
-		.def(vector_indexing_suite<std::vector<float>>());
+		.def(py::self += glm::vec3())
+		.def(py::self -= glm::vec3())
+		.def(py::self *= glm::vec3())
+		.def(py::self /= glm::vec3());
 
 
-	class_<hitpoint>("hitpoint")
+	py::class_<hitpoint>(m, "hitpoint")
 		.def_readwrite("p", &hitpoint::p)
 		.def_readwrite("n", &hitpoint::n)
 		.def_readwrite("wo", &hitpoint::wo)
@@ -214,18 +205,17 @@ BOOST_PYTHON_MODULE(composition){
 		.def_readwrite("depth", &hitpoint::depth)
 		.def("__str__", Hitpoint_str);
 
-	class_<std::vector<hitpoint>>("vec_hitpoint")
-		.def(vector_indexing_suite<std::vector<hitpoint>>())
-		.def("save", save_hitpoints)
-		.def("load", load_hitpoints)
-		.def("clear", clearHitpoints);
+	m.def("save_hitpoints", save_hitpoints)
+		.def("load_hitpoints", load_hitpoints)
+		.def("clear_hitpoints", clear_hitpoints);
 
-	class_<std::vector<RNG>>("rngs");
+	py::class_<RNG>(m, "rng");
 
-	def("createRNGs", createRNGVector);
+	m.def("createRNGs", createRNGVector);
 
 	// scene
-	class_<Scene>("Scene")
+	py::class_<Scene>(m, "Scene")
+		.def(py::init<>())
 		.def_readwrite("camera", &Scene::camera)
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("targetIDs", &Scene::targetMaterials)
@@ -236,21 +226,40 @@ BOOST_PYTHON_MODULE(composition){
 		.def("createBoxScene", createScene)
 		.def("__str__", Scene_str);
 	
-	class_<Camera>("Camera")
-		.def_readwrite("toWorld", &Camera::toWorld)
-		.def_readwrite("position", &Camera::position)
+	py::class_<Camera>(m, "Camera")
+		.def_property("toWorld",
+			[](const Camera& self){
+				return (py::array_t<float>)py::buffer_info(
+					(float*)&self.toWorld,
+					sizeof(float),
+					py::format_descriptor<float>::format(),
+					2,
+					{3, 3},
+					{sizeof(glm::vec3), sizeof(float)}
+					);
+			},
+			[](Camera& self, py::array_t<float>& x){
+				auto r = x.unchecked<2>();
+				assert(r.shape(0) == 3 && r.shape(1) == 3);
+				for(int i=0; i<3; i++){
+					for(int j=0; j<3; j++)
+						self.toWorld[i][j] = r(j, i); // row major (numpy) to column major (glm)
+				}
+			})
+		.def_property("position", PROPERTY_FLOAT3(Camera, position))
 		.def_readwrite("focalLength", &Camera::flen)
-		.def("setDirection", &Camera::setDirection)
-		.def("setSpace", setCamera);
+		.def("setDirection", &Camera::setDirection);
 
-	enum_<Material::Type>("MtlType")
+
+	py::enum_<Material::Type>(m, "MtlType")
 		.value("emit", Material::Type::EMIT)
 		.value("lambert", Material::Type::LAMBERT)
 		.value("glossy", Material::Type::GGX_REFLECTION)
 		.value("glass", Material::Type::GLASS)
 		.export_values();
 
-	class_<Material>("Material")
+	py::class_<Material>(m, "Material")
+		.def(py::init<>())
 		.def_readwrite("name", &Material::name)
 		.def_readwrite("type", &Material::type)
 		.def_readwrite("color", &Material::color)
@@ -259,29 +268,30 @@ BOOST_PYTHON_MODULE(composition){
 
 
 	// images
-	class_<Image>("Image", init<int, int>())
+	py::class_<Image>(m, "Image")
+		.def(py::init<int, int>())
+		.def(py::init<std::string>())
 		.def_readwrite("w", &Image::w)
 		.def_readwrite("h", &Image::h)
 		.def_readwrite("pixels", &Image::pixels)
-		.def(init<std::string>())
 		.def("save", &Image::save)
 		.def("load", load_image)
 		.def("toList", toBlenderImage);
 
 
 	// renderers
-	def("pt", PT);
-	def("ppm", PPM);
-	def("pt_notTarget", PT_notTarget);
+	m.def("pt", PT);
+	m.def("ppm", PPM);
+	m.def("pt_notTarget", PT_notTarget);
 
-	def("collectHits_target_exclusive", collectHitpoints_target_exclusive);
-	def("collectHits_target", collectHitpoints_target);
+	m.def("collectHits_target_exclusive", collectHitpoints_target_exclusive);
+	m.def("collectHits_target", collectHitpoints_target);
 	
-	def("radiance_ppm", radiance_PPM);
-	def("radiance_pt", radiance_PT);
+	m.def("radiance_ppm", radiance_PPM);
+	m.def("radiance_pt", radiance_PT);
 
-	def("hitsToImage_cpp", hitsToImage);
+	m.def("hitsToImage_cpp", hitsToImage);
 
 	// nprr
-	def("nprr", _nprr);
+	m.def("nprr", _nprr);
 }

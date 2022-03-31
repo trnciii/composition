@@ -1,6 +1,8 @@
 import bpy
 import time
 import math
+import numpy as np
+
 import composition
 col = composition.color
 
@@ -113,12 +115,13 @@ def render_1():
 	for k, node in nodes.items():
 		image = k+'_texture'
 		composition.bi.rampToImage(image, node, 256, 16)
-		remap.append((composition.sliceImage(image, 8), 0, 10))
+		array = np.array(composition.sliceImage(image, 8))
+		remap.append((array.flatten(), 0, 10))
 
 	cmp.nprr('nprr', 1000, remap)
 
 	print('-- end nprr --')
 
-# render_1()
-# render_2()
+render_1()
+render_2()
 remap()

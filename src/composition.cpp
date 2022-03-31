@@ -4,7 +4,6 @@
 
 #include "composition.hpp"
 
-#include "stb_image_write.h"
 #include <omp.h>
 #include <iostream>
 #include <string>
@@ -491,7 +490,7 @@ Image nprr(const int w, const int h, const Scene& scene,
 			double x = (double) (2*(xi+rng.uniform())-w)/h;
 			double y = (double)-(2*(yi+rng.uniform())-h)/h;
 
-			Ray view = scene.camera.ray(x, y);			
+			Ray view = scene.camera.ray(x, y);
 			image.pixels[i] += nprrKernel(view, scene, rng, remaps);
 		}
 		image.pixels[i] /= spp;

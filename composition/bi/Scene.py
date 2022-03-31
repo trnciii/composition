@@ -161,13 +161,17 @@ class Scene:
 			if s in bobjects.keys() and not bobjects[s].hide_get():
 				self.addSphere(s)
 
+		tids = []
 		for t in targets:
-			self.data.targetIDs.append(self.mtlBinding[t])
-			
+			tids.append(self.mtlBinding[t])
+		self.data.targetIDs = tids
+
+
 
 	def setCamera(self):
 		cam = bpy.context.scene.camera
 		cam.data.sensor_fit = 'VERTICAL'
 		f = 2*cam.data.lens/cam.data.sensor_height
-		mat = sum([list(r) for r in cam.matrix_world], [])
-		self.data.camera.setSpace(mat, f)
+		mat = cam.matrix_world
+		self.data.camera.position = mat.to_translation()
+		self.data.camera.toWorld = mat.to_3x3()
