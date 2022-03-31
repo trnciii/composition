@@ -1,3 +1,6 @@
 [submodule "ext/pybind11"]
 	path = ext/pybind11
 	url = https://github.com/pybind/pybind11
+[submodule "ext/glm"]
+	path = ext/glm
+	url = https://github.com/g-truc/glm
