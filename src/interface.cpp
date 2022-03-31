@@ -2,6 +2,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 
 #include <algorithm>
 #include <string>
@@ -32,6 +33,10 @@ namespace py = pybind11;
 		assert(r.shape(0) == 3);                            \
 		memcpy(&self.member, x.data(0), sizeof(glm::vec3)); \
 	}
+
+
+PYBIND11_MAKE_OPAQUE(std::vector<int>);
+PYBIND11_MAKE_OPAQUE(std::vector<hitpoint>);
 
 
 std::string Scene_str(const Scene& s){return str(s);}
@@ -130,6 +135,9 @@ void addMesh(Scene& scene,
 
 
 PYBIND11_MODULE(composition, m){
+
+	py::bind_vector<std::vector<int>>(m, "IntVector");
+	py::bind_vector<std::vector<hitpoint>>(m, "Hitpoints");
 
 	// basic data types
 	py::class_<glm::vec3>(m, "vec3")

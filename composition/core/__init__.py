@@ -2,6 +2,7 @@
 from .composition import vec3
 
 from .composition import hitpoint as Hit
+from .composition import Hitpoints
 from .composition import save_hitpoints
 from .composition import load_hitpoints
 from .composition import clear_hitpoints

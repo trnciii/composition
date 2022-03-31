@@ -143,8 +143,7 @@ class Context:
 		for hit in hits:
 			count[hit.pixel] += 1
 
-		for i in range(len(image.pixels)):
-			image.pixels[i] = core.vec3(count[i]/nRay, 0, 0)
+		image.pixels = [core.vec3(count[i]/nRay, 0, 0) for i in range(len(image.pixels))]
 
 		self.copyImage(ikey)
 
@@ -157,12 +156,14 @@ class Context:
 		for hit in hits:
 			d[hit.pixel] += hit.depth
 			count[hit.pixel] += 1
-			maxDepth = hit.depth if hit.depth > maxDepth else maxDepth
-		
-		if maxDepth>0:
-			for i in range(len(image.pixels)):
-				if count[i] > 0:
-					image.pixels[i] = core.vec3(d[i]/nRay/maxDepth, 0, 0)
+			if hit.depth > maxDepth:
+				maxDepth = hit.depth
+
+		image.pixels = [
+			core.vec3(d[i]/nRay/maxDepth, 0, 0) if count[i]>0
+			else core.vec3(0,0,0)
+			for i in range(len(image.pixels))
+		]
 
 		self.copyImage(key)
 		print("max depth of", key , ": ", maxDepth)
@@ -212,7 +213,7 @@ class Context:
 		for file in self.files:
 			key = toKey(file)
 			if key:
-				h = []
+				h = core.Hitpoints()
 				core.load_hitpoints(h, self.path + file)
 				self.hits[toKey(file)] = h
 
