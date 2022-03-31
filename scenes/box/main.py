@@ -1,6 +1,8 @@
 import bpy
 import time
 import composition
+import numpy as np
+
 col = composition.color
 HitsType = composition.HitsType
 
@@ -142,12 +144,13 @@ def nprr():
     for key, node in nodes.items():
         image = key+'_texture'
         composition.bi.rampToImage(image, node, 256, 16)
-        remap.append((composition.sliceImage(image, 8), 0, 25))
+        array = np.array(composition.sliceImage(image, 8))
+        remap.append((array.flatten(), 0, 25))
 
     cmp.nprr('nprr', 1000, remap)
 
     print('-- end nprr --')
 
 nprr()
-# render()
-# remap()
+render()
+remap()
