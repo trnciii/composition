@@ -27,6 +27,9 @@ def radiance(hit):
 def normal(hit):
 	return hit.n
 
+def position(hit):
+	return hit.p
+
 def const(x, y, z):
 	def f(hit):
 		return vec3(x, y, z)
