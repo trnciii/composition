@@ -37,80 +37,6 @@ namespace py = pybind11;
 
 PYBIND11_MAKE_OPAQUE(std::vector<hitpoint>);
 
-
-std::string Scene_str(const Scene& s){return str(s);}
-
-void setMaterial(Scene& scene, uint32_t id, Material m){scene.materials[id] = m;}
-
-
-std::string Hitpoint_str(const hitpoint& h){return str(h);}
-
-std::string save_hitpoints(std::vector<hitpoint>& data, const std::string& name){
-	std::string result;
-	if(writeVector(data, name))
-		return "Saved " + std::to_string(data.size()) + " hitpoints as " + name;
-	else
-		return "failed to save hitpoints as " + name;
-}
-
-std::string load_hitpoints(std::vector<hitpoint>& data, const std::string& name){
-	std::string result;
-	if(readVector(data, name))
-		return "Read " + std::to_string(data.size()) +  " hitpoints from " + name;
-	else
-		return "failed to read hitpoints from " + name;
-}
-
-void clear_hitpoints(std::vector<hitpoint>& hits, float R0){
-	for(hitpoint& hit : hits)hit.clear(R0);
-}
-
-
-void load_image(Image& image, const std::string name){image.load(name);}
-
-inline std::vector<float> toBlenderImage(const Image& im){
-	std::vector<float> f(im.len()*4);
-	for(int y=0; y<im.h; y++){
-		for(int x=0; x<im.w; x++){
-			int i_src = y*im.w + x;
-			int i_dst = (im.h -y-1)*im.w + x;
-			
-			f[4*i_dst  ] = im.pixels[i_src].x;
-			f[4*i_dst+1] = im.pixels[i_src].y;
-			f[4*i_dst+2] = im.pixels[i_src].z;
-			f[4*i_dst+3] = 1.0f;
-		}
-	}
-	return f;
-}
-
-
-using remap_for_nprr = std::tuple<std::vector<float>, float, float>;
-
-Image _nprr(const int w, const int h, const Scene& scene,
-	const int spp, std::vector<RNG>& rng_per_pixel,
-	const std::vector<remap_for_nprr>& remaps_py)
-{
-	std::vector<std::function<glm::vec3(float)>> remaps_cpp;
-	for(const auto& remap : remaps_py){
-		const auto& [image, min, max] = remap;
-		remaps_cpp.push_back([image, min, max](float u){
-			u = (u-min)/(max-min);
-
-			int w = image.size()/3;
-			int co = u*w;
-
-			if(co < 0) co = 0;
-			if(w-1 < co) co = w-1;
-
-			return glm::vec3(image[3*co], image[3*co+1], image[3*co+2]);
-		});
-	}
-
-	return nprr(w, h, scene, spp, rng_per_pixel, remaps_cpp);
-}
-
-
 PYBIND11_MODULE(composition, m){
 
 	py::bind_vector<std::vector<hitpoint>>(m, "Hitpoints");
@@ -149,11 +75,27 @@ PYBIND11_MODULE(composition, m){
 		.def_property("weight", PROPERTY_FLOAT3(hitpoint,weight))
 		.def_readwrite("iteration", &hitpoint::iteration)
 		.def_readwrite("depth", &hitpoint::depth)
-		.def("__str__", Hitpoint_str);
+		.def("__str__", [](const hitpoint& h){return str(h);});
 
-	m.def("save_hitpoints", save_hitpoints)
-		.def("load_hitpoints", load_hitpoints)
-		.def("clear_hitpoints", clear_hitpoints);
+	m.def("save_hitpoints", [](std::vector<hitpoint>& data, const std::string& name){
+		std::string result;
+		if(writeVector(data, name))
+			return "Saved " + std::to_string(data.size()) + " hitpoints as " + name;
+		else
+			return "failed to save hitpoints as " + name;
+	});
+
+	m.def("load_hitpoints", [](std::vector<hitpoint>& data, const std::string& name){
+		std::string result;
+		if(readVector(data, name))
+			return "Read " + std::to_string(data.size()) +  " hitpoints from " + name;
+		else
+			return "failed to read hitpoints from " + name;
+	});
+
+	m.def("clear_hitpoints", [](std::vector<hitpoint>& hits, float R0){
+		for(hitpoint& hit : hits)hit.clear(R0);
+	});
 
 	py::class_<RNG>(m, "rng");
 
@@ -166,7 +108,7 @@ PYBIND11_MODULE(composition, m){
 		.def_readwrite("materials", &Scene::materials)
 		.def_readwrite("targetIDs", &Scene::targetMaterials)
 		.def("addMaterial", &Scene::addMaterial)
-		.def("setMaterial", setMaterial)
+		.def("setMaterial", [](Scene& scene, uint32_t id, Material m){scene.materials[id] = m;})
 		.def("addSphere", [](Scene& self, py::array_t<float>& c, float r, uint32_t m, const std::string& n){
 			glm::vec3 center(c.at(0), c.at(1), c.at(2));
 			self.addSphere(center, r, m, n);
@@ -187,7 +129,7 @@ PYBIND11_MODULE(composition, m){
 			self.addMesh(m);
 		})
 		.def("createBoxScene", createScene)
-		.def("__str__", Scene_str);
+		.def("__str__", [](const Scene& s){return str(s);});
 	
 
 	py::class_<Camera>(m, "Camera")
@@ -257,8 +199,22 @@ PYBIND11_MODULE(composition, m){
 				memcpy(self.pixels.data(), pixels.data(), len*sizeof(glm::vec3));
 			})
 		.def("save", &Image::save)
-		.def("load", load_image)
-		.def("toList", toBlenderImage)
+		.def("load", [](Image& image, const std::string name){image.load(name);})
+		.def("toList", [](const Image& im){
+			std::vector<float> f(im.len()*4);
+			for(int y=0; y<im.h; y++){
+				for(int x=0; x<im.w; x++){
+					int i_src = y*im.w + x;
+					int i_dst = (im.h -y-1)*im.w + x;
+
+					f[4*i_dst  ] = im.pixels[i_src].x;
+					f[4*i_dst+1] = im.pixels[i_src].y;
+					f[4*i_dst+2] = im.pixels[i_src].z;
+					f[4*i_dst+3] = 1.0f;
+				}
+			}
+			return f;
+		})
 		.def("__len__", [](const Image& self){return self.pixels.size();});
 
 
@@ -292,5 +248,27 @@ PYBIND11_MODULE(composition, m){
 	});
 
 	// nprr
-	m.def("nprr", _nprr);
+	m.def("nprr", [](
+		const int w, const int h, const Scene& scene,
+		const int spp, std::vector<RNG>& rng_per_pixel,
+		const std::vector< std::tuple<std::vector<float>, float, float> >& remaps_py)
+	{
+		std::vector<std::function<glm::vec3(float)>> remaps_cpp;
+		for(const auto& remap : remaps_py){
+			const auto& [image, min, max] = remap;
+			remaps_cpp.push_back([image, min, max](float u){
+				u = (u-min)/(max-min);
+
+				int w = image.size()/3;
+				int co = u*w;
+
+				if(co < 0) co = 0;
+				if(w-1 < co) co = w-1;
+
+				return glm::vec3(image[3*co], image[3*co+1], image[3*co+2]);
+			});
+		}
+
+		return nprr(w, h, scene, spp, rng_per_pixel, remaps_cpp);
+	});
 }
