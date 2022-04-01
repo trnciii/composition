@@ -35,7 +35,6 @@ namespace py = pybind11;
 	}
 
 
-PYBIND11_MAKE_OPAQUE(std::vector<int>);
 PYBIND11_MAKE_OPAQUE(std::vector<hitpoint>);
 
 
@@ -85,54 +84,6 @@ inline std::vector<float> toBlenderImage(const Image& im){
 	return f;
 }
 
-void hitsToImage(const std::vector<hitpoint>& hits, Image& result,
-	const py::function& remap)
-{
-	std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
-
-	for(int i=0; i<hits.size(); i++){
-		const hitpoint& hit = hits[i];
-		if(i%(hits.size()/39) == 0) std::cout <<"+" <<std::flush;
-
-		const glm::vec3 t = remap(hit).cast<glm::vec3>();
-		result.pixels[hit.pixel] += hit.weight * t;
-	}
-
-	std::cout <<"|" <<std::endl;
-}
-
-
-void addMesh(Scene& scene,
-	const std::vector<py::list>& vertices,
-	const std::vector<py::list>& indices,
-	std::string name)
-{
-	Mesh m;
-	m.name = name;
-
-	for(int i=0; i<vertices.size(); i++){
-		m.vertices.push_back({
-			vertices[i][0].cast<glm::vec3>(),	// position
-			vertices[i][1].cast<glm::vec3>()	// normal
-		});
-	}
-
-	for(int i=0; i<indices.size(); i++){
-		const py::list& index = indices[i];
-		m.indices.push_back({
-			index[0].cast<uint32_t>(),	// v0
-			index[1].cast<uint32_t>(),	// v1
-			index[2].cast<uint32_t>(),	// v2
-			index[3].cast<glm::vec3>(),	// normal
-			index[4].cast<bool>(),		// smooth
-			index[5].cast<uint32_t>()	// material
-		});
-	}
-
-	m.buildTree();
-	scene.addMesh(m);
-}
-
 
 using remap_for_nprr = std::tuple<std::vector<float>, float, float>;
 
@@ -162,45 +113,40 @@ Image _nprr(const int w, const int h, const Scene& scene,
 
 PYBIND11_MODULE(composition, m){
 
-	py::bind_vector<std::vector<int>>(m, "IntVector");
 	py::bind_vector<std::vector<hitpoint>>(m, "Hitpoints");
 
-	// basic data types
-	py::class_<glm::vec3>(m, "vec3")
-		.def(py::init<float, float, float>())
-		.def_readwrite("x", &glm::vec3::x)
-		.def_readwrite("y", &glm::vec3::y)
-		.def_readwrite("z", &glm::vec3::z)
+	PYBIND11_NUMPY_DTYPE(glm::vec3, x, y, z);
 
-		.def(py::self + glm::vec3())
-		.def(py::self * glm::vec3())
-		.def(py::self - glm::vec3())
-		.def(py::self / glm::vec3())
+	PYBIND11_NUMPY_DTYPE(Vertex, position, normal);
+	PYBIND11_NUMPY_DTYPE(Index, v0, v1, v2, normal, use_smooth, mtlID);
 
-		.def(py::self + float())
-		.def(py::self - float())
-		.def(py::self * float())
-		.def(py::self / float())
-		.def(float() + py::self)
-		.def(float() - py::self)
-		.def(float() * py::self)
-
-		.def(py::self += glm::vec3())
-		.def(py::self -= glm::vec3())
-		.def(py::self *= glm::vec3())
-		.def(py::self /= glm::vec3());
+	// PYBIND11_NUMPY_DTYPE(hitpoint,
+	// 	p,
+	// 	n,
+	// 	ng,
+	// 	wo,
+	// 	mtlID,
+	// 	pixel,
+	// 	R,
+	// 	N,
+	// 	tau,
+	// 	weight,
+	// 	iteration,
+	// 	depth
+	// );
 
 
 	py::class_<hitpoint>(m, "hitpoint")
-		.def_readwrite("p", &hitpoint::p)
-		.def_readwrite("n", &hitpoint::n)
-		.def_readwrite("wo", &hitpoint::wo)
+		.def_property("p", PROPERTY_FLOAT3(hitpoint, p))
+		.def_property("n", PROPERTY_FLOAT3(hitpoint,n))
+		.def_property("ng", PROPERTY_FLOAT3(hitpoint, ng))
+		.def_property("wo", PROPERTY_FLOAT3(hitpoint,wo))
 		.def_readwrite("mtlID", &hitpoint::mtlID)
 		.def_readwrite("pixel", &hitpoint::pixel)
 		.def_readwrite("R", &hitpoint::R)
 		.def_readwrite("N", &hitpoint::N)
-		.def_readwrite("tau", &hitpoint::tau)
-		.def_readwrite("weight", &hitpoint::weight)
+		.def_property("tau", PROPERTY_FLOAT3(hitpoint,tau))
+		.def_property("weight", PROPERTY_FLOAT3(hitpoint,weight))
 		.def_readwrite("iteration", &hitpoint::iteration)
 		.def_readwrite("depth", &hitpoint::depth)
 		.def("__str__", Hitpoint_str);
@@ -221,11 +167,29 @@ PYBIND11_MODULE(composition, m){
 		.def_readwrite("targetIDs", &Scene::targetMaterials)
 		.def("addMaterial", &Scene::addMaterial)
 		.def("setMaterial", setMaterial)
-		.def("addSphere", &Scene::addSphere)
-		.def("addMesh", addMesh)
+		.def("addSphere", [](Scene& self, py::array_t<float>& c, float r, uint32_t m, const std::string& n){
+			glm::vec3 center(c.at(0), c.at(1), c.at(2));
+			self.addSphere(center, r, m, n);
+		})
+		.def("addMesh", [](
+			Scene& self,
+			const py::array_t<Vertex>& vertices,
+			const py::array_t<Index>& indices,
+			std::string name)
+		{
+			Mesh m;
+			m.name = name;
+
+			m.vertices = std::vector<Vertex>(vertices.data(), vertices.data()+vertices.size());
+			m.indices = std::vector<Index>(indices.data(), indices.data()+indices.size());
+
+			m.buildTree();
+			self.addMesh(m);
+		})
 		.def("createBoxScene", createScene)
 		.def("__str__", Scene_str);
 	
+
 	py::class_<Camera>(m, "Camera")
 		.def_property("toWorld",
 			[](const Camera& self){
@@ -262,7 +226,7 @@ PYBIND11_MODULE(composition, m){
 		.def(py::init<>())
 		.def_readwrite("name", &Material::name)
 		.def_readwrite("type", &Material::type)
-		.def_readwrite("color", &Material::color)
+		.def_property("color", PROPERTY_FLOAT3(Material, color))
 		.def_readwrite("a", &Material::a)
 		.def_readwrite("ior", &Material::ior);
 
@@ -273,10 +237,29 @@ PYBIND11_MODULE(composition, m){
 		.def(py::init<std::string>())
 		.def_readwrite("w", &Image::w)
 		.def_readwrite("h", &Image::h)
-		.def_readwrite("pixels", &Image::pixels)
+		.def_property("pixels",
+			[](const Image& self){
+				return (py::array_t<float>)py::buffer_info(
+					(float*)self.pixels.data(),
+					sizeof(float),
+					py::format_descriptor<float>::format(),
+					3,
+					{self.h, self.w, 3},
+					{3*self.w*sizeof(float), 3*sizeof(float), sizeof(float)}
+				);
+			},
+			[](Image& self, py::array_t<float>& pixels){
+				assert(pixels.ndim() == 3);
+				self.h = pixels.shape(0);
+				self.w = pixels.shape(1);
+				size_t len = self.w * self.h;
+				self.pixels.resize(len);
+				memcpy(self.pixels.data(), pixels.data(), len*sizeof(glm::vec3));
+			})
 		.def("save", &Image::save)
 		.def("load", load_image)
-		.def("toList", toBlenderImage);
+		.def("toList", toBlenderImage)
+		.def("__len__", [](const Image& self){return self.pixels.size();});
 
 
 	// renderers
@@ -290,7 +273,23 @@ PYBIND11_MODULE(composition, m){
 	m.def("radiance_ppm", radiance_PPM);
 	m.def("radiance_pt", radiance_PT);
 
-	m.def("hitsToImage_cpp", hitsToImage);
+	m.def("hitsToImage_cpp", [](
+		const std::vector<hitpoint>& hits,
+		Image& result,
+		const py::function& remap)
+	{
+		std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
+
+		for(int i=0; i<hits.size(); i++){
+			const hitpoint& hit = hits[i];
+			if(i%(hits.size()/39) == 0) std::cout <<"+" <<std::flush;
+
+			const py::array_t<float> t = remap(hit);
+			result.pixels[hit.pixel] += hit.weight * glm::vec3(t.at(0), t.at(1), t.at(2));
+		}
+
+		std::cout <<"|" <<std::endl;
+	});
 
 	// nprr
 	m.def("nprr", _nprr);

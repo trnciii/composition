@@ -1,5 +1,6 @@
 import bpy
 import os
+import numpy as np
 from enum import Enum
 from collections import namedtuple
 
@@ -144,19 +145,22 @@ class Context:
 
 	def mask(self, hits, ikey, nRay):
 		image = self.images[ikey]
-		count = [0]*len(image.pixels)
+		count = [0]*len(image)
 
 		for hit in hits:
 			count[hit.pixel] += 1
 
-		image.pixels = [core.vec3(count[i]/nRay, 0, 0) for i in range(len(image.pixels))]
+		image.pixels = np.array([
+			[count[i]/nRay, 0, 0]
+			for i in range(len(image))
+		]).reshape((image.h, image.w, 3))
 
 		self.copyImage(ikey)
 
 	def depth(self, hits, key, nRay):
 		image = self.images[key]
-		d = [0]*len(image.pixels)
-		count = [0]*len(image.pixels)
+		d = [0]*len(image)
+		count = [0]*len(image)
 		maxDepth = 0
 
 		for hit in hits:
@@ -165,11 +169,11 @@ class Context:
 			if hit.depth > maxDepth:
 				maxDepth = hit.depth
 
-		image.pixels = [
-			core.vec3(d[i]/nRay/maxDepth, 0, 0) if count[i]>0
-			else core.vec3(0,0,0)
-			for i in range(len(image.pixels))
-		]
+		image.pixels = np.array([
+			[d[i]/nRay/maxDepth, 0, 0] if count[i]>0
+			else [0,0,0]
+			for i in range(len(image))
+		]).reshape((image.h, image.w, 3))
 
 		self.copyImage(key)
 		print("max depth of", key , ": ", maxDepth)

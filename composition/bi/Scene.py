@@ -4,10 +4,11 @@ import bmesh
 import numpy as np
 from math import pi
 from ..core import composition as core
+from ..core import dtype
 
 def toGLM(v):
 	if type(v) == Vector:
-		return core.vec3(v.x, v.y, v.z)
+		return [v.x, v.y, v.z]
 
 def findShaders(key):
 	tree = bpy.data.materials[key].node_tree
@@ -42,7 +43,7 @@ def createMaterial(key):
 		s = shader.inputs[1].default_value
 		
 		m.type = core.MtlType.emit
-		m.color = core.vec3(c[0]*s, c[1]*s, c[2]*s)
+		m.color = [c[0]*s, c[1]*s, c[2]*s]
 		
 		return m
 		
@@ -50,7 +51,7 @@ def createMaterial(key):
 		c = shader.inputs['Color'].default_value
 		
 		m.type = core.MtlType.lambert
-		m.color = core.vec3(c[0], c[1], c[2])
+		m.color = [c[0], c[1], c[2]]
 		
 		return m
 	
@@ -59,7 +60,7 @@ def createMaterial(key):
 		a = shader.inputs['Roughness'].default_value
 		
 		m.type = core.MtlType.glossy
-		m.color = core.vec3(c[0], c[1], c[2])
+		m.color = [c[0], c[1], c[2]]
 		m.a = a*a
 		
 		return m
@@ -70,7 +71,7 @@ def createMaterial(key):
 		ior = shader.inputs['IOR'].default_value
 
 		m.type = core.MtlType.glass
-		m.color = core.vec3(c[0], c[1], c[2])
+		m.color = [c[0], c[1], c[2]]
 		m.a = a*a
 		m.ior = ior
 
@@ -103,7 +104,7 @@ class Scene:
 		env = core.Material()
 		env.name = 'env'
 		env.type = core.MtlType.emit
-		env.color = core.vec3(0, 0, 0)
+		env.color = [0, 0, 0]
 		self.data.setMaterial(0,env)
 
 	def __str__(self): return self.data.__str__()
@@ -124,14 +125,23 @@ class Scene:
 		  
 		OW = obj.matrix_world
 
-		vertices = [
-			[toGLM(OW@v.co),toGLM((OW@v.normal - OW.to_translation()).normalized())]
-			for v in mesh.vertices]
-		indices = [[ p.vertices[0], p.vertices[1], p.vertices[2],
-			toGLM((OW@p.normal-OW.to_translation()).normalized()), p.use_smooth,
-			self.mtlBinding[materialNames[p.material_index]] ] for p in mesh.polygons]
-		
-		self.data.addMesh(list(vertices), list(indices), key)
+		vertices = np.array([(
+			tuple(OW@v.co),
+			tuple( (OW@v.normal - OW.to_translation()).normalized() ))
+			for v in mesh.vertices],
+			dtype = dtype.Vertex_dtype
+		)
+
+		indices = np.array([(
+			p.vertices[0], p.vertices[1], p.vertices[2],
+			tuple( (OW@p.normal-OW.to_translation()).normalized() ),
+			p.use_smooth,
+			self.mtlBinding[materialNames[p.material_index]])
+			for p in mesh.polygons],
+			dtype = dtype.Face_dtype
+		)
+
+		self.data.addMesh(vertices, indices, key)
 		bpy.data.meshes.remove(mesh)		
 
 	def addSphere(self, key):
@@ -145,7 +155,7 @@ class Scene:
 		if name not in self.mtlBinding.keys():
 			self.mtlBinding[name] = self.data.addMaterial(createMaterial(name))
 
-		self.data.addSphere(toGLM(o.location), sum(o.dimensions)/6, self.mtlBinding[name], key)
+		self.data.addSphere(o.location, sum(o.dimensions)/6, self.mtlBinding[name], key)
 
 	def create(self, spheres, meshes, targets):
 

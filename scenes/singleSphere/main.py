@@ -9,7 +9,7 @@ col = composition.color
 # define ramps
 
 param = composition.core.PPMParam()
-param.nRay = 50
+param.nRay = 8
 param.R0 = 0.5
 param.nPhoton = 50000
 param.itr = 10
@@ -32,17 +32,15 @@ def target0():
 
 	# return remap
 
-	white = composition.vec3(1,1,1)
-	black = composition.vec3(1,0.05,0.05)
-
-
+	white = [1,1,1]
+	black = [1,0.05,0.05]
 
 	floor = math.floor
 
 	def f(hit):
 		p = hit.p*2.5
 		return white\
-			if pow(-1,floor(p.x)) * pow(-1,floor(p.y)) * pow(-1,floor(p.z)) <0\
+			if pow(-1,floor(p[0])) * pow(-1,floor(p[1])) * pow(-1,floor(p[2])) <0\
 			else black
 
 	# e = composition.vec3(0.15)
@@ -61,20 +59,18 @@ def render_2():
 	print(cmp.scene.data)
 	time.sleep(0.1)
 
-	# cmp.pt_ref('pt', 10000)
-	# cmp.saveImage('pt')
+	cmp.pt_ref('pt', 10000)
+	cmp.saveImage('pt')
 
-	# cmp.pt_nt('nt', 10000)
-	# cmp.saveImage('nt')
-	# print()
-	# return
+	cmp.pt_nt('nt', 10000)
+	cmp.saveImage('nt')
+	print()
 
 	for n in cmp.targetNames:
 		cmp.genHits_ex(n, param.nRay, param.R0)
 		cmp.genHits_all(n, param.nRay, param.R0)
 
 	for k, h in cmp.hits.items():
-		print(k)
 
 		if k.type is composition.HitsType.EX:
 			cmp.radiance_pt(h, 10000)
@@ -122,6 +118,6 @@ def render_1():
 
 	print('-- end nprr --')
 
-render_1()
+# render_1()
 render_2()
 remap()
