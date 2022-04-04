@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include "Scene.hpp"
 #include "Random.hpp"
 #include "accel.hpp"

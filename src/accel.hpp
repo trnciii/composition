@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iterator>
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <vector>
