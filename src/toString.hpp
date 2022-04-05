@@ -82,9 +82,9 @@ inline std::string str(const hitpoint& hit){
 	s += "radius            : " + str(hit.R) + "\n";
 	s += "photon count      : " + str(hit.N) + "\n";
 	s += "radiance          : " + str(hit.tau) + "\n";
-	s += "throupu           : " + str(hit.weight) + "\n";
-	s += "itration count    : " + str(hit.iteration) + "\n";
-	s += "target event count: " + str(hit.depth) + "\n";
+	s += "throughput        : " + str(hit.weight) + "\n";
+	s += "iteration count   : " + str(hit.iteration) + "\n";
+	s += "target event depth: " + str(hit.depth) + "\n";
 
 	return s;
 }
