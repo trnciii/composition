@@ -1,7 +1,9 @@
 import bpy
 import os
+import numpy as np
 from enum import Enum
 from collections import namedtuple
+import time
 
 from .. import core
 from .Scene import Scene
@@ -68,7 +70,9 @@ class Context:
 		self.images[key] = core.Image(self.w, self.h)
 
 	def copyImage(self, key):
-		bpy.data.images[key].pixels = self.images[key].toList()
+		im = self.images[key]
+		pixels = np.flipud(np.append(im.pixels, np.ones((*im.size ,1), dtype='<f4'), axis=2))
+		bpy.data.images[key].pixels.foreach_set(pixels.flatten())
 
 	def setTargets(self, targets):
 		self.targetNames = targets
@@ -109,7 +113,7 @@ class Context:
 		h = core.collectHits_target_exclusive(self.scene.mtlBinding[target], depth,
 			self.w, self.h, nRay, self.scene.data, self.rng_thread)
 		
-		core.clear_hitpoints(h, R0)
+		h.reset(R0)
 
 		key = HitsKey(target, HitsType.EX, nRay)
 		self.hits[key] = h
@@ -121,7 +125,7 @@ class Context:
 		h = core.collectHits_target(self.scene.mtlBinding[target], depth,
 			self.w, self.h, nRay, self.scene.data, self.rng_thread)
 		
-		core.clear_hitpoints(h, R0)
+		h.reset(R0)
 
 		key = HitsKey(target, HitsType.ALL, nRay)
 		self.hits[key] = h
@@ -144,32 +148,30 @@ class Context:
 
 	def mask(self, hits, ikey, nRay):
 		image = self.images[ikey]
-		count = [0]*len(image.pixels)
+		w, h = image.size
 
-		for hit in hits:
-			count[hit.pixel] += 1
+		count = [0]*len(image)
 
-		image.pixels = [core.vec3(count[i]/nRay, 0, 0) for i in range(len(image.pixels))]
+		for i in np.array(hits)['pixel']:
+			count[i] += 1
+
+		image.pixels = np.repeat(np.array(count)/nRay, 3)
 
 		self.copyImage(ikey)
 
 	def depth(self, hits, key, nRay):
 		image = self.images[key]
-		d = [0]*len(image.pixels)
-		count = [0]*len(image.pixels)
+		w, h = image.size
+
+		count = np.zeros(len(image))
 		maxDepth = 0
 
-		for hit in hits:
-			d[hit.pixel] += hit.depth
-			count[hit.pixel] += 1
-			if hit.depth > maxDepth:
-				maxDepth = hit.depth
+		depth = np.array(hits)['depth']
+		for i, d in zip(np.array(hits)['pixel'], depth):
+			count[i] += d
 
-		image.pixels = [
-			core.vec3(d[i]/nRay/maxDepth, 0, 0) if count[i]>0
-			else core.vec3(0,0,0)
-			for i in range(len(image.pixels))
-		]
+		maxDepth = np.amax(depth)
+		image.pixels = np.repeat(np.array(count)/(nRay*maxDepth), 3)
 
 		self.copyImage(key)
 		print("max depth of", key , ": ", maxDepth)
@@ -197,7 +199,7 @@ class Context:
 
 	def saveImage(self, key):
 		path = self.path + 'im_' + key
-		if self.images[key].save(path):
+		if self.images[key].write(path):
 			print('Saved', quate(key), 'as', quate(path))
 		else:
 			print('failed to save', quate(key), 'as', quate(path))
@@ -206,22 +208,20 @@ class Context:
 		im = core.Image(path)
 		if im:
 			print("Read an image:", quate(path), 'as', quate(key))
-			addImage(key, im.w, im.h)
+			addImage(key, *im.size)
 			self.images[key] = im
 			self.copyImage(key)
 		else:
 			print("failed to read an image", quate(path))
 
 	def saveHits(self, key, nRay):
-		print(core.save_hitpoints(self.hits[key], self.path+toFilename(key)))
+		self.hits[key].write(self.path + toFilename(key))
 
 	def loadAll(self, nRay):
 		for file in self.files:
 			key = toKey(file)
 			if key:
-				h = core.Hitpoints()
-				core.load_hitpoints(h, self.path + file)
-				self.hits[toKey(file)] = h
+				self.hits[toKey(file)] = core.read_hitpoints(self.path + file)
 
 			words = file.split('_')
 

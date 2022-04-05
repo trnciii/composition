@@ -1,5 +1,4 @@
 import numpy as np
-from ..core import vec3
 
 class RampData():
 
@@ -43,15 +42,15 @@ class RampData():
 		c = self._data[0][1]
 		for pair in self._data:
 			if u>pair[0]: c = pair[1]
-		return vec3(c[0], c[1], c[2])
+		return [c[0], c[1], c[2]]
 
 	def evalLinear(self, u):
 		if u<=self._data[ 0][0]:
 			c = self._data[0][1]
-			return vec3(c[0], c[1], c[2])
+			return [c[0], c[1], c[2]]
 		if u>=self._data[-1][0]:
 			c = self._data[-1][1]
-			return vec3(c[0], c[1], c[2])
+			return [c[0], c[1], c[2]]
 		
 		x1 = self._data[0][0]
 		y1 = self._data[0][1]
@@ -62,12 +61,12 @@ class RampData():
 			
 			if x1<=u and u<x2:
 				c = ((x2-u)*y1 + (u-x1)*y2)/(x2-x1)
-				return vec3(c[0], c[1], c[2])
+				return [c[0], c[1], c[2]]
 
 			x1 = x2
 			y1 = y2
 
-		return vec3(0, 0, 0)
+		return [0, 0, 0]
 
 	def __str__(self):
 		s = "ramp <" + str(self._mode) + ">\n"

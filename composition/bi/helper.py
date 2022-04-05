@@ -1,6 +1,5 @@
 import bpy
 import math
-from ..core.composition import vec3
 from .. import color
 
 def rampToImage(name, ramp, w, h):	
@@ -57,7 +56,7 @@ def ramp(coord, name):
 	
 		def f(hit):
 			rs = ev(coord(hit))
-			return vec3(rs[0], rs[1], rs[2])
+			return [rs[0], rs[1], rs[2]]
 
 		return f
 

@@ -4,21 +4,42 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <cstring>
 #include <glm/glm.hpp>
 
 struct Image{
+private:
 	int w;
 	int h;
 	std::vector<glm::vec3> pixels;
+
+public:
 
 	inline Image():w(0), h(0), pixels(0){}
 	inline Image(int _w, int _h):w(_w), h(_h), pixels(_w*_h){}
 	inline Image(const std::string n){load(n);}
 
-	inline int len()const{return w*h;}
+	inline int width()const{return w;}
+	inline int height()const{return h;}
+	inline int size()const{return w*h;}
 	inline glm::vec3* data(){return pixels.data();}
 
-	inline bool save(const std::string name){
+	inline glm::vec3& operator [](int i){return pixels[i];}
+	inline glm::vec3& at(int i){return pixels[i];}
+	inline glm::vec3& at(int x, int y){return pixels[y*w + x];}
+
+	inline void resize(int _w, int _h){
+		w = _w;
+		h = _h;
+		pixels.resize(w*h);
+	}
+
+	inline void setPixels(const float* src, size_t count){
+		assert(count == 3*w*h);
+		memcpy(pixels.data(), src, count*sizeof(float));
+	}
+
+	inline bool save(const std::string name)const{
 		std::ofstream out(name, std::ios::out | std::ios::binary);
 		if(!out) return false;
 		if(pixels.size() != w*h) return false;
