@@ -142,8 +142,13 @@ class Context:
 
 # convert
 	def hitsToImage(self, hits, key, color):
+		t0 = time.time()
 		# core.hitsToImage_py(hits, self.images[key], color)
 		core.hitsToImage_cpp(hits, self.images[key], color)
+
+		t1 = time.time()
+		print('time for conversion', t1-t0)
+
 		self.copyImage(key)
 
 	def mask(self, hits, ikey, nRay):

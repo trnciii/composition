@@ -26,17 +26,11 @@ void init_renderer(py::module_& m){
 		Image& result,
 		const py::function& remap)
 	{
-		std::cout <<"|--------- --------- --------- --------- |\n" <<"|" <<std::flush;
-
 		for(int i=0; i<hits.size(); i++){
 			const hitpoint& hit = hits[i];
-			if(i%(hits.size()/39) == 0) std::cout <<"+" <<std::flush;
-
 			const py::array_t<float> t = remap(hit);
 			result[hit.pixel] += hit.weight * glm::vec3(t.at(0), t.at(1), t.at(2));
 		}
-
-		std::cout <<"|" <<std::endl;
 	});
 
 	m.def("nprr", [](
