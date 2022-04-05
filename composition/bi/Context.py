@@ -3,6 +3,7 @@ import os
 import numpy as np
 from enum import Enum
 from collections import namedtuple
+import time
 
 from .. import core
 from .Scene import Scene
@@ -148,36 +149,29 @@ class Context:
 	def mask(self, hits, ikey, nRay):
 		image = self.images[ikey]
 		w, h = image.size
+
 		count = [0]*len(image)
 
-		for hit in hits:
-			count[hit.pixel] += 1
+		for i in np.array(hits)['pixel']:
+			count[i] += 1
 
-		image.pixels = np.array([
-			[count[i]/nRay, 0, 0]
-			for i in range(len(image))
-		]).reshape((h, w, 3))
+		image.pixels = np.repeat(np.array(count)/nRay, 3).reshape((h,w,3))
 
 		self.copyImage(ikey)
 
 	def depth(self, hits, key, nRay):
 		image = self.images[key]
 		w, h = image.size
-		d = [0]*len(image)
-		count = [0]*len(image)
+
+		count = np.zeros(len(image))
 		maxDepth = 0
 
-		for hit in hits:
-			d[hit.pixel] += hit.depth
-			count[hit.pixel] += 1
-			if hit.depth > maxDepth:
-				maxDepth = hit.depth
+		depth = np.array(hits)['depth']
+		for i, d in zip(np.array(hits)['pixel'], depth):
+			count[i] += d
 
-		image.pixels = np.array([
-			[d[i]/nRay/maxDepth, 0, 0] if count[i]>0
-			else [0,0,0]
-			for i in range(len(image))
-		]).reshape((h, w, 3))
+		maxDepth = np.amax(depth)
+		image.pixels = np.repeat(np.array(count)/(nRay*maxDepth), 3).reshape((h,w,3))
 
 		self.copyImage(key)
 		print("max depth of", key , ": ", maxDepth)
