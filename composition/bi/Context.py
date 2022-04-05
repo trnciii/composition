@@ -110,7 +110,7 @@ class Context:
 		h = core.collectHits_target_exclusive(self.scene.mtlBinding[target], depth,
 			self.w, self.h, nRay, self.scene.data, self.rng_thread)
 		
-		core.clear_hitpoints(h, R0)
+		h.reset(R0)
 
 		key = HitsKey(target, HitsType.EX, nRay)
 		self.hits[key] = h
@@ -122,7 +122,7 @@ class Context:
 		h = core.collectHits_target(self.scene.mtlBinding[target], depth,
 			self.w, self.h, nRay, self.scene.data, self.rng_thread)
 		
-		core.clear_hitpoints(h, R0)
+		h.reset(R0)
 
 		key = HitsKey(target, HitsType.ALL, nRay)
 		self.hits[key] = h
@@ -217,15 +217,13 @@ class Context:
 			print("failed to read an image", quate(path))
 
 	def saveHits(self, key, nRay):
-		print(core.save_hitpoints(self.hits[key], self.path+toFilename(key)))
+		self.hits[key].write(self.path + toFilename(key))
 
 	def loadAll(self, nRay):
 		for file in self.files:
 			key = toKey(file)
 			if key:
-				h = core.Hitpoints()
-				core.load_hitpoints(h, self.path + file)
-				self.hits[toKey(file)] = h
+				self.hits[toKey(file)] = core.read_hitpoints(self.path + file)
 
 			words = file.split('_')
 

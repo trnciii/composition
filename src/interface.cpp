@@ -4,6 +4,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 
+#include <execution>
+#include <functional>
 #include <algorithm>
 #include <string>
 #include <omp.h>
@@ -39,28 +41,48 @@ PYBIND11_MAKE_OPAQUE(std::vector<hitpoint>);
 
 PYBIND11_MODULE(composition, m){
 
-	py::bind_vector<std::vector<hitpoint>>(m, "Hitpoints");
-
 	PYBIND11_NUMPY_DTYPE(glm::vec3, x, y, z);
-
 	PYBIND11_NUMPY_DTYPE(Vertex, position, normal);
 	PYBIND11_NUMPY_DTYPE(Index, v0, v1, v2, normal, use_smooth, mtlID);
+	PYBIND11_NUMPY_DTYPE(hitpoint,
+		p,
+		n,
+		ng,
+		wo,
+		mtlID,
+		pixel,
+		R,
+		N,
+		tau,
+		weight,
+		iteration,
+		depth
+	);
 
-	// PYBIND11_NUMPY_DTYPE(hitpoint,
-	// 	p,
-	// 	n,
-	// 	ng,
-	// 	wo,
-	// 	mtlID,
-	// 	pixel,
-	// 	R,
-	// 	N,
-	// 	tau,
-	// 	weight,
-	// 	iteration,
-	// 	depth
-	// );
 
+	py::bind_vector<std::vector<hitpoint>>(m, "Hitpoints", py::buffer_protocol())
+		.def("write", writeVector<hitpoint>)
+		.def("load", readVector<hitpoint>)
+		.def("reset", [](std::vector<hitpoint>& self, float R0){
+			using namespace std::placeholders;
+			std::for_each(std::execution::unseq, self.begin(), self.end(), std::bind(&hitpoint::clear, _1, R0));
+		})
+		.def_buffer([](std::vector<hitpoint>& self){
+			return py::buffer_info(
+				self.data(),
+				sizeof(hitpoint),
+				py::format_descriptor<hitpoint>::format(),
+				1,
+				{self.size()},
+				{sizeof(hitpoint)}
+			);
+		});
+
+	m.def("read_hitpoints", [](const std::string& name){
+		std::vector<hitpoint> ret;
+		readVector(ret, name);
+		return ret;
+	});
 
 	py::class_<hitpoint>(m, "hitpoint")
 		.def_property("p", PROPERTY_FLOAT3(hitpoint, p))
@@ -77,25 +99,6 @@ PYBIND11_MODULE(composition, m){
 		.def_readwrite("depth", &hitpoint::depth)
 		.def("__str__", [](const hitpoint& h){return str(h);});
 
-	m.def("save_hitpoints", [](std::vector<hitpoint>& data, const std::string& name){
-		std::string result;
-		if(writeVector(data, name))
-			return "Saved " + std::to_string(data.size()) + " hitpoints as " + name;
-		else
-			return "failed to save hitpoints as " + name;
-	});
-
-	m.def("load_hitpoints", [](std::vector<hitpoint>& data, const std::string& name){
-		std::string result;
-		if(readVector(data, name))
-			return "Read " + std::to_string(data.size()) +  " hitpoints from " + name;
-		else
-			return "failed to read hitpoints from " + name;
-	});
-
-	m.def("clear_hitpoints", [](std::vector<hitpoint>& hits, float R0){
-		for(hitpoint& hit : hits)hit.clear(R0);
-	});
 
 	py::class_<RNG>(m, "rng");
 
@@ -247,7 +250,6 @@ PYBIND11_MODULE(composition, m){
 		std::cout <<"|" <<std::endl;
 	});
 
-	// nprr
 	m.def("nprr", [](
 		const int w, const int h, const Scene& scene,
 		const int spp, std::vector<RNG>& rng_per_pixel,
