@@ -69,7 +69,9 @@ class Context:
 		self.images[key] = core.Image(self.w, self.h)
 
 	def copyImage(self, key):
-		bpy.data.images[key].pixels = self.images[key].toList()
+		im = self.images[key]
+		pixels = np.flipud(np.append(im.pixels, np.ones((*im.size ,1), dtype='<f4'), axis=2))
+		bpy.data.images[key].pixels.foreach_set(pixels.flatten())
 
 	def setTargets(self, targets):
 		self.targetNames = targets
@@ -145,6 +147,7 @@ class Context:
 
 	def mask(self, hits, ikey, nRay):
 		image = self.images[ikey]
+		w, h = image.size
 		count = [0]*len(image)
 
 		for hit in hits:
@@ -153,12 +156,13 @@ class Context:
 		image.pixels = np.array([
 			[count[i]/nRay, 0, 0]
 			for i in range(len(image))
-		]).reshape((image.h, image.w, 3))
+		]).reshape((h, w, 3))
 
 		self.copyImage(ikey)
 
 	def depth(self, hits, key, nRay):
 		image = self.images[key]
+		w, h = image.size
 		d = [0]*len(image)
 		count = [0]*len(image)
 		maxDepth = 0
@@ -173,7 +177,7 @@ class Context:
 			[d[i]/nRay/maxDepth, 0, 0] if count[i]>0
 			else [0,0,0]
 			for i in range(len(image))
-		]).reshape((image.h, image.w, 3))
+		]).reshape((h, w, 3))
 
 		self.copyImage(key)
 		print("max depth of", key , ": ", maxDepth)
@@ -201,7 +205,7 @@ class Context:
 
 	def saveImage(self, key):
 		path = self.path + 'im_' + key
-		if self.images[key].save(path):
+		if self.images[key].write(path):
 			print('Saved', quate(key), 'as', quate(path))
 		else:
 			print('failed to save', quate(key), 'as', quate(path))
@@ -210,7 +214,7 @@ class Context:
 		im = core.Image(path)
 		if im:
 			print("Read an image:", quate(path), 'as', quate(key))
-			addImage(key, im.w, im.h)
+			addImage(key, *im.size)
 			self.images[key] = im
 			self.copyImage(key)
 		else:

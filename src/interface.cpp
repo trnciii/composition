@@ -180,8 +180,7 @@ PYBIND11_MODULE(composition, m){
 	py::class_<Image>(m, "Image")
 		.def(py::init<int, int>())
 		.def(py::init<std::string>())
-		.def_readwrite("w", &Image::w)
-		.def_readwrite("h", &Image::h)
+		.def_property_readonly("size", [](const Image& self){return py::make_tuple(self.w, self.h);})
 		.def_property("pixels",
 			[](const Image& self){
 				return (py::array_t<float>)py::buffer_info(
@@ -201,23 +200,8 @@ PYBIND11_MODULE(composition, m){
 				self.pixels.resize(len);
 				memcpy(self.pixels.data(), pixels.data(), len*sizeof(glm::vec3));
 			})
-		.def("save", &Image::save)
-		.def("load", [](Image& image, const std::string name){image.load(name);})
-		.def("toList", [](const Image& im){
-			std::vector<float> f(im.len()*4);
-			for(int y=0; y<im.h; y++){
-				for(int x=0; x<im.w; x++){
-					int i_src = y*im.w + x;
-					int i_dst = (im.h -y-1)*im.w + x;
-
-					f[4*i_dst  ] = im.pixels[i_src].x;
-					f[4*i_dst+1] = im.pixels[i_src].y;
-					f[4*i_dst+2] = im.pixels[i_src].z;
-					f[4*i_dst+3] = 1.0f;
-				}
-			}
-			return f;
-		})
+		.def("write", &Image::save)
+		.def("load", &Image::load)
 		.def("__len__", [](const Image& self){return self.pixels.size();});
 
 
