@@ -8,7 +8,7 @@
 #include "data.hpp"
 #include "Scene.hpp"
 
-std::string str(const int& v){
+inline std::string str(const int& v){
 	float e = log10(fabs(v));
 	char s[20];
 	if(e<4) std::sprintf(s, "%4d", v);
@@ -16,7 +16,7 @@ std::string str(const int& v){
 	return std::string(s);
 }
 
-std::string str(const uint32_t& v){
+inline std::string str(const uint32_t& v){
 	float e = log10(fabs(v));
 	char s[20];
 	if(e<4) std::sprintf(s, "%4d", v);
@@ -24,7 +24,7 @@ std::string str(const uint32_t& v){
 	return std::string(s);
 }
 
-std::string str(const float& v){
+inline std::string str(const float& v){
 	float exp = log10(fabs(v));
 	char s[20];
 	if(-3<exp && exp<3)std::sprintf(s, "%9.5f", v);
@@ -32,25 +32,25 @@ std::string str(const float& v){
 	return std::string(s);
 }
 
-std::string str(const glm::vec3& v){
+inline std::string str(const glm::vec3& v){
 	return str(v.x)+" "+str(v.y)+" "+str(v.z);
 }
 
-std::string str(const glm::vec4& v){
+inline std::string str(const glm::vec4& v){
 	return str(v.x)+" "+str(v.y)+" "+str(v.z)+" "+str(v.w);
 }
 
-std::string str(const Ray& ray){
+inline std::string str(const Ray& ray){
 	return str(ray.o) + " | " + str(ray.d);
 }
 
-std::string str(const Sphere& s){
+inline std::string str(const Sphere& s){
 	char m[20];
 	std::sprintf(m, "material: %2d", s.mtlID);
 	return str(s.p) + " | " + str(s.r) + " | " + m;
 }
 
-std::string str(const Material::Type& t){
+inline std::string str(const Material::Type& t){
 	if(t == Material::Type::EMIT)			return "   EMIT";
 	if(t == Material::Type::LAMBERT)		return "LAMBERT";
 	if(t == Material::Type::GGX_REFLECTION) return "    GGX";
@@ -58,7 +58,7 @@ std::string str(const Material::Type& t){
 	return "----";
 }
 
-std::string str(const Material& m){
+inline std::string str(const Material& m){
 	std::string s = str(m.type);
 	s += " | color:" + str(m.color);
 
@@ -70,7 +70,7 @@ std::string str(const Material& m){
 	return s;
 }
 
-std::string str(const hitpoint& hit){
+inline std::string str(const hitpoint& hit){
 	std::string s;
 
 	s += "position          : " + str(hit.p) + "\n";
@@ -89,7 +89,7 @@ std::string str(const hitpoint& hit){
 	return s;
 }
 
-std::string str(const Camera& c){
+inline std::string str(const Camera& c){
 	glm::mat3 w = glm::transpose(c.toWorld);
 	
 	std::string s = "position:\n" + str(c.position) + "\n";
@@ -106,7 +106,7 @@ template<typename T> int getMaxNameSize(const std::vector<T>& v){
 		})->name.size();
 }
 
-std::string str(const Scene& scene){
+inline std::string str(const Scene& scene){
 	std::stringstream s;
 
 	s <<"scene\n" <<"----------  ----------  ----------\n";
@@ -180,7 +180,7 @@ std::string str(const Scene& scene){
 	return s.str();
 }
 
-std::string str(const Mesh& mesh){
+inline std::string str(const Mesh& mesh){
 	std::stringstream s;
 	s <<mesh.name <<"\n----------  ----------  ----------\n";
 

@@ -24,6 +24,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 
-pybind11_add_module(composition src/interface.cpp src/composition.cpp)
+pybind11_add_module(composition
+	src/composition.cpp
+	src/interface/interface.cpp
+	src/interface/data.cpp
+	src/interface/renderer.cpp
+	src/interface/scene.cpp
+)
 
 add_executable(main src/main.cpp src/composition.cpp)
