@@ -180,29 +180,31 @@ PYBIND11_MODULE(composition, m){
 	py::class_<Image>(m, "Image")
 		.def(py::init<int, int>())
 		.def(py::init<std::string>())
-		.def_property_readonly("size", [](const Image& self){return py::make_tuple(self.w, self.h);})
+		.def_property_readonly("size", [](const Image& self){return py::make_tuple(self.width(), self.height());})
 		.def_property("pixels",
-			[](const Image& self){
+			[](Image& self){
 				return (py::array_t<float>)py::buffer_info(
-					(float*)self.pixels.data(),
+					(float*)self.data(),
 					sizeof(float),
 					py::format_descriptor<float>::format(),
 					3,
-					{self.h, self.w, 3},
-					{3*self.w*sizeof(float), 3*sizeof(float), sizeof(float)}
+					{self.height(), self.width(), 3},
+					{3*self.width()*sizeof(float), 3*sizeof(float), sizeof(float)}
 				);
 			},
 			[](Image& self, py::array_t<float>& pixels){
-				assert(pixels.ndim() == 3);
-				self.h = pixels.shape(0);
-				self.w = pixels.shape(1);
-				size_t len = self.w * self.h;
-				self.pixels.resize(len);
-				memcpy(self.pixels.data(), pixels.data(), len*sizeof(glm::vec3));
+				if(pixels.ndim() == 3){
+					self.resize(pixels.shape(1), pixels.shape(0));
+					self.setPixels(pixels.data(), pixels.size());
+				}
+				else if(pixels.ndim() == 1){
+					self.setPixels(pixels.data(), pixels.size());
+				}
+				else assert(false);
 			})
 		.def("write", &Image::save)
 		.def("load", &Image::load)
-		.def("__len__", [](const Image& self){return self.pixels.size();});
+		.def("__len__", [](const Image& self){return self.size();});
 
 
 	// renderers
@@ -228,7 +230,7 @@ PYBIND11_MODULE(composition, m){
 			if(i%(hits.size()/39) == 0) std::cout <<"+" <<std::flush;
 
 			const py::array_t<float> t = remap(hit);
-			result.pixels[hit.pixel] += hit.weight * glm::vec3(t.at(0), t.at(1), t.at(2));
+			result[hit.pixel] += hit.weight * glm::vec3(t.at(0), t.at(1), t.at(2));
 		}
 
 		std::cout <<"|" <<std::endl;

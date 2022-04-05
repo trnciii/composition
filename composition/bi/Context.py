@@ -155,7 +155,7 @@ class Context:
 		for i in np.array(hits)['pixel']:
 			count[i] += 1
 
-		image.pixels = np.repeat(np.array(count)/nRay, 3).reshape((h,w,3))
+		image.pixels = np.repeat(np.array(count)/nRay, 3)
 
 		self.copyImage(ikey)
 
@@ -171,7 +171,7 @@ class Context:
 			count[i] += d
 
 		maxDepth = np.amax(depth)
-		image.pixels = np.repeat(np.array(count)/(nRay*maxDepth), 3).reshape((h,w,3))
+		image.pixels = np.repeat(np.array(count)/(nRay*maxDepth), 3)
 
 		self.copyImage(key)
 		print("max depth of", key , ": ", maxDepth)

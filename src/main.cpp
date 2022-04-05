@@ -83,7 +83,7 @@ int main(void){
 	std::cout <<std::endl;
 	for(auto& [key, image] : images){
 		std::string name = outDir+"/"+key+".png";
-		if(writeImage(image.data(), image.w, image.h, name))
+		if(writeImage(image.data(), image.width(), image.height(), name))
 			std::cout <<"saved " <<name <<std::endl;
 	}
 
@@ -194,19 +194,19 @@ int main(void){
 			double u = std::max(tau.x, std::max(tau.y, tau.z));
 			u = pow(8*u, 1);
 
-			images[remap].pixels[hit.pixel] += tau*colormap_4(u) * hit.weight;
-			images[raw].pixels[hit.pixel] += tau*hit.weight;
+			images[remap][hit.pixel] += tau*colormap_4(u) * hit.weight;
+			images[raw][hit.pixel] += tau*hit.weight;
 		}
 
 		for(int i=0; i<dim.x*dim.y; i++)
-			images["composed"].pixels[i] += images[remap].pixels[i];
+			images["composed"][i] += images[remap][i];
 	}
 
 	// save all image
 	std::cout <<std::endl;
 	for(auto& [key, image] : images){
 		std::string name = outDir+"/"+key+".png";
-		if(writeImage(image.data(), image.w, image.h, name))
+		if(writeImage(image.data(), image.width(), image.height(), name))
 			std::cout <<"saved " <<name <<std::endl;
 	}
 	std::cout <<std::endl;

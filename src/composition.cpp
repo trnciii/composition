@@ -142,9 +142,9 @@ Image PT(int w, int h, const Scene& scene, const int spp,
 			double y = (double)-(2*(yi+rng.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);			
-			image.pixels[i] += pathTracingKernel(view, scene, rng);
+			image[i] += pathTracingKernel(view, scene, rng);
 		}
-		image.pixels[i] /= spp;
+		image[i] /= spp;
 	}
 
 	return image;
@@ -166,9 +166,9 @@ Image PT_notTarget(const int w, const int h, const Scene& scene,
 			double y = (double)-(2*(yi+rng.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);			
-			image.pixels[i] += pathTracingKernel_notTarget(view, scene, rng);
+			image[i] += pathTracingKernel_notTarget(view, scene, rng);
 		}
-		image.pixels[i] /= spp;
+		image[i] /= spp;
 	}
 
 	return image;
@@ -433,7 +433,7 @@ Image PPM(const int w, const int h, const Scene& scene,
 	
 	Image im(w, h);
 	for(hitpoint& hit : hits)
-		im.pixels[hit.pixel] += hit.tau * hit.weight / (float)iteration;
+		im[hit.pixel] += hit.tau * hit.weight / (float)iteration;
 	return im;
 }
 
@@ -491,9 +491,9 @@ Image nprr(const int w, const int h, const Scene& scene,
 			double y = (double)-(2*(yi+rng.uniform())-h)/h;
 
 			Ray view = scene.camera.ray(x, y);
-			image.pixels[i] += nprrKernel(view, scene, rng, remaps);
+			image[i] += nprrKernel(view, scene, rng, remaps);
 		}
-		image.pixels[i] /= spp;
+		image[i] /= spp;
 	}
 
 	return image;
