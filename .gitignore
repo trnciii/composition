@@ -10,8 +10,5 @@ text/
 *.blend2
 *.DS_Store
 
-main
-main.exe
-
 Makefile
 lib
