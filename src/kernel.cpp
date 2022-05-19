@@ -59,9 +59,9 @@ int createScene(Scene*const s){
 
 	Material mTarget1;
 		mTarget1.name = "right";
-		mTarget1.type = Material::Type::GLASS;
-		mTarget1.color = glm::vec3(1);
-		mTarget1.a = 0.1;
+		mTarget1.type = Material::Type::LAMBERT;
+		mTarget1.color = glm::vec3(0.8);
+
 
 	uint32_t target1 = s->addMaterial(mTarget1);
 	s->targetMaterials.push_back(target1);
