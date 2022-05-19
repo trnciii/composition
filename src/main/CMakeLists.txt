@@ -1,2 +1,2 @@
 include_directories(${PROJECT_SOURCE_DIR}/src)
-add_executable(main main.cpp ../composition.cpp)
+add_executable(main main.cpp ../kernel.cpp)

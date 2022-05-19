@@ -1,7 +1,7 @@
 #include "interface.hpp"
 
 #include "toString.hpp"
-#include "composition.hpp"
+#include "kernel.hpp"
 
 void init_scene(py::module_& m){
 // scene

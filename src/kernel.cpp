@@ -2,7 +2,7 @@
 #define IMPLEMENT_TREE
 #define IMPLEMENT_MESH
 
-#include "composition.hpp"
+#include "kernel.hpp"
 
 #include <omp.h>
 #include <iostream>

@@ -1,6 +1,6 @@
 #include "interface.hpp"
 
-#include "composition.hpp"
+#include "kernel.hpp"
 
 
 void init_renderer(py::module_& m){

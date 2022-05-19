@@ -5,7 +5,7 @@ include_directories(pybind11)
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 pybind11_add_module(composition
-	../composition.cpp
+	../kernel.cpp
 	interface.cpp
 	data.cpp
 	renderer.cpp
