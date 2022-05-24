@@ -4,15 +4,12 @@ from . import basis
 
 ## vector helper
 def normalize(v):
-	return v/np.dot(v, v)**0.5
+	return v/np.sqet(np.dot(v, v))
 
 # hit to vec3
 
 def radiance(hit):
-	if hit.iteration > 0:
-		return hit.tau/hit.iteration
-	else:
-		return [0,0,0]
+	return hit.tau/hit.iteration if hit.iteration>0 else np.zeros(3)
 
 def normal(hit):
 	return hit.n
@@ -21,9 +18,8 @@ def position(hit):
 	return hit.p
 
 def const(x, y, z):
-	def f(hit):
-		return [x, y, z]
-	return f
+	ret = np.array([x, y, z])
+	return lambda hit: ret
 
 def cel_diffuse(ramp, p):
 	def f(hit):
@@ -43,20 +39,13 @@ def sumRadianceRGB(hit):
 
 def ramp(coord, data):
 	if isinstance(data, RampData):
-		def f(hit):
-			return data.eval(coord(hit))
-
-		return f
+		ev = data.eval
+		return lambda hit: ev(coord(hit))
 	
   # case [[r, g, b], ...]
 	if isinstance(data, np.ndarray):
-		w = len(data)
-		im = np.array(data)
-
-		def f(hit):
-			return im[max(0, min(w-1, int(coord(hit)*w)))]
-		
-		return f
+		w = data.shape[0]
+		return lambda hit: data[max(0, min(w-1, int(coord(hit)*w)))]
 
 	print('aaaaaa')
 	return
