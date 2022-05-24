@@ -1,62 +1,56 @@
 import bpy
 import math
+import numpy as np
+
 from .. import color
 
-def rampToImage(name, ramp, w, h):	
-	def case_RampData():
-		d = 2**(math.ceil(math.log(ramp.data[-1][0], 2)))
-		c = ramp.eval(d*i/w)
-		return [c.x, c.y, c.z, 1]
-	
-	def case_image():
-		d = len(ramp)
-		return ramp[max(0, min(w-1, int(d*i/w)))] + [1]
-
+def rampToImage(name, ramp, w, h):
 	img = addImage(name, w, h)
-	px = [[0.0]*4 for i in range(w*h)]
 	nodes = bpy.context.scene.node_tree.nodes
-	
-	for i in range(w):
-		c = [1., 0., 1.]
-		if isinstance(ramp, color.RampData):
-			c = case_RampData()
-		elif isinstance(ramp, list):
-			c = case_image()
-		elif ramp in nodes.keys():
-			c = list(nodes[ramp].color_ramp.evaluate(i/w))
-		else:
-			print('failed to find ramp data <{}>'.format(name))
-			return
 
-		for j in range(h):
-			idx = j*w + i
-			px[idx] = c
-			 
-	img.pixels = sum(px, [])
+	if isinstance(ramp, np.ndarray):
+		end = ramp.shape[0]-1
+		ev = lambda x: ramp[int(x)]
+
+	elif ramp in nodes.keys():
+		end = 1
+		ev = nodes[ramp].color_ramp.evaluate
+
+	elif isinstance(ramp, color.RampData):
+		end = 2**(math.ceil(math.log(ramp.data[-1][0], 2)))
+		ev = ramp.eval
+
+	else:
+		end = 1
+		ev = lambda x: [1,0,1,1]
+
+
+	sampled = np.array([ev(x) for x in np.linspace(0, end, w)])
+
+	if sampled.shape[1] == 3:
+		sampled = np.insert(sampled, 3, 1, axis=1)
+
+	img.pixels = np.tile(sampled.flatten(), h)
 
 
 def sliceImage(key, y):
-	im = bpy.data.images[key]
-	w, h = im.size
-	
-	p = [[0.]*3 for i in range(w)]
+	image = bpy.data.images[key]
+	w, h = image.size
+	pixels = np.array(image.pixels).reshape((h, w, 4))
+
 	y = max(0, min(h-1, int(y*h)))
-	for x in range(w):
-		i = y*w+x
-		p[x][0] = im.pixels[4*i  ]
-		p[x][1] = im.pixels[4*i+1]
-		p[x][2] = im.pixels[4*i+2]
-	return p
+	return pixels[y, :, :3]
+
 
 def ramp(coord, name):
 	nodes = bpy.context.scene.node_tree.nodes
 
 	if name in nodes.keys():
 		ev = nodes[name].color_ramp.evaluate
-	
+
 		def f(hit):
-			rs = ev(coord(hit))
-			return [rs[0], rs[1], rs[2]]
+			return ev(coord(hit))
+			# return [rs[0], rs[1], rs[2]]
 
 		return f
 

@@ -48,14 +48,15 @@ def ramp(coord, data):
 
 		return f
 	
-    # case [[r, g, b], ...]
-	if isinstance(data, list):
+  # case [[r, g, b], ...]
+	if isinstance(data, np.ndarray):
 		w = len(data)
-		im = [[p[0], p[1], p[2]] for p in data]
+		im = np.array(data)
 
 		def f(hit):
 			return im[max(0, min(w-1, int(coord(hit)*w)))]
 		
 		return f
 
+	print('aaaaaa')
 	return
